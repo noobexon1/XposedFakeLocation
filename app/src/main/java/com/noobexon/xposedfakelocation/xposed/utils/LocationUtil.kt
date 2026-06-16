@@ -49,6 +49,7 @@ object LocationUtil {
 
     @Synchronized
     fun createFakeLocation(originalLocation: Location? = null, provider: String = LocationManager.GPS_PROVIDER): Location {
+        updateLocation()
         val fakeLocation = if (originalLocation == null) {
             Location(provider).apply {
                 time = System.currentTimeMillis() - 300
@@ -121,6 +122,12 @@ object LocationUtil {
     @Synchronized
     fun updateLocation() {
         try {
+            // If a route is playing, let RoutePlayer control the position
+            RoutePlayer.loadActiveRoute()
+            if (RoutePlayer.isRouteActive()) {
+                return
+            }
+
             PreferencesUtil.getLastClickedLocation()?.let {
                 if (PreferencesUtil.getUseRandomize() == true) {
                     val randomizationRadius = PreferencesUtil.getRandomizeRadius() ?: DEFAULT_RANDOMIZE_RADIUS

@@ -20,6 +20,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import com.noobexon.xposedfakelocation.R
 import com.noobexon.xposedfakelocation.data.DEFAULT_MAP_ZOOM
+import com.noobexon.xposedfakelocation.data.model.RouteWaypoint
 import kotlinx.coroutines.flow.Flow
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory
 import org.osmdroid.util.GeoPoint
@@ -56,6 +57,9 @@ import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay
  *   coordinate and places the marker there.
  * @param centerMapEvent One-shot [Flow] from [MapViewModel]; animates the camera to the user's
  *   real device location.
+ * @param activeRouteWaypoints Waypoints of the currently playing route — drawn as a Polyline with
+ *   Markers on the map. Empty when no route is active.
+ * @param currentRoutePosition Current route playback position on the map, or null when not playing.
  * @param onClickedLocationChange Callback to update [MapViewModel] when the user taps the map or
  *   the "Go to point" event resolves.
  * @param onUserLocationChange Callback to update [MapViewModel] when a real device location is
@@ -72,6 +76,8 @@ fun MapViewContainer(
     isPlaying: Boolean,
     mapZoom: Double?,
     hasResolvedInitialLocation: Boolean,
+    activeRouteWaypoints: List<RouteWaypoint>,
+    currentRoutePosition: GeoPoint?,
     goToPointEvent: Flow<GeoPoint>,
     centerMapEvent: Flow<Unit>,
     onClickedLocationChange: (GeoPoint?) -> Unit,
@@ -107,6 +113,8 @@ fun MapViewContainer(
         onLoadingFinished = onLoadingFinished,
         onInitialLocationResolved = onInitialLocationResolved,
     )
+    HandleActiveRouteOverlay(mapView, activeRouteWaypoints)
+    HandleCurrentRoutePosition(mapView, currentRoutePosition)
     ManageMapViewLifecycle(mapView, locationOverlay, onMapZoomChange)
 
     // Display loading spinner or MapView

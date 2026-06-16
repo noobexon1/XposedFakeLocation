@@ -6,6 +6,8 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.noobexon.xposedfakelocation.R
 import com.noobexon.xposedfakelocation.data.model.FavoriteLocation
+import com.noobexon.xposedfakelocation.data.model.Route
+import com.noobexon.xposedfakelocation.data.model.RouteWaypoint
 import com.noobexon.xposedfakelocation.data.repository.PreferencesRepository
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
@@ -13,8 +15,12 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.osmdroid.util.GeoPoint
 
 /** Valid latitude values accepted by the "Go to point" and "Add to favorites" dialogs. */
@@ -76,16 +82,42 @@ class MapViewModel(application: Application) : AndroidViewModel(application) {
 
     init {
         viewModelScope.launch {
-            preferencesRepository.getIsPlayingFlow().collect { isPlaying ->
-                _uiState.update { it.copy(isPlaying = isPlaying) }
+            preferencesRepository.getIsPlayingFlow()
+                .flowOn(Dispatchers.IO)
+                .collect { isPlaying ->
+                    val waypoints = withContext(Dispatchers.IO) {
+                        preferencesRepository.getActiveRouteWaypoints()
+                    }
+                    _uiState.update {
+                        it.copy(
+                            isPlaying = isPlaying,
+                            activeRouteWaypoints = waypoints,
+                            currentRoutePosition = null
+                        )
+                    }
+                }
+        }
+
+        viewModelScope.launch {
+            while (true) {
+                delay(2000L)
+                if (_uiState.value.isPlaying) {
+                    val lat = withContext(Dispatchers.IO) { preferencesRepository.getCurrentRouteLat() }
+                    val lon = withContext(Dispatchers.IO) { preferencesRepository.getCurrentRouteLon() }
+                    if (lat != 0.0 || lon != 0.0) {
+                        _uiState.update { it.copy(currentRoutePosition = GeoPoint(lat, lon)) }
+                    }
+                }
             }
         }
 
         viewModelScope.launch {
-            preferencesRepository.getLastClickedLocationFlow().collect { location ->
-                val geoPoint = location?.let { GeoPoint(it.latitude, it.longitude) }
-                _uiState.update { it.copy(lastClickedLocation = geoPoint) }
-            }
+            preferencesRepository.getLastClickedLocationFlow()
+                .flowOn(Dispatchers.IO)
+                .collect { location ->
+                    val geoPoint = location?.let { GeoPoint(it.latitude, it.longitude) }
+                    _uiState.update { it.copy(lastClickedLocation = geoPoint) }
+                }
         }
     }
 
@@ -388,6 +420,100 @@ class MapViewModel(application: Application) : AndroidViewModel(application) {
                     )
                 )
             }
+        }
+    }
+
+    // ---- Add to route dialog ----
+
+    /**
+     * Remembers the name of the route that was last created or selected, so that
+     * [showAddToRouteDialog] can pre-select it when the user adds another waypoint.
+     */
+    private var lastUsedRouteName: String? = null
+
+    /** Makes the "Add to route" dialog visible and loads the list of available route names. */
+    fun showAddToRouteDialog() {
+        val routeNames = preferencesRepository.getRoutes().map { it.name }
+        val preselected = if (lastUsedRouteName in routeNames) {
+            lastUsedRouteName!!
+        } else {
+            routeNames.firstOrNull() ?: ""
+        }
+        _uiState.update {
+            it.copy(
+                isAddToRouteDialogVisible = true,
+                availableRouteNames = routeNames,
+                selectedRouteName = preselected,
+                newRouteNameInput = "",
+            )
+        }
+    }
+
+    /** Dismisses the "Add to route" dialog. */
+    fun hideAddToRouteDialog() {
+        _uiState.update { it.copy(isAddToRouteDialogVisible = false) }
+    }
+
+    /**
+     * Updates the selected route name in the dialog.
+     *
+     * @param name The selected route name.
+     */
+    fun onRouteSelectionChange(name: String) {
+        lastUsedRouteName = name
+        _uiState.update { it.copy(selectedRouteName = name, newRouteNameInput = "") }
+    }
+
+    /**
+     * Updates the new route name input field.
+     *
+     * @param value The raw string typed by the user.
+     */
+    fun onNewRouteNameChange(value: String) {
+        _uiState.update { it.copy(newRouteNameInput = value, selectedRouteName = "") }
+    }
+
+    /**
+     * Adds the current marker to an existing route or creates a new route.
+     * On success the dialog is dismissed.
+     */
+    fun confirmAddToRoute() {
+        val state = _uiState.value
+        val location = state.lastClickedLocation ?: return
+        val routeName = state.selectedRouteName.ifBlank { state.newRouteNameInput.ifBlank { return } }
+
+        viewModelScope.launch {
+            val routes = preferencesRepository.getRoutes().toMutableList()
+            val existingRoute = routes.find { it.name == routeName }
+
+            if (existingRoute != null) {
+                val newWaypoint = RouteWaypoint(
+                    name = "Waypoint ${existingRoute.waypoints.size + 1}",
+                    latitude = location.latitude,
+                    longitude = location.longitude,
+                    order = existingRoute.waypoints.size,
+                )
+                val updatedRoute = existingRoute.copy(
+                    waypoints = existingRoute.waypoints + newWaypoint,
+                )
+                preferencesRepository.updateRoute(existingRoute, updatedRoute)
+            } else {
+                val newRoute = Route(
+                    name = routeName,
+                    waypoints = listOf(
+                        RouteWaypoint(
+                            name = "Waypoint 1",
+                            latitude = location.latitude,
+                            longitude = location.longitude,
+                            order = 0,
+                        ),
+                    ),
+                )
+                preferencesRepository.addRoute(newRoute)
+            }
+
+            lastUsedRouteName = routeName
+            hideAddToRouteDialog()
         }
     }
 

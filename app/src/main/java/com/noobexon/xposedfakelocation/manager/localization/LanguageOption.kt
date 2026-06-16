@@ -8,6 +8,7 @@ import java.util.Locale
 
 private const val ENGLISH_LANGUAGE_TAG = "en"
 private const val CHINESE_LANGUAGE_TAG = "zh-CN"
+private const val GERMAN_LANGUAGE_TAG = "de-DE"
 
 /**
  * The set of UI languages the user can choose from in settings.
@@ -31,7 +32,10 @@ enum class LanguageOption(
     ENGLISH(ENGLISH_LANGUAGE_TAG, R.string.language_english),
 
     /** Simplified Chinese (`zh-CN`). */
-    CHINESE(CHINESE_LANGUAGE_TAG, R.string.language_chinese);
+    CHINESE(CHINESE_LANGUAGE_TAG, R.string.language_chinese),
+
+    /** German (`de-DE`). */
+    GERMAN(GERMAN_LANGUAGE_TAG, R.string.language_german);
 
     /**
      * The language's name written in its own script (autonym), e.g. "English" or "中文", so a user

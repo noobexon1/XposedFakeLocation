@@ -55,6 +55,9 @@ object PreferencesUtil {
         log("Initialized with remote preferences")
     }
 
+    /** Returns the raw remote preferences, e.g. for [RoutePlayer]. */
+    fun getPreferences(): SharedPreferences? = preferences
+
     private val locationProxyPackages = setOf(
         "com.android.location.fused",
         "com.google.android.gms"

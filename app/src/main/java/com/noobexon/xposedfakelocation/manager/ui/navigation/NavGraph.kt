@@ -3,13 +3,17 @@ package com.noobexon.xposedfakelocation.manager.ui.navigation
 import androidx.compose.runtime.Composable
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.navArgument
 import com.noobexon.xposedfakelocation.manager.ui.about.AboutScreen
 import com.noobexon.xposedfakelocation.manager.ui.favorites.FavoritesScreen
 import com.noobexon.xposedfakelocation.manager.ui.map.MapScreen
 import com.noobexon.xposedfakelocation.manager.ui.map.MapViewModel
 import com.noobexon.xposedfakelocation.manager.ui.permissions.PermissionsScreen
+import com.noobexon.xposedfakelocation.manager.ui.routes.RouteDetailScreen
+import com.noobexon.xposedfakelocation.manager.ui.routes.RoutesScreen
 import com.noobexon.xposedfakelocation.manager.ui.settings.SettingsScreen
 import com.noobexon.xposedfakelocation.manager.ui.targetapps.TargetAppsScreen
 import org.osmdroid.util.GeoPoint
@@ -40,6 +44,19 @@ fun AppNavGraph(
         }
         composable(route = Screen.Permissions.route) {
             PermissionsScreen(navController = navController)
+        }
+        composable(route = Screen.Routes.route) {
+            RoutesScreen(navController = navController)
+        }
+        composable(
+            route = Screen.RouteDetail.route,
+            arguments = listOf(navArgument("routeName") { type = NavType.StringType }),
+        ) { backStackEntry ->
+            val routeName = java.net.URLDecoder.decode(
+                backStackEntry.arguments?.getString("routeName") ?: "",
+                "UTF-8",
+            )
+            RouteDetailScreen(navController = navController, routeName = routeName)
         }
         composable(route = Screen.Settings.route) {
             SettingsScreen(navController = navController)

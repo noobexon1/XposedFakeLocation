@@ -1,0 +1,219 @@
+<resources>
+    <string name="app_name">XposedFakeLocation</string>
+
+    <string name="description">Täusche deinen Gerätestandort global oder für bestimmte Apps vor</string>
+
+    <string name="language_system">Systemstandard</string>
+    <string name="language_english">Englisch</string>
+    <string name="language_chinese">Chinesisch</string>
+    <string name="language_german">Deutsch</string>
+
+    <string name="action_ok">OK</string>
+    <string name="action_cancel">Abbrechen</string>
+    <string name="action_save">Speichern</string>
+    <string name="action_add">Hinzufügen</string>
+    <string name="action_update">Aktualisieren</string>
+    <string name="action_go">Los</string>
+    <string name="action_reset">Zurücksetzen</string>
+
+    <string name="cd_back">Zurück</string>
+    <string name="cd_navigate_back">Zurück navigieren</string>
+    <string name="cd_change_language">Sprache ändern</string>
+    <string name="cd_search_settings">Einstellungen suchen</string>
+    <string name="cd_search_apps">Apps suchen</string>
+    <string name="cd_clear_search">Suche löschen</string>
+    <string name="cd_collapse_search">Suche einklappen</string>
+    <string name="cd_more_options">Weitere Optionen</string>
+    <string name="unit_meters" translatable="false">m</string>
+    <string name="unit_meters_per_second" translatable="false">m/s</string>
+    <string name="cd_menu">Menü</string>
+    <string name="cd_center">Zentrieren</string>
+    <string name="cd_options">Optionen</string>
+    <string name="cd_play">Starten</string>
+    <string name="cd_stop">Stoppen</string>
+    <string name="cd_delete">Löschen</string>
+    <string name="cd_add_template">Vorlage hinzufügen</string>
+    <string name="cd_edit_named_item">%1$s bearbeiten</string>
+    <string name="cd_delete_named_item">%1$s löschen</string>
+    <string name="cd_edit_app_profile">%1$s-Profil bearbeiten</string>
+    <string name="cd_app_icon">%1$s-Symbol</string>
+    <string name="cd_move_up">Nach oben</string>
+    <string name="cd_move_down">Nach unten</string>
+
+    <string name="screen_settings">Einstellungen</string>
+    <string name="screen_favorites">Favoriten</string>
+    <string name="screen_routes">Routen</string>
+    <string name="screen_target_apps">Ziel-Apps</string>
+    <string name="screen_templates">Vorlagen</string>
+    <string name="screen_about">Über</string>
+
+    <string name="drawer_navigation">Navigation</string>
+    <string name="drawer_community">Community</string>
+    <string name="drawer_app_info">App-Info</string>
+    <string name="drawer_map">Karte</string>
+    <string name="drawer_subtitle">Täusche deinen Standort ganz einfach vor</string>
+    <string name="drawer_version">Version %1$s</string>
+    <string name="coming_soon">Demnächst verfügbar!</string>
+
+    <string name="dialog_module_not_active_title">Modul nicht aktiv</string>
+    <string name="dialog_module_not_active_message">Das XposedFakeLocation-Modul ist in deiner Xposed-Manager-App nicht aktiv. Bitte aktiviere es und starte die App neu, um fortzufahren.</string>
+
+    <string name="category_language">Sprache</string>
+    <string name="category_appearance">Erscheinungsbild</string>
+    <string name="category_notifications">Benachrichtigungen</string>
+    <string name="category_external_control">Externe Steuerung</string>
+    <string name="category_system_hooks">System-Hooks</string>
+    <string name="category_location">Standort</string>
+    <string name="category_altitude">Höhe</string>
+    <string name="category_movement">Bewegung</string>
+
+    <string name="setting_theme_title">App-Design</string>
+    <string name="setting_theme_description">Legt das Farbschema für die gesamte Manager-App fest.</string>
+    <string name="theme_system">Systemstandard</string>
+    <string name="theme_light">Hell</string>
+    <string name="theme_dark">Dunkel</string>
+
+    <string name="setting_language_title">App-Sprache</string>
+    <string name="setting_language_description">Ändert die von der Manager-App und ihren Xposed-Toast-Meldungen verwendete Sprache.</string>
+    <string name="setting_hide_toast_title">Toast-Meldung \'Gefälschter Standort aktiv\' ausblenden</string>
+    <string name="setting_hide_toast_description">Unterdrückt die Toast-Meldung, die angezeigt wird, wenn das Modul in einer Ziel-App aktiviert wird</string>
+    <string name="setting_external_broadcast_title">Externe Broadcast-Steuerung erlauben</string>
+    <string name="setting_external_broadcast_description">Aus (Standard): Blockiert den BroadcastReceiver — keine App oder ADB-Shell kann das Spoofing starten/stoppen oder Koordinaten über Intents setzen. Ein: Jede installierte App und \'adb shell am broadcast\' können das Modul steuern (keine Berechtigungsprüfung; Koordinaten werden auf gültige Breitengrad-/Längengradbereiche begrenzt). Aktiviere dies nur, wenn du jeder App auf dem Gerät vertraust oder die App auf einem kontrollierten Gerät (z. B. zur Automatisierung) läuft. Siehe docs/EXTERNAL_CONTROL.md für Aktionen und Sperroptionen.</string>
+    <string name="setting_system_hooks_title">Systemweite Hooks aktivieren</string>
+    <string name="setting_system_hooks_description">Fügt das Android-System-Framework (android) und den Telefonprozess (com.android.phone) zum Modulbereich hinzu, sodass der Standort auf Systemebene gefälscht werden kann. Ein Geräteneustart ist erforderlich, damit die Änderungen wirksam werden.</string>
+    <string name="dialog_restart_required_title">Neustart erforderlich</string>
+    <string name="dialog_restart_required_enable_message">Systemweite Hooks wurden zum Modulbereich hinzugefügt. Bitte starte dein Gerät neu, damit sie wirksam werden.</string>
+    <string name="dialog_restart_required_disable_message">Systemweite Hooks wurden aus dem Modulbereich entfernt. Bitte starte dein Gerät neu, um sie vollständig rückgängig zu machen.</string>
+    <string name="system_hooks_module_inactive">Modul ist nicht aktiv. Aktiviere zuerst XposedFakeLocation in deinem Xposed-Manager.</string>
+    <string name="system_hooks_scope_failed">Bereich konnte nicht aktualisiert werden: %1$s</string>
+    <string name="setting_more_info">Weitere Informationen über %1$s</string>
+    <string name="setting_disable">%1$s deaktivieren</string>
+    <string name="setting_enable">%1$s aktivieren</string>
+    <string name="setting_adjust_value">Wert für %1$s anpassen</string>
+    <string name="settings_search_hint">Einstellungen suchen</string>
+    <string name="settings_search_empty">Keine Einstellungen gefunden</string>
+    <string name="settings_reset_all">Alle Einstellungen zurücksetzen</string>
+    <string name="settings_reset_title">Alle Einstellungen zurücksetzen?</string>
+    <string name="settings_reset_message">Dies setzt jede Einstellung auf ihren Standardwert zurück. Dies kann nicht rückgängig gemacht werden.</string>
+    <string name="settings_reset_done">Einstellungen auf Standardwerte zurückgesetzt</string>
+
+    <string name="setting_randomize_title">Standort in der Nähe randomisieren</string>
+    <string name="setting_randomize_description">Platziert deinen Standort zufällig innerhalb des angegebenen Radius</string>
+    <string name="setting_randomize_radius_label">Randomisierungsradius</string>
+    <string name="setting_gps_noise_title">GPS-Rauschen</string>
+    <string name="setting_gps_noise_description">Fügt stationäres GPS-Rauschen um den ausgewählten Standort hinzu</string>
+    <string name="setting_horizontal_accuracy_title">Benutzerdefinierte horizontale Genauigkeit</string>
+    <string name="setting_horizontal_accuracy_description">Legt die horizontale Genauigkeit deines Standorts fest</string>
+    <string name="setting_horizontal_accuracy_label">Horizontale Genauigkeit</string>
+    <string name="setting_vertical_accuracy_title">Benutzerdefinierte vertikale Genauigkeit</string>
+    <string name="setting_vertical_accuracy_description">Legt die vertikale Genauigkeit deines Standorts fest</string>
+    <string name="setting_vertical_accuracy_label">Vertikale Genauigkeit</string>
+    <string name="setting_altitude_title">Benutzerdefinierte Höhe</string>
+    <string name="setting_altitude_description">Legt eine benutzerdefinierte Höhe für deinen Standort fest</string>
+    <string name="setting_altitude_label">Höhe</string>
+    <string name="setting_msl_title">Benutzerdefiniertes MSL</string>
+    <string name="setting_msl_description">Legt einen benutzerdefinierten Wert für die mittlere Meereshöhe (MSL) fest</string>
+    <string name="setting_msl_label">MSL</string>
+    <string name="setting_msl_accuracy_title">Benutzerdefinierte MSL-Genauigkeit</string>
+    <string name="setting_msl_accuracy_description">Legt die Genauigkeit des Werts für die mittlere Meereshöhe fest</string>
+    <string name="setting_msl_accuracy_label">MSL-Genauigkeit</string>
+    <string name="setting_speed_title">Benutzerdefinierte Geschwindigkeit</string>
+    <string name="setting_speed_description">Legt eine benutzerdefinierte Geschwindigkeit für deinen Standort fest</string>
+    <string name="setting_speed_label">Geschwindigkeit</string>
+    <string name="setting_speed_accuracy_title">Benutzerdefinierte Geschwindigkeitsgenauigkeit</string>
+    <string name="setting_speed_accuracy_description">Legt die Genauigkeit deines Geschwindigkeitswerts fest</string>
+    <string name="setting_speed_accuracy_label">Geschwindigkeitsgenauigkeit</string>
+
+    <string name="gps_noise_low">Niedrig</string>
+    <string name="gps_noise_normal">Normal</string>
+    <string name="gps_noise_high">Hoch</string>
+    <string name="override_inherit">Übernehmen</string>
+    <string name="override_on">Ein</string>
+    <string name="override_off">Aus</string>
+
+    <string name="map_go_to_point">Gehe zu Punkt</string>
+    <string name="map_add_to_favorites">Zu Favoriten hinzufügen</string>
+    <string name="map_add_to_templates">Zu Vorlagen hinzufügen</string>
+    <string name="map_update_template_location">Vorlagenstandort aktualisieren</string>
+    <string name="map_clear_location">Standort löschen</string>
+    <string name="toast_fake_location_set">Gefälschter Standort gesetzt</string>
+    <string name="toast_unset_fake_location">Gefälschten Standort aufheben</string>
+    <string name="toast_user_location_not_available">Benutzerstandort nicht verfügbar</string>
+    <string name="map_updating">Karte wird aktualisiert…</string>
+
+    <string name="field_name">Name</string>
+    <string name="field_description">Beschreibung (optional)</string>
+    <string name="field_latitude">Breitengrad</string>
+    <string name="field_longitude">Längengrad</string>
+    <string name="field_template">Vorlage</string>
+    <string name="validation_name_required">Bitte gib einen Namen ein</string>
+    <string name="validation_latitude_range">Breitengrad muss zwischen -90 und 90 liegen</string>
+    <string name="validation_longitude_range">Längengrad muss zwischen -180 und 180 liegen</string>
+    <string name="coordinates_lat_lon">Breite: %1$s, Länge: %2$s</string>
+    <string name="new_location_format">Neuer Standort: %1$s, %2$s</string>
+    <string name="current_location_format">Aktuell: %1$s, %2$s</string>
+
+    <string name="template_title">Vorlage</string>
+    <string name="template_empty">Noch keine Vorlagen.</string>
+    <string name="template_no_available">Keine Vorlagen verfügbar.</string>
+    <string name="template_no_matching">Keine passenden Vorlagen</string>
+    <string name="profile_edit_title">%1$s bearbeiten</string>
+    <string name="profile_enabled">Aktiviert</string>
+    <string name="profile_global">Global</string>
+    <string name="profile_custom">Benutzerdefiniert</string>
+    <string name="profile_advanced_title">Erweitert</string>
+    <string name="profile_advanced_description">Erweiterte Einstellungen für diese App überschreiben</string>
+    <string name="template_advanced_description">Die aktuellen globalen Einstellungen vor dem Speichern dieser Vorlage überschreiben</string>
+
+    <string name="favorites_edit_title">Favorit bearbeiten</string>
+    <string name="favorites_empty">Noch keine Favoriten.</string>
+    <string name="favorites_empty_description">Speichere einen Standort auf der Karte, um ihn hier zu sehen.</string>
+    <string name="favorites_delete_title">Favorit löschen?</string>
+    <string name="favorites_delete_message">\"%1$s\" löschen? Diese Aktion kann nicht rückgängig gemacht werden.</string>
+    <string name="favorites_delete_confirm">Löschen</string>
+
+    <string name="routes_empty">Noch keine Routen.</string>
+    <string name="routes_empty_description">Lege Wegpunkte auf der Karte fest, um eine Route zu erstellen.</string>
+    <string name="routes_delete_title">Route löschen?</string>
+    <string name="routes_delete_message">\"%1$s\" löschen? Diese Aktion kann nicht rückgängig gemacht werden.</string>
+    <string name="route_detail_title">Route: %1$s</string>
+    <string name="route_waypoints_count">%1$d Wegpunkte</string>
+    <string name="route_play">Route abspielen</string>
+    <string name="route_stop">Route stoppen</string>
+    <string name="route_speed">Geschwindigkeit: %1$d m/s</string>
+    <string name="route_loop">Wiederholen</string>
+    <string name="route_no_waypoints">Noch keine Wegpunkte.</string>
+    <string name="route_confirm_delete_waypoint">Diesen Wegpunkt löschen?</string>
+    <string name="route_select_existing">Vorhandene Route auswählen:</string>
+    <string name="route_or_create_new">Oder eine neue erstellen:</string>
+    <string name="route_new_route_name">Neuer Routenname</string>
+    <string name="map_add_to_route">Zu Route hinzufügen</string>
+    <string name="target_apps_search_label">Apps oder Pakete suchen</string>
+    <string name="target_apps_no_results">Keine Apps entsprechen \"%1$s\"</string>
+    <string name="target_apps_filter_user">Benutzer-Apps</string>
+    <string name="target_apps_filter_system">System-Apps</string>
+    <string name="target_apps_filter_no_results">Keine Apps entsprechen dem aktiven Filter</string>
+    <string name="cd_filter_apps">Apps filtern</string>
+    <string name="target_apps_selected_count">%1$d ausgewählt</string>
+    <string name="target_apps_module_inactive">Modul ist nicht aktiv. Aktiviere XposedFakeLocation in deinem Xposed-Manager, um Ziel-Apps auszuwählen.</string>
+    <string name="target_apps_scope_request_failed">Bereich konnte nicht aktualisiert werden: %1$s</string>
+    <string name="target_apps_relaunch_cd">%1$s neu starten</string>
+    <string name="target_apps_relaunching">%1$s wird neu gestartet…</string>
+    <string name="target_apps_relaunch_failed">%1$s konnte nicht neu gestartet werden. Sind Root-Rechte gewährt?</string>
+    <string name="target_apps_root_required">Das erneute Starten einer Ziel-App erfordert Root-Zugriff für XposedFakeLocation. Bitte gewähre diesen in deinem Root-Manager.</string>
+
+    <string name="permissions_activity_error">Fehler: Zugriff auf Aktivität nicht möglich.</string>
+    <string name="permissions_required">Berechtigungen sind erforderlich, um diese App zu nutzen</string>
+    <string name="permissions_grant">Berechtigungen gewähren</string>
+    <string name="permissions_permanently_denied">Du hast die Standortberechtigungen dauerhaft verweigert. Bitte aktiviere sie in den Einstellungen und starte die App neu.</string>
+    <string name="permissions_open_settings">Einstellungen öffnen</string>
+
+    <string name="about_description">XposedFakeLocation ist eine App, die es Nutzern ermöglicht, ihren Standort zu Test- oder Unterhaltungszwecken zu fälschen.\n\nNutze sie verantwortungsvoll und stelle sicher, dass du bei der Nutzung von Standortdiensten alle geltenden lokalen Vorschriften einhältst.\n\nDu bist für die Nutzung dieser App vollständig selbst verantwortlich.</string>
+    <string name="about_version_label">Version:</string>
+    <string name="about_developer_label">Erstellt von:</string>
+    <string name="about_contributors_label">Mitwirkende:</string>
+    <string name="about_contributors_loading">Mitwirkende werden geladen…</string>
+    <string name="about_contributors_error">Mitwirkende konnten nicht geladen werden.</string>
+    <string name="about_contributors_empty">Keine Mitwirkenden gefunden.</string>
+    <string name="about_contributors_retry">Wiederholen</string>
+</resources>

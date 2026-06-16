@@ -168,8 +168,59 @@ class LocationApiHooks(private val module: XposedInterface, private val classLoa
                 }
             }
 
+            hookRequestLocationUpdates(locationManagerClass)
+
         } catch (e: Exception) {
             module.log(Log.ERROR, tag, "Error hooking LocationManager - ${e.message}")
+        }
+    }
+
+    private fun hookRequestLocationUpdates(locationManagerClass: Class<*>) {
+        try {
+            val listenerClass = Class.forName("android.location.LocationListener", false, classLoader)
+            val method1 = locationManagerClass.getDeclaredMethod(
+                "requestLocationUpdates", String::class.java, Long::class.java,
+                Float::class.java, listenerClass
+            )
+            module.log(Log.INFO, tag, "Hooking requestLocationUpdates(String, long, float, LocationListener)")
+            module.hook(method1).intercept { chain ->
+                val minTime = chain.getArg(1) as Long
+                val provider = chain.getArg(0) as String
+                module.log(Log.INFO, tag, "requestLocationUpdates called: provider=$provider minTime=${minTime}ms")
+                if (minTime > 1000) {
+                    module.log(Log.INFO, tag, "Reducing minTime: ${minTime}ms -> 1000ms")
+                    chain.proceed(arrayOf(
+                        chain.getArg(0), 1000L, chain.getArg(2), chain.getArg(3)
+                    ))
+                } else {
+                    chain.proceed()
+                }
+            }
+
+            val methodWithLooper = try {
+                locationManagerClass.getDeclaredMethod(
+                    "requestLocationUpdates", String::class.java, Long::class.java,
+                    Float::class.java, listenerClass, android.os.Looper::class.java
+                )
+            } catch (e: NoSuchMethodException) { null }
+            if (methodWithLooper != null) {
+                module.log(Log.INFO, tag, "Hooking requestLocationUpdates(String, long, float, LocationListener, Looper)")
+                module.hook(methodWithLooper).intercept { chain ->
+                    val minTime = chain.getArg(1) as Long
+                    val provider = chain.getArg(0) as String
+                    module.log(Log.INFO, tag, "requestLocationUpdates(looper): provider=$provider minTime=${minTime}ms")
+                    if (minTime > 1000) {
+                        module.log(Log.INFO, tag, "Reducing minTime(looper): ${minTime}ms -> 1000ms")
+                        chain.proceed(arrayOf(
+                            chain.getArg(0), 1000L, chain.getArg(2), chain.getArg(3), chain.getArg(4)
+                        ))
+                    } else {
+                        chain.proceed()
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            module.log(Log.WARN, tag, "requestLocationUpdates hooks not available: ${e.message}")
         }
     }
 }
