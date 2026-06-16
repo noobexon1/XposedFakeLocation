@@ -25,6 +25,8 @@ import com.noobexon.xposedfakelocation.data.LOCATION_DETECTION_DELAY_MS
 import com.noobexon.xposedfakelocation.data.LOCATION_DETECTION_MAX_ATTEMPTS
 import com.noobexon.xposedfakelocation.data.WORLD_MAP_ZOOM
 import com.noobexon.xposedfakelocation.data.model.RouteWaypoint
+import com.noobexon.xposedfakelocation.manager.ui.routes.createCurrentPositionDrawable
+import com.noobexon.xposedfakelocation.manager.ui.routes.createNumberedMarkerDrawable
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
@@ -481,6 +483,7 @@ internal fun HandleActiveRouteOverlay(
     mapView: MapView,
     waypoints: List<RouteWaypoint>,
 ) {
+    val context = LocalContext.current
     LaunchedEffect(waypoints) {
         // Remove old route overlays (Polyline and route Markers only)
         val toRemove = mutableListOf<Any>()
@@ -509,11 +512,13 @@ internal fun HandleActiveRouteOverlay(
         mapView.overlays.add(polyline)
 
         waypoints.forEachIndexed { index, wp ->
+            val icon = createNumberedMarkerDrawable(context, index + 1)
             val marker = Marker(mapView).apply {
                 position = GeoPoint(wp.latitude, wp.longitude)
                 setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
                 title = "${index + 1}: ${wp.name}"
                 snippet = "%.5f, %.5f".format(wp.latitude, wp.longitude)
+                setIcon(icon)
                 relatedObject = "route_waypoint"
             }
             mapView.overlays.add(marker)
@@ -525,6 +530,47 @@ internal fun HandleActiveRouteOverlay(
         } else if (geoPoints.size == 1) {
             mapView.controller.setZoom(15.0)
             mapView.controller.setCenter(geoPoints[0])
+        }
+
+        mapView.invalidate()
+    }
+}
+
+/**
+ * Draws or removes a moving marker showing the current route playback position on the map.
+ *
+ * When [position] is non-null, a green dot marker is placed at that coordinate.
+ * When null (route not playing), the marker is removed.
+ *
+ * @param mapView The osmdroid map to draw on.
+ * @param position The current route position, or null to clear.
+ */
+@Composable
+internal fun HandleCurrentRoutePosition(
+    mapView: MapView,
+    position: GeoPoint?,
+) {
+    val context = LocalContext.current
+    LaunchedEffect(position) {
+        val toRemove = mutableListOf<Any>()
+        for (overlay in mapView.overlays) {
+            if (overlay is Marker && overlay.relatedObject == "current_route_position") {
+                toRemove.add(overlay)
+            }
+        }
+        toRemove.forEach { mapView.overlays.remove(it) }
+
+        if (position != null) {
+            val icon = createCurrentPositionDrawable(context)
+            val marker = Marker(mapView).apply {
+                this.position = position
+                setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER)
+                setIcon(icon)
+                setInfoWindow(null)
+                title = "Current route position"
+                relatedObject = "current_route_position"
+            }
+            mapView.overlays.add(marker)
         }
 
         mapView.invalidate()

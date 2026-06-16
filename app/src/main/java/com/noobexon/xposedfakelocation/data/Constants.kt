@@ -57,6 +57,8 @@ const val KEY_ACTIVE_ROUTE_WAYPOINT_INDEX = "active_route_waypoint_index"
 const val KEY_ACTIVE_ROUTE_PROGRESS = "active_route_progress"
 const val KEY_ROUTE_PLAYBACK_SPEED = "route_playback_speed"
 const val KEY_ROUTE_LOOP = "route_loop"
+const val KEY_CURRENT_ROUTE_LAT = "current_route_lat"
+const val KEY_CURRENT_ROUTE_LON = "current_route_lon"
 
 // Packages added/removed from module scope when system-level hooks are toggled.
 val SYSTEM_HOOK_PACKAGES = listOf("android", "com.android.phone")

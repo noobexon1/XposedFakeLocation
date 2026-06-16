@@ -15,6 +15,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import org.osmdroid.util.GeoPoint
@@ -84,7 +85,20 @@ class MapViewModel(application: Application) : AndroidViewModel(application) {
                 } else {
                     emptyList()
                 }
-                _uiState.update { it.copy(isPlaying = isPlaying, activeRouteWaypoints = waypoints) }
+                _uiState.update { it.copy(isPlaying = isPlaying, activeRouteWaypoints = waypoints, currentRoutePosition = null) }
+            }
+        }
+
+        viewModelScope.launch {
+            while (true) {
+                delay(1500L)
+                if (_uiState.value.isPlaying) {
+                    val lat = preferencesRepository.getCurrentRouteLat()
+                    val lon = preferencesRepository.getCurrentRouteLon()
+                    if (lat != 0.0 || lon != 0.0) {
+                        _uiState.update { it.copy(currentRoutePosition = GeoPoint(lat, lon)) }
+                    }
+                }
             }
         }
 

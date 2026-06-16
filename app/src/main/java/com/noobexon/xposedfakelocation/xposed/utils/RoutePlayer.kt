@@ -46,6 +46,7 @@ object RoutePlayer {
                 stopTimer()
                 isActive = false
                 isFinished = false
+                clearCurrentPosition()
                 log("Route stopped (nowPlaying=false)")
                 return
             }
@@ -116,6 +117,7 @@ object RoutePlayer {
         if (pos != null) {
             LocationUtil.latitude = pos.first
             LocationUtil.longitude = pos.second
+            persistCurrentPosition(pos.first, pos.second)
             val walkedWaypoints = computeWalkedWaypoints(totalDistance)
             log("hook: elapsed=${"%.1f".format(elapsedSeconds)}s dist=${"%.1f".format(totalDistance)}m wp_idx=$walkedWaypoints lat=${"%.6f".format(pos.first)} lon=${"%.6f".format(pos.second)}")
         }
@@ -196,4 +198,28 @@ object RoutePlayer {
     }
 
     private fun interpolate(a: Double, b: Double, t: Double): Double = a + (b - a) * t
+
+    private fun clearCurrentPosition() {
+        try {
+            val prefs = PreferencesUtil.getPreferences() ?: return
+            prefs.edit()
+                .putLong("current_route_lat", java.lang.Double.doubleToRawLongBits(0.0))
+                .putLong("current_route_lon", java.lang.Double.doubleToRawLongBits(0.0))
+                .apply()
+        } catch (_: Exception) {
+            // silent
+        }
+    }
+
+    private fun persistCurrentPosition(lat: Double, lon: Double) {
+        try {
+            val prefs = PreferencesUtil.getPreferences() ?: return
+            prefs.edit()
+                .putLong("current_route_lat", java.lang.Double.doubleToRawLongBits(lat))
+                .putLong("current_route_lon", java.lang.Double.doubleToRawLongBits(lon))
+                .apply()
+        } catch (_: Exception) {
+            // silent — remote prefs may be read-only from target process
+        }
+    }
 }

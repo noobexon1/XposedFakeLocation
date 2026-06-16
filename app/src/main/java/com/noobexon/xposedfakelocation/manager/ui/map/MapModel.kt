@@ -54,6 +54,7 @@ data class FavoritesInputState(
  * @property selectedRouteName The currently selected route name in the dialog.
  * @property newRouteNameInput Input for creating a new route from the add-to-route dialog.
  * @property activeRouteWaypoints Waypoints of the currently playing route, empty when none.
+ * @property currentRoutePosition Current route playback position on the map, or null when not playing.
  */
 @Immutable
 data class MapUiState(
@@ -72,6 +73,7 @@ data class MapUiState(
     val selectedRouteName: String = "",
     val newRouteNameInput: String = "",
     val activeRouteWaypoints: List<RouteWaypoint> = emptyList(),
+    val currentRoutePosition: GeoPoint? = null,
 ) {
     /** `true` when the FAB should be interactive, i.e. a spoof target has been placed on the map. */
     val isFabClickable: Boolean

@@ -36,6 +36,8 @@ import com.noobexon.xposedfakelocation.data.DEFAULT_USE_VERTICAL_ACCURACY
 import com.noobexon.xposedfakelocation.data.DEFAULT_VERTICAL_ACCURACY
 import com.noobexon.xposedfakelocation.data.KEY_ACCURACY
 import com.noobexon.xposedfakelocation.data.KEY_ACTIVE_ROUTE_NAME
+import com.noobexon.xposedfakelocation.data.KEY_CURRENT_ROUTE_LAT
+import com.noobexon.xposedfakelocation.data.KEY_CURRENT_ROUTE_LON
 import com.noobexon.xposedfakelocation.data.KEY_ACTIVE_ROUTE_PROGRESS
 import com.noobexon.xposedfakelocation.data.KEY_ACTIVE_ROUTE_WAYPOINT_INDEX
 import com.noobexon.xposedfakelocation.data.KEY_ACTIVE_ROUTE_WAYPOINTS
@@ -454,6 +456,17 @@ class PreferencesRepository(context: Context) {
     fun getRouteLoopFlow(): Flow<Boolean> = remoteFlow(KEY_ROUTE_LOOP, DEFAULT_ROUTE_LOOP) { it.getBoolean(KEY_ROUTE_LOOP, DEFAULT_ROUTE_LOOP) }
     suspend fun saveRouteLoop(loop: Boolean) = editRemote { putBoolean(KEY_ROUTE_LOOP, loop) }
     fun getRouteLoop(): Boolean = remotePrefs()?.getBoolean(KEY_ROUTE_LOOP, DEFAULT_ROUTE_LOOP) ?: DEFAULT_ROUTE_LOOP
+
+    // region Current Route Position (remote, written by RoutePlayer in target process)
+    fun getCurrentRouteLat(): Double {
+        val bits = remotePrefs()?.getLong(KEY_CURRENT_ROUTE_LAT, java.lang.Double.doubleToRawLongBits(0.0)) ?: java.lang.Double.doubleToRawLongBits(0.0)
+        return java.lang.Double.longBitsToDouble(bits)
+    }
+    fun getCurrentRouteLon(): Double {
+        val bits = remotePrefs()?.getLong(KEY_CURRENT_ROUTE_LON, java.lang.Double.doubleToRawLongBits(0.0)) ?: java.lang.Double.doubleToRawLongBits(0.0)
+        return java.lang.Double.longBitsToDouble(bits)
+    }
+    // endregion
     // endregion
 
     // region Map Zoom (local)

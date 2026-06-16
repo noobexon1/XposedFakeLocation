@@ -22,8 +22,6 @@ fun RouteMapView(
     waypoints: List<RouteWaypoint>,
     modifier: Modifier = Modifier,
 ) {
-    if (waypoints.isEmpty()) return
-
     val context = LocalContext.current
     val mapView = remember { createMapView(context) }
 
@@ -37,7 +35,7 @@ fun RouteMapView(
     }
 
     LaunchedEffect(waypoints) {
-        drawRoute(mapView, waypoints)
+        drawRoute(context, mapView, waypoints)
     }
 
     AndroidView(
@@ -54,38 +52,42 @@ private fun createMapView(context: Context): MapView {
     }
 }
 
-private fun drawRoute(mapView: MapView, waypoints: List<RouteWaypoint>) {
+private fun drawRoute(context: Context, mapView: MapView, waypoints: List<RouteWaypoint>) {
     mapView.overlays.clear()
 
     val geoPoints = waypoints.map { GeoPoint(it.latitude, it.longitude) }
 
-    val polyline = Polyline().apply {
-        setPoints(geoPoints)
-        outlinePaint.apply {
-            color = Color.rgb(33, 150, 243)
-            strokeWidth = 6f
-            isAntiAlias = true
+    if (geoPoints.isNotEmpty()) {
+        val polyline = Polyline().apply {
+            setPoints(geoPoints)
+            outlinePaint.apply {
+                color = Color.rgb(33, 150, 243)
+                strokeWidth = 6f
+                isAntiAlias = true
+            }
         }
-    }
-    mapView.overlays.add(polyline)
+        mapView.overlays.add(polyline)
 
-    waypoints.forEachIndexed { index, wp ->
-        val marker = Marker(mapView).apply {
-            position = GeoPoint(wp.latitude, wp.longitude)
-            setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
-            title = "${index + 1}: ${wp.name}"
-            snippet = "%.5f, %.5f".format(wp.latitude, wp.longitude)
-            setInfoWindow(null)
+        waypoints.forEachIndexed { index, wp ->
+            val icon = createNumberedMarkerDrawable(context, index + 1)
+            val marker = Marker(mapView).apply {
+                position = GeoPoint(wp.latitude, wp.longitude)
+                setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
+                title = "${index + 1}: ${wp.name}"
+                snippet = "%.5f, %.5f".format(wp.latitude, wp.longitude)
+                setIcon(icon)
+                setInfoWindow(null)
+            }
+            mapView.overlays.add(marker)
         }
-        mapView.overlays.add(marker)
-    }
 
-    if (geoPoints.size >= 2) {
-        val box = BoundingBox.fromGeoPoints(geoPoints)
-        mapView.zoomToBoundingBox(box.increaseByScale(1.2f), true, 48)
-    } else if (geoPoints.size == 1) {
-        mapView.controller.setZoom(15.0)
-        mapView.controller.setCenter(geoPoints[0])
+        if (geoPoints.size >= 2) {
+            val box = BoundingBox.fromGeoPoints(geoPoints)
+            mapView.zoomToBoundingBox(box.increaseByScale(1.2f), true, 48)
+        } else {
+            mapView.controller.setZoom(15.0)
+            mapView.controller.setCenter(geoPoints[0])
+        }
     }
 
     mapView.invalidate()

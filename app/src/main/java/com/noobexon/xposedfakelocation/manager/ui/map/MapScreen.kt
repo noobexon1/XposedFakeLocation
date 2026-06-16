@@ -260,6 +260,7 @@ fun MapScreen(
                     mapZoom = uiState.mapZoom,
                     hasResolvedInitialLocation = uiState.hasResolvedInitialLocation,
                     activeRouteWaypoints = uiState.activeRouteWaypoints,
+                    currentRoutePosition = uiState.currentRoutePosition,
                     goToPointEvent = mapViewModel.goToPointEvent,
                     centerMapEvent = mapViewModel.centerMapEvent,
                     onClickedLocationChange = mapViewModel::updateClickedLocation,

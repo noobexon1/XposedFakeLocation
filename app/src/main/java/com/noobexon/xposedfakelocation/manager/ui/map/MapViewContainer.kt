@@ -59,6 +59,7 @@ import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay
  *   real device location.
  * @param activeRouteWaypoints Waypoints of the currently playing route — drawn as a Polyline with
  *   Markers on the map. Empty when no route is active.
+ * @param currentRoutePosition Current route playback position on the map, or null when not playing.
  * @param onClickedLocationChange Callback to update [MapViewModel] when the user taps the map or
  *   the "Go to point" event resolves.
  * @param onUserLocationChange Callback to update [MapViewModel] when a real device location is
@@ -76,6 +77,7 @@ fun MapViewContainer(
     mapZoom: Double?,
     hasResolvedInitialLocation: Boolean,
     activeRouteWaypoints: List<RouteWaypoint>,
+    currentRoutePosition: GeoPoint?,
     goToPointEvent: Flow<GeoPoint>,
     centerMapEvent: Flow<Unit>,
     onClickedLocationChange: (GeoPoint?) -> Unit,
@@ -112,6 +114,7 @@ fun MapViewContainer(
         onInitialLocationResolved = onInitialLocationResolved,
     )
     HandleActiveRouteOverlay(mapView, activeRouteWaypoints)
+    HandleCurrentRoutePosition(mapView, currentRoutePosition)
     ManageMapViewLifecycle(mapView, locationOverlay, onMapZoomChange)
 
     // Display loading spinner or MapView
