@@ -425,14 +425,25 @@ class MapViewModel(application: Application) : AndroidViewModel(application) {
 
     // ---- Add to route dialog ----
 
+    /**
+     * Remembers the name of the route that was last created or selected, so that
+     * [showAddToRouteDialog] can pre-select it when the user adds another waypoint.
+     */
+    private var lastUsedRouteName: String? = null
+
     /** Makes the "Add to route" dialog visible and loads the list of available route names. */
     fun showAddToRouteDialog() {
         val routeNames = preferencesRepository.getRoutes().map { it.name }
+        val preselected = if (lastUsedRouteName in routeNames) {
+            lastUsedRouteName!!
+        } else {
+            routeNames.firstOrNull() ?: ""
+        }
         _uiState.update {
             it.copy(
                 isAddToRouteDialogVisible = true,
                 availableRouteNames = routeNames,
-                selectedRouteName = routeNames.firstOrNull() ?: "",
+                selectedRouteName = preselected,
                 newRouteNameInput = "",
             )
         }
@@ -449,6 +460,7 @@ class MapViewModel(application: Application) : AndroidViewModel(application) {
      * @param name The selected route name.
      */
     fun onRouteSelectionChange(name: String) {
+        lastUsedRouteName = name
         _uiState.update { it.copy(selectedRouteName = name, newRouteNameInput = "") }
     }
 
@@ -475,7 +487,6 @@ class MapViewModel(application: Application) : AndroidViewModel(application) {
             val existingRoute = routes.find { it.name == routeName }
 
             if (existingRoute != null) {
-                // Add to existing route
                 val newWaypoint = RouteWaypoint(
                     name = "Waypoint ${existingRoute.waypoints.size + 1}",
                     latitude = location.latitude,
@@ -487,7 +498,6 @@ class MapViewModel(application: Application) : AndroidViewModel(application) {
                 )
                 preferencesRepository.updateRoute(existingRoute, updatedRoute)
             } else {
-                // Create new route
                 val newRoute = Route(
                     name = routeName,
                     waypoints = listOf(
@@ -502,6 +512,7 @@ class MapViewModel(application: Application) : AndroidViewModel(application) {
                 preferencesRepository.addRoute(newRoute)
             }
 
+            lastUsedRouteName = routeName
             hideAddToRouteDialog()
         }
     }
