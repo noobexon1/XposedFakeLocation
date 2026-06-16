@@ -9,6 +9,7 @@ import com.noobexon.xposedfakelocation.xposed.hooks.PhoneServicesHooks
 import com.noobexon.xposedfakelocation.xposed.hooks.SystemServicesHooks
 import com.noobexon.xposedfakelocation.xposed.utils.LocationUtil
 import com.noobexon.xposedfakelocation.xposed.utils.PreferencesUtil
+import com.noobexon.xposedfakelocation.xposed.utils.RoutePlayer
 import io.github.libxposed.api.XposedModule
 import io.github.libxposed.api.XposedModuleInterface.ModuleLoadedParam
 import io.github.libxposed.api.XposedModuleInterface.PackageLoadedParam
@@ -29,6 +30,7 @@ class ModuleEntry : XposedModule() {
         log(Log.INFO, TAG, "onModuleLoaded: ${param.processName}")
         LocationUtil.logger = { priority, tag, message -> log(priority, tag, message) }
         PreferencesUtil.logger = { priority, tag, message -> log(priority, tag, message) }
+        RoutePlayer.logger = { priority, tag, message -> log(priority, tag, message) }
     }
 
     override fun onPackageLoaded(param: PackageLoadedParam) {
