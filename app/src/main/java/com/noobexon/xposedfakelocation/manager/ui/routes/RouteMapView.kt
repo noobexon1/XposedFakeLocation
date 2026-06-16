@@ -6,6 +6,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.viewinterop.AndroidView
@@ -35,6 +36,10 @@ fun RouteMapView(
     }
 
     LaunchedEffect(waypoints) {
+        if (waypoints.isEmpty()) return@LaunchedEffect
+        while (mapView.width <= 0 || mapView.height <= 0) {
+            withFrameNanos { }
+        }
         drawRoute(context, mapView, waypoints)
     }
 
@@ -83,7 +88,7 @@ private fun drawRoute(context: Context, mapView: MapView, waypoints: List<RouteW
 
         if (geoPoints.size >= 2) {
             val box = BoundingBox.fromGeoPoints(geoPoints)
-            mapView.zoomToBoundingBox(box.increaseByScale(1.2f), true, 48)
+            mapView.post { mapView.zoomToBoundingBox(box.increaseByScale(1.2f), false, 0) }
         } else {
             mapView.controller.setZoom(15.0)
             mapView.controller.setCenter(geoPoints[0])
