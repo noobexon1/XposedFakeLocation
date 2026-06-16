@@ -27,6 +27,15 @@ import androidx.core.content.edit
 object RoutePlayer {
     private const val TAG = "[RoutePlayer]"
 
+    /**
+     * Minimum interval between [advance] calls in nanoseconds.
+     * Location getters (getLatitude, getLongitude, etc.) are hooked individually
+     * and called in rapid succession by the target app (microseconds apart).
+     * This threshold ensures only one advance per ~100ms window, giving a
+     * meaningful time delta for interpolation.
+     */
+    private const val MIN_ADVANCE_INTERVAL_NANOS = 100_000_000L // 100ms
+
     @Volatile var logger: ((Int, String, String) -> Unit)? = null
     private fun log(msg: String, priority: Int = Log.INFO) = logger?.invoke(priority, TAG, msg)
 
@@ -108,17 +117,22 @@ object RoutePlayer {
             return
         }
 
-        val deltaSeconds = (now - lastUpdateTime) / 1_000_000_000.0
-        lastUpdateTime = now
+        val deltaNanos = now - lastUpdateTime
 
-        if (deltaSeconds <= 0) return
+        // Skip if called too frequently (microseconds between Location getters).
+        // Only advance once per ~100ms to get a meaningful time delta.
+        if (deltaNanos < MIN_ADVANCE_INTERVAL_NANOS) return
 
-        // If more than 2 seconds elapsed (e.g. route was stopped and restarted),
-        // treat as fresh start to avoid a large position jump.
-        if (deltaSeconds > 2.0) {
-            lastUpdateTime = 0L
+        // If more than 2 seconds elapsed (stop->restart), reinitialize
+        // without jumping past waypoints.
+        if (deltaNanos > 2_000_000_000L) {
+            lastUpdateTime = now
+            setPosition()
             return
         }
+
+        lastUpdateTime = now
+        val deltaSeconds = deltaNanos / 1_000_000_000.0
 
         // Calculate distance between current and next waypoint in meters
         if (currentIndex >= waypoints.size - 1) {
