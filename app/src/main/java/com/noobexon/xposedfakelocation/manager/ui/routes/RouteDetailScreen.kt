@@ -89,7 +89,7 @@ fun RouteDetailScreen(
         onStopPlaying = routeDetailViewModel::stopPlaying,
         onPlaybackSpeedChange = routeDetailViewModel::updatePlaybackSpeed,
         onLoopingChange = routeDetailViewModel::updateLooping,
-        onAddWaypoint = { /* TODO: Dialog vom MapScreen aus */ },
+        onAddWaypoint = { /* TODO: trigger dialog from MapScreen */ },
         onRemoveWaypoint = routeDetailViewModel::removeWaypoint,
         onMoveWaypointUp = { index ->
             if (index > 0) routeDetailViewModel.reorderWaypoint(index, index - 1)
@@ -288,7 +288,7 @@ private fun ControlSection(
                 )
             }
 
-            // Geschwindigkeit
+            // Playback speed
             Text(
                 text = stringResource(R.string.route_speed, playbackSpeed.toInt()),
                 style = MaterialTheme.typography.bodyMedium,
@@ -301,7 +301,7 @@ private fun ControlSection(
                 modifier = Modifier.fillMaxWidth(),
             )
 
-            // Schleifen-Modus
+            // Loop mode
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.fillMaxWidth(),
