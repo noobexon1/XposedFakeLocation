@@ -524,12 +524,14 @@ internal fun HandleActiveRouteOverlay(
             mapView.overlays.add(marker)
         }
 
-        if (geoPoints.size >= 2) {
-            val box = org.osmdroid.util.BoundingBox.fromGeoPoints(geoPoints)
-            mapView.zoomToBoundingBox(box.increaseByScale(1.2f), true, 48)
-        } else if (geoPoints.size == 1) {
-            mapView.controller.setZoom(15.0)
-            mapView.controller.setCenter(geoPoints[0])
+        if (mapView.width > 0 && mapView.height > 0) {
+            if (geoPoints.size >= 2) {
+                val box = org.osmdroid.util.BoundingBox.fromGeoPoints(geoPoints)
+                mapView.zoomToBoundingBox(box.increaseByScale(1.2f), true, 48)
+            } else if (geoPoints.size == 1) {
+                mapView.controller.setZoom(15.0)
+                mapView.controller.setCenter(geoPoints[0])
+            }
         }
 
         mapView.invalidate()

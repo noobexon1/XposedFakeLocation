@@ -15,9 +15,12 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.osmdroid.util.GeoPoint
 
 /** Valid latitude values accepted by the "Go to point" and "Add to favorites" dialogs. */
@@ -79,22 +82,28 @@ class MapViewModel(application: Application) : AndroidViewModel(application) {
 
     init {
         viewModelScope.launch {
-            preferencesRepository.getIsPlayingFlow().collect { isPlaying ->
-                val waypoints = if (isPlaying) {
-                    preferencesRepository.getActiveRouteWaypoints()
-                } else {
-                    emptyList()
+            preferencesRepository.getIsPlayingFlow()
+                .flowOn(Dispatchers.IO)
+                .collect { isPlaying ->
+                    val waypoints = withContext(Dispatchers.IO) {
+                        preferencesRepository.getActiveRouteWaypoints()
+                    }
+                    _uiState.update {
+                        it.copy(
+                            isPlaying = isPlaying,
+                            activeRouteWaypoints = waypoints,
+                            currentRoutePosition = null
+                        )
+                    }
                 }
-                _uiState.update { it.copy(isPlaying = isPlaying, activeRouteWaypoints = waypoints, currentRoutePosition = null) }
-            }
         }
 
         viewModelScope.launch {
             while (true) {
-                delay(1500L)
+                delay(2000L)
                 if (_uiState.value.isPlaying) {
-                    val lat = preferencesRepository.getCurrentRouteLat()
-                    val lon = preferencesRepository.getCurrentRouteLon()
+                    val lat = withContext(Dispatchers.IO) { preferencesRepository.getCurrentRouteLat() }
+                    val lon = withContext(Dispatchers.IO) { preferencesRepository.getCurrentRouteLon() }
                     if (lat != 0.0 || lon != 0.0) {
                         _uiState.update { it.copy(currentRoutePosition = GeoPoint(lat, lon)) }
                     }
@@ -103,10 +112,12 @@ class MapViewModel(application: Application) : AndroidViewModel(application) {
         }
 
         viewModelScope.launch {
-            preferencesRepository.getLastClickedLocationFlow().collect { location ->
-                val geoPoint = location?.let { GeoPoint(it.latitude, it.longitude) }
-                _uiState.update { it.copy(lastClickedLocation = geoPoint) }
-            }
+            preferencesRepository.getLastClickedLocationFlow()
+                .flowOn(Dispatchers.IO)
+                .collect { location ->
+                    val geoPoint = location?.let { GeoPoint(it.latitude, it.longitude) }
+                    _uiState.update { it.copy(lastClickedLocation = geoPoint) }
+                }
         }
     }
 
