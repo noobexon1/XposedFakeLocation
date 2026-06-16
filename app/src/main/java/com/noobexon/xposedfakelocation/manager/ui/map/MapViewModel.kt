@@ -449,7 +449,7 @@ class MapViewModel(application: Application) : AndroidViewModel(application) {
      * @param name The selected route name.
      */
     fun onRouteSelectionChange(name: String) {
-        _uiState.update { it.copy(selectedRouteName = name) }
+        _uiState.update { it.copy(selectedRouteName = name, newRouteNameInput = "") }
     }
 
     /**
@@ -458,7 +458,7 @@ class MapViewModel(application: Application) : AndroidViewModel(application) {
      * @param value The raw string typed by the user.
      */
     fun onNewRouteNameChange(value: String) {
-        _uiState.update { it.copy(newRouteNameInput = value) }
+        _uiState.update { it.copy(newRouteNameInput = value, selectedRouteName = "") }
     }
 
     /**

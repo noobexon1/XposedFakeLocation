@@ -49,6 +49,7 @@ object LocationUtil {
 
     @Synchronized
     fun createFakeLocation(originalLocation: Location? = null, provider: String = LocationManager.GPS_PROVIDER): Location {
+        updateLocation()
         val fakeLocation = if (originalLocation == null) {
             Location(provider).apply {
                 time = System.currentTimeMillis() - 300
