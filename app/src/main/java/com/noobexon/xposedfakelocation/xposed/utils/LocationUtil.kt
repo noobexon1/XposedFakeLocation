@@ -121,6 +121,13 @@ object LocationUtil {
     @Synchronized
     fun updateLocation() {
         try {
+            // If a route is playing, let RoutePlayer control the position
+            RoutePlayer.loadActiveRoute()
+            if (RoutePlayer.isRouteActive()) {
+                RoutePlayer.advance()
+                return
+            }
+
             PreferencesUtil.getLastClickedLocation()?.let {
                 if (PreferencesUtil.getUseRandomize() == true) {
                     val randomizationRadius = PreferencesUtil.getRandomizeRadius() ?: DEFAULT_RANDOMIZE_RADIUS
