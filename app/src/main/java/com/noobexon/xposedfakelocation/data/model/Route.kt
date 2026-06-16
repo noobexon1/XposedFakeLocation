@@ -1,8 +1,8 @@
 package com.noobexon.xposedfakelocation.data.model
 
 /**
- * Eine Route besteht aus einem Namen und einer geordneten Liste von Wegpunkten.
- * Wird als GSON-JSON in den lokalen SharedPreferences gespeichert.
+ * A route consisting of a name and an ordered list of waypoints.
+ * Persisted as GSON JSON in local SharedPreferences.
  */
 data class Route(
     val name: String,

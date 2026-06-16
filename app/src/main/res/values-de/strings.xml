@@ -37,9 +37,12 @@
     <string name="cd_delete_named_item">%1$s löschen</string>
     <string name="cd_edit_app_profile">%1$s-Profil bearbeiten</string>
     <string name="cd_app_icon">%1$s-Symbol</string>
+    <string name="cd_move_up">Nach oben</string>
+    <string name="cd_move_down">Nach unten</string>
 
     <string name="screen_settings">Einstellungen</string>
     <string name="screen_favorites">Favoriten</string>
+    <string name="screen_routes">Routen</string>
     <string name="screen_target_apps">Ziel-Apps</string>
     <string name="screen_templates">Vorlagen</string>
     <string name="screen_about">Über</string>
@@ -168,6 +171,23 @@
     <string name="favorites_delete_title">Favorit löschen?</string>
     <string name="favorites_delete_message">\"%1$s\" löschen? Diese Aktion kann nicht rückgängig gemacht werden.</string>
     <string name="favorites_delete_confirm">Löschen</string>
+
+    <string name="routes_empty">Noch keine Routen.</string>
+    <string name="routes_empty_description">Lege Wegpunkte auf der Karte fest, um eine Route zu erstellen.</string>
+    <string name="routes_delete_title">Route löschen?</string>
+    <string name="routes_delete_message">\"%1$s\" löschen? Diese Aktion kann nicht rückgängig gemacht werden.</string>
+    <string name="route_detail_title">Route: %1$s</string>
+    <string name="route_waypoints_count">%1$d Wegpunkte</string>
+    <string name="route_play">Route abspielen</string>
+    <string name="route_stop">Route stoppen</string>
+    <string name="route_speed">Geschwindigkeit: %1$d m/s</string>
+    <string name="route_loop">Wiederholen</string>
+    <string name="route_no_waypoints">Noch keine Wegpunkte.</string>
+    <string name="route_confirm_delete_waypoint">Diesen Wegpunkt löschen?</string>
+    <string name="route_select_existing">Vorhandene Route auswählen:</string>
+    <string name="route_or_create_new">Oder eine neue erstellen:</string>
+    <string name="route_new_route_name">Neuer Routenname</string>
+    <string name="map_add_to_route">Zu Route hinzufügen</string>
     <string name="target_apps_search_label">Apps oder Pakete suchen</string>
     <string name="target_apps_no_results">Keine Apps entsprechen \"%1$s\"</string>
     <string name="target_apps_filter_user">Benutzer-Apps</string>

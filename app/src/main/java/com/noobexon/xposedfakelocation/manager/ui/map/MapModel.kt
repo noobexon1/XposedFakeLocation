@@ -2,6 +2,7 @@ package com.noobexon.xposedfakelocation.manager.ui.map
 
 import androidx.annotation.StringRes
 import androidx.compose.runtime.Immutable
+import com.noobexon.xposedfakelocation.data.model.RouteWaypoint
 import org.osmdroid.util.GeoPoint
 
 /**
@@ -48,6 +49,11 @@ data class FavoritesInputState(
  * @property hasResolvedInitialLocation Whether the map has completed its one-time initial camera
  *   positioning. Survives navigation so that re-entering the screen restores the last camera
  *   position instead of re-running location detection.
+ * @property isAddToRouteDialogVisible Whether the "Add to route" dialog is shown.
+ * @property availableRouteNames List of names of all saved routes for selection.
+ * @property selectedRouteName The currently selected route name in the dialog.
+ * @property newRouteNameInput Input for creating a new route from the add-to-route dialog.
+ * @property activeRouteWaypoints Waypoints of the currently playing route, empty when none.
  */
 @Immutable
 data class MapUiState(
@@ -61,6 +67,11 @@ data class MapUiState(
     val isAddToFavoritesDialogVisible: Boolean = false,
     val goToPointState: GoToPointInputState = GoToPointInputState(),
     val hasResolvedInitialLocation: Boolean = false,
+    val isAddToRouteDialogVisible: Boolean = false,
+    val availableRouteNames: List<String> = emptyList(),
+    val selectedRouteName: String = "",
+    val newRouteNameInput: String = "",
+    val activeRouteWaypoints: List<RouteWaypoint> = emptyList(),
 ) {
     /** `true` when the FAB should be interactive, i.e. a spoof target has been placed on the map. */
     val isFabClickable: Boolean

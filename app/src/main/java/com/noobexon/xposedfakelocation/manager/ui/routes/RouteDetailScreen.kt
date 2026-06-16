@@ -189,7 +189,7 @@ private fun RouteDetailContent(
                 .padding(innerPadding)
                 .padding(16.dp),
         ) {
-            // Steuerungsbereich
+            // Control section
             ControlSection(
                 isPlaying = uiState.isPlaying,
                 playbackSpeed = uiState.playbackSpeed,
@@ -202,7 +202,17 @@ private fun RouteDetailContent(
 
             Spacer(Modifier.height(16.dp))
 
-            // Wegpunkt-Liste
+            // Route map preview
+            RouteMapView(
+                waypoints = uiState.waypoints,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(250.dp),
+            )
+
+            Spacer(Modifier.height(16.dp))
+
+            // Waypoint list
             if (uiState.waypoints.isEmpty()) {
                 Text(
                     text = stringResource(R.string.route_no_waypoints),

@@ -9,6 +9,8 @@ import com.google.gson.Gson
 import com.google.gson.JsonSyntaxException
 import com.google.gson.reflect.TypeToken
 import com.noobexon.xposedfakelocation.data.DEFAULT_ACCURACY
+import com.noobexon.xposedfakelocation.data.DEFAULT_ACTIVE_ROUTE_PROGRESS
+import com.noobexon.xposedfakelocation.data.DEFAULT_ACTIVE_ROUTE_WAYPOINT_INDEX
 import com.noobexon.xposedfakelocation.data.DEFAULT_ALTITUDE
 import com.noobexon.xposedfakelocation.data.DEFAULT_ENABLE_BROADCAST_CONTROL
 import com.noobexon.xposedfakelocation.data.DEFAULT_ENABLE_SYSTEM_HOOKS
@@ -18,6 +20,8 @@ import com.noobexon.xposedfakelocation.data.DEFAULT_MAP_ZOOM
 import com.noobexon.xposedfakelocation.data.DEFAULT_MEAN_SEA_LEVEL
 import com.noobexon.xposedfakelocation.data.DEFAULT_MEAN_SEA_LEVEL_ACCURACY
 import com.noobexon.xposedfakelocation.data.DEFAULT_RANDOMIZE_RADIUS
+import com.noobexon.xposedfakelocation.data.DEFAULT_ROUTE_LOOP
+import com.noobexon.xposedfakelocation.data.DEFAULT_ROUTE_PLAYBACK_SPEED
 import com.noobexon.xposedfakelocation.data.DEFAULT_SPEED
 import com.noobexon.xposedfakelocation.data.DEFAULT_SPEED_ACCURACY
 import com.noobexon.xposedfakelocation.data.DEFAULT_THEME_OPTION
@@ -31,6 +35,10 @@ import com.noobexon.xposedfakelocation.data.DEFAULT_USE_SPEED_ACCURACY
 import com.noobexon.xposedfakelocation.data.DEFAULT_USE_VERTICAL_ACCURACY
 import com.noobexon.xposedfakelocation.data.DEFAULT_VERTICAL_ACCURACY
 import com.noobexon.xposedfakelocation.data.KEY_ACCURACY
+import com.noobexon.xposedfakelocation.data.KEY_ACTIVE_ROUTE_NAME
+import com.noobexon.xposedfakelocation.data.KEY_ACTIVE_ROUTE_PROGRESS
+import com.noobexon.xposedfakelocation.data.KEY_ACTIVE_ROUTE_WAYPOINT_INDEX
+import com.noobexon.xposedfakelocation.data.KEY_ACTIVE_ROUTE_WAYPOINTS
 import com.noobexon.xposedfakelocation.data.KEY_ALTITUDE
 import com.noobexon.xposedfakelocation.data.KEY_ENABLE_BROADCAST_CONTROL
 import com.noobexon.xposedfakelocation.data.KEY_ENABLE_SYSTEM_HOOKS
@@ -43,6 +51,10 @@ import com.noobexon.xposedfakelocation.data.KEY_MAP_ZOOM
 import com.noobexon.xposedfakelocation.data.KEY_MEAN_SEA_LEVEL
 import com.noobexon.xposedfakelocation.data.KEY_MEAN_SEA_LEVEL_ACCURACY
 import com.noobexon.xposedfakelocation.data.KEY_RANDOMIZE_RADIUS
+import com.noobexon.xposedfakelocation.data.KEY_ROUTES
+import com.noobexon.xposedfakelocation.data.KEY_ROUTE_LOOP
+import com.noobexon.xposedfakelocation.data.KEY_ROUTE_PLAYBACK_SPEED
+import com.noobexon.xposedfakelocation.data.KEY_ROUTE_PLAYING
 import com.noobexon.xposedfakelocation.data.KEY_SPEED
 import com.noobexon.xposedfakelocation.data.KEY_SPEED_ACCURACY
 import com.noobexon.xposedfakelocation.data.KEY_TARGET_APPS
@@ -60,6 +72,8 @@ import com.noobexon.xposedfakelocation.data.REMOTE_PREFS_GROUP
 import com.noobexon.xposedfakelocation.data.SHARED_PREFS_FILE
 import com.noobexon.xposedfakelocation.data.model.FavoriteLocation
 import com.noobexon.xposedfakelocation.data.model.LastClickedLocation
+import com.noobexon.xposedfakelocation.data.model.Route
+import com.noobexon.xposedfakelocation.data.model.RouteWaypoint
 import com.noobexon.xposedfakelocation.manager.App
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.awaitClose
@@ -340,6 +354,106 @@ class PreferencesRepository(context: Context) {
             emptyList()
         }
     }
+    // endregion
+
+    // region Routes (local)
+    fun getRoutesFlow(): Flow<List<Route>> =
+        localFlow(KEY_ROUTES) { parseRoutes(it.getString(KEY_ROUTES, null)) }
+
+    suspend fun addRoute(route: Route) {
+        val updated = getRoutes().toMutableList().apply { add(route) }
+        saveRoutes(updated)
+        Log.d(tag, "Added Route: $route")
+    }
+
+    suspend fun removeRoute(route: Route) {
+        val updated = getRoutes().toMutableList().apply { remove(route) }
+        saveRoutes(updated)
+        Log.d(tag, "Removed Route: $route")
+    }
+
+    suspend fun updateRoute(old: Route, new: Route) {
+        val updated = getRoutes().toMutableList().apply {
+            val index = indexOf(old)
+            if (index != -1) set(index, new)
+        }
+        saveRoutes(updated)
+        Log.d(tag, "Updated Route: $old -> $new")
+    }
+
+    fun getRoutes(): List<Route> = parseRoutes(localPrefs.getString(KEY_ROUTES, null))
+
+    private fun saveRoutes(routes: List<Route>) {
+        val json = gson.toJson(routes)
+        editLocal { putString(KEY_ROUTES, json) }
+    }
+
+    private fun parseRoutes(json: String?): List<Route> {
+        if (json.isNullOrBlank()) return emptyList()
+        return try {
+            val type = object : TypeToken<List<Route>>() {}.type
+            gson.fromJson(json, type)
+        } catch (e: JsonSyntaxException) {
+            Log.e(tag, "Error parsing Routes: ${e.message}")
+            emptyList()
+        }
+    }
+    // endregion
+
+    // region Active Route Playback (remote)
+    fun getRoutePlayingFlow(): Flow<Boolean> = remoteFlow(KEY_ROUTE_PLAYING, false) { it.getBoolean(KEY_ROUTE_PLAYING, false) }
+    suspend fun saveRoutePlaying(isRoutePlaying: Boolean) = editRemote { putBoolean(KEY_ROUTE_PLAYING, isRoutePlaying) }
+    fun getRoutePlaying(): Boolean = remotePrefs()?.getBoolean(KEY_ROUTE_PLAYING, false) ?: false
+
+    fun getActiveRouteNameFlow(): Flow<String> = remoteFlow(KEY_ACTIVE_ROUTE_NAME, "") { it.getString(KEY_ACTIVE_ROUTE_NAME, "") ?: "" }
+    suspend fun saveActiveRouteName(name: String) = editRemote { putString(KEY_ACTIVE_ROUTE_NAME, name) }
+    fun getActiveRouteName(): String = remotePrefs()?.getString(KEY_ACTIVE_ROUTE_NAME, null) ?: ""
+
+    fun getActiveRouteWaypointsFlow(): Flow<List<RouteWaypoint>> =
+        remoteFlow(KEY_ACTIVE_ROUTE_WAYPOINTS, emptyList<RouteWaypoint>()) {
+            parseRouteWaypoints(it.getString(KEY_ACTIVE_ROUTE_WAYPOINTS, null))
+        }
+
+    suspend fun saveActiveRouteWaypoints(waypoints: List<RouteWaypoint>) {
+        val json = gson.toJson(waypoints)
+        editRemote { putString(KEY_ACTIVE_ROUTE_WAYPOINTS, json) }
+    }
+
+    fun getActiveRouteWaypoints(): List<RouteWaypoint> =
+        parseRouteWaypoints(remotePrefs()?.getString(KEY_ACTIVE_ROUTE_WAYPOINTS, null))
+
+    private fun parseRouteWaypoints(json: String?): List<RouteWaypoint> {
+        if (json.isNullOrBlank()) return emptyList()
+        return try {
+            val type = object : TypeToken<List<RouteWaypoint>>() {}.type
+            gson.fromJson(json, type)
+        } catch (e: JsonSyntaxException) {
+            Log.e(tag, "Error parsing active route waypoints: ${e.message}")
+            emptyList()
+        }
+    }
+
+    fun getActiveRouteWaypointIndexFlow(): Flow<Int> = remoteFlow(KEY_ACTIVE_ROUTE_WAYPOINT_INDEX, DEFAULT_ACTIVE_ROUTE_WAYPOINT_INDEX) { it.getInt(KEY_ACTIVE_ROUTE_WAYPOINT_INDEX, DEFAULT_ACTIVE_ROUTE_WAYPOINT_INDEX) }
+    suspend fun saveActiveRouteWaypointIndex(index: Int) = editRemote { putInt(KEY_ACTIVE_ROUTE_WAYPOINT_INDEX, index) }
+    fun getActiveRouteWaypointIndex(): Int = remotePrefs()?.getInt(KEY_ACTIVE_ROUTE_WAYPOINT_INDEX, DEFAULT_ACTIVE_ROUTE_WAYPOINT_INDEX) ?: DEFAULT_ACTIVE_ROUTE_WAYPOINT_INDEX
+
+    fun getActiveRouteProgressFlow(): Flow<Double> = remoteFlow(KEY_ACTIVE_ROUTE_PROGRESS, DEFAULT_ACTIVE_ROUTE_PROGRESS) { it.getLong(KEY_ACTIVE_ROUTE_PROGRESS, java.lang.Double.doubleToRawLongBits(DEFAULT_ACTIVE_ROUTE_PROGRESS)).let { java.lang.Double.longBitsToDouble(it) } }
+    suspend fun saveActiveRouteProgress(progress: Double) = editRemote { putLong(KEY_ACTIVE_ROUTE_PROGRESS, java.lang.Double.doubleToRawLongBits(progress)) }
+    fun getActiveRouteProgress(): Double {
+        val bits = remotePrefs()?.getLong(KEY_ACTIVE_ROUTE_PROGRESS, java.lang.Double.doubleToRawLongBits(DEFAULT_ACTIVE_ROUTE_PROGRESS)) ?: java.lang.Double.doubleToRawLongBits(DEFAULT_ACTIVE_ROUTE_PROGRESS)
+        return java.lang.Double.longBitsToDouble(bits)
+    }
+
+    fun getRoutePlaybackSpeedFlow(): Flow<Double> = remoteFlow(KEY_ROUTE_PLAYBACK_SPEED, DEFAULT_ROUTE_PLAYBACK_SPEED) { it.getLong(KEY_ROUTE_PLAYBACK_SPEED, java.lang.Double.doubleToRawLongBits(DEFAULT_ROUTE_PLAYBACK_SPEED)).let { java.lang.Double.longBitsToDouble(it) } }
+    suspend fun saveRoutePlaybackSpeed(speed: Double) = editRemote { putLong(KEY_ROUTE_PLAYBACK_SPEED, java.lang.Double.doubleToRawLongBits(speed)) }
+    fun getRoutePlaybackSpeed(): Double {
+        val bits = remotePrefs()?.getLong(KEY_ROUTE_PLAYBACK_SPEED, java.lang.Double.doubleToRawLongBits(DEFAULT_ROUTE_PLAYBACK_SPEED)) ?: java.lang.Double.doubleToRawLongBits(DEFAULT_ROUTE_PLAYBACK_SPEED)
+        return java.lang.Double.longBitsToDouble(bits)
+    }
+
+    fun getRouteLoopFlow(): Flow<Boolean> = remoteFlow(KEY_ROUTE_LOOP, DEFAULT_ROUTE_LOOP) { it.getBoolean(KEY_ROUTE_LOOP, DEFAULT_ROUTE_LOOP) }
+    suspend fun saveRouteLoop(loop: Boolean) = editRemote { putBoolean(KEY_ROUTE_LOOP, loop) }
+    fun getRouteLoop(): Boolean = remotePrefs()?.getBoolean(KEY_ROUTE_LOOP, DEFAULT_ROUTE_LOOP) ?: DEFAULT_ROUTE_LOOP
     // endregion
 
     // region Map Zoom (local)

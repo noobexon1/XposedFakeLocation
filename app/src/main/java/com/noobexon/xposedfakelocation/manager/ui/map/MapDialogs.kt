@@ -10,14 +10,18 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.noobexon.xposedfakelocation.R
+import compose.icons.LineAwesomeIcons
+import compose.icons.lineawesomeicons.RouteSolid
 
 /**
  * Stateless dialog that lets the user jump the camera (and spoof marker) to an arbitrary
@@ -212,4 +216,89 @@ private fun CoordinateInputField(
             modifier = Modifier.padding(start = 16.dp)
         )
     }
+}
+
+/**
+ * Dialog for adding the current marker location to a route.
+ *
+ * The user can select an existing route or enter a name for a new route.
+ * The dialog is fully controlled and holds no local state.
+ *
+ * @param routeNames List of available route names.
+ * @param selectedRouteName The currently selected route name.
+ * @param newRouteName Input for a new route name.
+ * @param onRouteSelectionChange Called when a route is selected.
+ * @param onNewRouteNameChange Called when the new route name input changes.
+ * @param onConfirm Called on confirmation.
+ * @param onDismissRequest Called when the dialog is dismissed.
+ */
+@Composable
+fun AddToRouteDialog(
+    routeNames: List<String>,
+    selectedRouteName: String,
+    newRouteName: String,
+    onRouteSelectionChange: (String) -> Unit,
+    onNewRouteNameChange: (String) -> Unit,
+    onConfirm: () -> Unit,
+    onDismissRequest: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismissRequest,
+        title = { Text(stringResource(R.string.map_add_to_route)) },
+        text = {
+            Column {
+                if (routeNames.isNotEmpty()) {
+                    Text(
+                        text = stringResource(R.string.route_select_existing),
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                    // Radio-button-style selection for existing routes
+                    routeNames.forEach { name ->
+                        Surface(
+                            onClick = { onRouteSelectionChange(name) },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 2.dp),
+                            shape = MaterialTheme.shapes.small,
+                            color = if (name == selectedRouteName) {
+                                MaterialTheme.colorScheme.primaryContainer
+                            } else {
+                                MaterialTheme.colorScheme.surface
+                            },
+                        ) {
+                            Text(
+                                text = name,
+                                modifier = Modifier.padding(12.dp),
+                                style = MaterialTheme.typography.bodyMedium,
+                            )
+                        }
+                    }
+                    Spacer(Modifier.height(12.dp))
+                    Text(
+                        text = stringResource(R.string.route_or_create_new),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                Spacer(Modifier.height(8.dp))
+                OutlinedTextField(
+                    value = newRouteName,
+                    onValueChange = onNewRouteNameChange,
+                    label = { Text(stringResource(R.string.route_new_route_name)) },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onConfirm) {
+                Text(stringResource(R.string.action_add))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismissRequest) {
+                Text(stringResource(R.string.action_cancel))
+            }
+        }
+    )
 }

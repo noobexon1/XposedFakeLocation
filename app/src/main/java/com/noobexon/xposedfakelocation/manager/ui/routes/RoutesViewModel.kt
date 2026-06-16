@@ -10,7 +10,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -75,25 +74,18 @@ class RouteDetailViewModel(application: Application) : AndroidViewModel(applicat
     fun loadRoute(routeName: String) {
         viewModelScope.launch {
             val route = preferencesRepository.getRoutes().find { it.name == routeName } ?: return@launch
-            val playbackSpeed = preferencesRepository.getRoutePlaybackSpeedFlow()
-            val isLooping = preferencesRepository.getRouteLoopFlow()
-            val isRoutePlaying = preferencesRepository.getRoutePlayingFlow()
-
-            combine(
-                preferencesRepository.getRoutePlayingFlow(),
-                preferencesRepository.getRoutePlaybackSpeedFlow(),
-                preferencesRepository.getRouteLoopFlow(),
-            ) { playing, speed, loop ->
-                _uiState.update {
-                    it.copy(
-                        route = route,
-                        waypoints = route.waypoints,
-                        isPlaying = playing,
-                        playbackSpeed = speed,
-                        isLooping = loop,
-                    )
-                }
-            }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), RouteDetailUiState())
+            val isPlaying = preferencesRepository.getRoutePlaying()
+            val playbackSpeed = preferencesRepository.getRoutePlaybackSpeed()
+            val isLooping = preferencesRepository.getRouteLoop()
+            _uiState.update {
+                it.copy(
+                    route = route,
+                    waypoints = route.waypoints,
+                    isPlaying = isPlaying,
+                    playbackSpeed = playbackSpeed,
+                    isLooping = isLooping,
+                )
+            }
         }
     }
 

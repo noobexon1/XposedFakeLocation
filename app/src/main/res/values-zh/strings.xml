@@ -35,9 +35,12 @@
     <string name="cd_delete_named_item">删除 %1$s</string>
     <string name="cd_edit_app_profile">编辑 %1$s 配置</string>
     <string name="cd_app_icon">%1$s 图标</string>
+    <string name="cd_move_up">上移</string>
+    <string name="cd_move_down">下移</string>
 
     <string name="screen_settings">设置</string>
     <string name="screen_favorites">收藏</string>
+    <string name="screen_routes">路线</string>
     <string name="screen_target_apps">目标应用</string>
     <string name="screen_templates">模板</string>
     <string name="screen_about">关于</string>
@@ -166,6 +169,23 @@
     <string name="favorites_delete_title">删除收藏？</string>
     <string name="favorites_delete_message">删除"%1$s"？此操作无法撤销。</string>
     <string name="favorites_delete_confirm">删除</string>
+
+    <string name="routes_empty">还没有路线。</string>
+    <string name="routes_empty_description">在地图上保存路径点来创建路线。</string>
+    <string name="routes_delete_title">删除路线？</string>
+    <string name="routes_delete_message">删除「%1$s」？此操作无法撤销。</string>
+    <string name="route_detail_title">路线：%1$s</string>
+    <string name="route_waypoints_count">%1$d 个路径点</string>
+    <string name="route_play">播放路线</string>
+    <string name="route_stop">停止路线</string>
+    <string name="route_speed">速度：%1$d 米/秒</string>
+    <string name="route_loop">循环</string>
+    <string name="route_no_waypoints">还没有路径点。</string>
+    <string name="route_confirm_delete_waypoint">删除此路径点？</string>
+    <string name="route_select_existing">选择现有路线：</string>
+    <string name="route_or_create_new">或创建新路线：</string>
+    <string name="route_new_route_name">新路线名称</string>
+    <string name="map_add_to_route">添加到路线</string>
     <string name="target_apps_search_label">搜索应用或包名</string>
     <string name="target_apps_no_results">没有与「%1$s」匹配的应用</string>
     <string name="target_apps_filter_user">用户应用</string>

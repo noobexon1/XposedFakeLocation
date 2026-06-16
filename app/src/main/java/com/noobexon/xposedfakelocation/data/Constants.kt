@@ -48,6 +48,16 @@ const val KEY_ENABLE_SYSTEM_HOOKS = "enable_system_hooks"
 
 const val KEY_THEME_OPTION = "theme_option"
 
+// ROUTES
+const val KEY_ROUTES = "routes"
+const val KEY_ROUTE_PLAYING = "route_playing"
+const val KEY_ACTIVE_ROUTE_NAME = "active_route_name"
+const val KEY_ACTIVE_ROUTE_WAYPOINTS = "active_route_waypoints"
+const val KEY_ACTIVE_ROUTE_WAYPOINT_INDEX = "active_route_waypoint_index"
+const val KEY_ACTIVE_ROUTE_PROGRESS = "active_route_progress"
+const val KEY_ROUTE_PLAYBACK_SPEED = "route_playback_speed"
+const val KEY_ROUTE_LOOP = "route_loop"
+
 // Packages added/removed from module scope when system-level hooks are toggled.
 val SYSTEM_HOOK_PACKAGES = listOf("android", "com.android.phone")
 
@@ -84,6 +94,12 @@ const val DEFAULT_LANGUAGE_TAG = ""
 const val DEFAULT_ENABLE_SYSTEM_HOOKS = false
 
 const val DEFAULT_THEME_OPTION = ""
+
+// ROUTES DEFAULTS
+const val DEFAULT_ROUTE_PLAYBACK_SPEED = 10.0
+const val DEFAULT_ROUTE_LOOP = false
+const val DEFAULT_ACTIVE_ROUTE_WAYPOINT_INDEX = 0
+const val DEFAULT_ACTIVE_ROUTE_PROGRESS = 0.0
 
 // MATH & PHYS
 const val PI = 3.14159265359

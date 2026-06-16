@@ -44,6 +44,7 @@ import compose.icons.lineawesomeicons.HeartSolid
 import compose.icons.lineawesomeicons.InfoCircleSolid
 import compose.icons.lineawesomeicons.MapSolid
 import compose.icons.lineawesomeicons.MobileAltSolid
+import compose.icons.lineawesomeicons.RouteSolid
 import compose.icons.lineawesomeicons.Telegram
 
 /** Centralised spacing and size constants for the navigation drawer layout. */
@@ -125,6 +126,13 @@ fun DrawerContent(
                 label = stringResource(R.string.screen_favorites),
                 onClick = { navigateTo(Screen.Favorites.route) },
                 isSelected = currentRoute == Screen.Favorites.route
+            )
+
+            DrawerItem(
+                icon = LineAwesomeIcons.RouteSolid,
+                label = stringResource(R.string.screen_routes),
+                onClick = { navigateTo(Screen.Routes.route) },
+                isSelected = currentRoute == Screen.Routes.route
             )
 
             DrawerItem(

@@ -6,6 +6,8 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.noobexon.xposedfakelocation.R
 import com.noobexon.xposedfakelocation.data.model.FavoriteLocation
+import com.noobexon.xposedfakelocation.data.model.Route
+import com.noobexon.xposedfakelocation.data.model.RouteWaypoint
 import com.noobexon.xposedfakelocation.data.repository.PreferencesRepository
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
@@ -77,7 +79,12 @@ class MapViewModel(application: Application) : AndroidViewModel(application) {
     init {
         viewModelScope.launch {
             preferencesRepository.getIsPlayingFlow().collect { isPlaying ->
-                _uiState.update { it.copy(isPlaying = isPlaying) }
+                val waypoints = if (isPlaying) {
+                    preferencesRepository.getActiveRouteWaypoints()
+                } else {
+                    emptyList()
+                }
+                _uiState.update { it.copy(isPlaying = isPlaying, activeRouteWaypoints = waypoints) }
             }
         }
 
@@ -388,6 +395,89 @@ class MapViewModel(application: Application) : AndroidViewModel(application) {
                     )
                 )
             }
+        }
+    }
+
+    // ---- Add to route dialog ----
+
+    /** Makes the "Add to route" dialog visible and loads the list of available route names. */
+    fun showAddToRouteDialog() {
+        val routeNames = preferencesRepository.getRoutes().map { it.name }
+        _uiState.update {
+            it.copy(
+                isAddToRouteDialogVisible = true,
+                availableRouteNames = routeNames,
+                selectedRouteName = routeNames.firstOrNull() ?: "",
+                newRouteNameInput = "",
+            )
+        }
+    }
+
+    /** Dismisses the "Add to route" dialog. */
+    fun hideAddToRouteDialog() {
+        _uiState.update { it.copy(isAddToRouteDialogVisible = false) }
+    }
+
+    /**
+     * Updates the selected route name in the dialog.
+     *
+     * @param name The selected route name.
+     */
+    fun onRouteSelectionChange(name: String) {
+        _uiState.update { it.copy(selectedRouteName = name) }
+    }
+
+    /**
+     * Updates the new route name input field.
+     *
+     * @param value The raw string typed by the user.
+     */
+    fun onNewRouteNameChange(value: String) {
+        _uiState.update { it.copy(newRouteNameInput = value) }
+    }
+
+    /**
+     * Adds the current marker to an existing route or creates a new route.
+     * On success the dialog is dismissed.
+     */
+    fun confirmAddToRoute() {
+        val state = _uiState.value
+        val location = state.lastClickedLocation ?: return
+        val routeName = state.selectedRouteName.ifBlank { state.newRouteNameInput.ifBlank { return } }
+
+        viewModelScope.launch {
+            val routes = preferencesRepository.getRoutes().toMutableList()
+            val existingRoute = routes.find { it.name == routeName }
+
+            if (existingRoute != null) {
+                // Add to existing route
+                val newWaypoint = RouteWaypoint(
+                    name = "Waypoint ${existingRoute.waypoints.size + 1}",
+                    latitude = location.latitude,
+                    longitude = location.longitude,
+                    order = existingRoute.waypoints.size,
+                )
+                val updatedRoute = existingRoute.copy(
+                    waypoints = existingRoute.waypoints + newWaypoint,
+                )
+                preferencesRepository.updateRoute(existingRoute, updatedRoute)
+            } else {
+                // Create new route
+                val newRoute = Route(
+                    name = routeName,
+                    waypoints = listOf(
+                        RouteWaypoint(
+                            name = "Waypoint 1",
+                            latitude = location.latitude,
+                            longitude = location.longitude,
+                            order = 0,
+                        ),
+                    ),
+                )
+                preferencesRepository.addRoute(newRoute)
+            }
+
+            hideAddToRouteDialog()
         }
     }
 

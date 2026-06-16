@@ -24,6 +24,7 @@ import com.noobexon.xposedfakelocation.data.DEFAULT_MAP_ZOOM
 import com.noobexon.xposedfakelocation.data.LOCATION_DETECTION_DELAY_MS
 import com.noobexon.xposedfakelocation.data.LOCATION_DETECTION_MAX_ATTEMPTS
 import com.noobexon.xposedfakelocation.data.WORLD_MAP_ZOOM
+import com.noobexon.xposedfakelocation.data.model.RouteWaypoint
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
@@ -33,6 +34,7 @@ import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.MapView
 import org.osmdroid.views.overlay.MapEventsOverlay
 import org.osmdroid.views.overlay.Marker
+import org.osmdroid.views.overlay.Polyline
 import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay
 
 /**
@@ -459,5 +461,72 @@ internal fun ManageMapViewLifecycle(
             mapView.onPause()
             mapView.onDetach()
         }
+    }
+}
+
+/**
+ * Draws or removes the active route overlay (Polyline + waypoint Markers) on the map.
+ *
+ * When [waypoints] is non-empty, a blue Polyline connecting all waypoints is drawn and a Marker
+ * is placed at each waypoint. The camera is zoomed to fit the entire route bounding box.
+ * When [waypoints] is empty, the route overlay is removed.
+ *
+ * The overlay is keyed on the [waypoints] list so it is redrawn whenever the route changes.
+ *
+ * @param mapView The osmdroid map to draw on.
+ * @param waypoints The waypoints of the currently playing route, or empty to clear.
+ */
+@Composable
+internal fun HandleActiveRouteOverlay(
+    mapView: MapView,
+    waypoints: List<RouteWaypoint>,
+) {
+    LaunchedEffect(waypoints) {
+        // Remove old route overlays (Polyline and route Markers only)
+        val toRemove = mutableListOf<Any>()
+        for (overlay in mapView.overlays) {
+            if (overlay is Polyline || (overlay is Marker && overlay.relatedObject == "route_waypoint")) {
+                toRemove.add(overlay)
+            }
+        }
+        toRemove.forEach { mapView.overlays.remove(it) }
+
+        if (waypoints.isEmpty()) {
+            mapView.invalidate()
+            return@LaunchedEffect
+        }
+
+        val geoPoints = waypoints.map { GeoPoint(it.latitude, it.longitude) }
+
+        val polyline = Polyline().apply {
+            setPoints(geoPoints)
+            outlinePaint.apply {
+                color = android.graphics.Color.rgb(33, 150, 243)
+                strokeWidth = 6f
+                isAntiAlias = true
+            }
+        }
+        mapView.overlays.add(polyline)
+
+        waypoints.forEachIndexed { index, wp ->
+            val marker = Marker(mapView).apply {
+                position = GeoPoint(wp.latitude, wp.longitude)
+                setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
+                title = "${index + 1}: ${wp.name}"
+                snippet = "%.5f, %.5f".format(wp.latitude, wp.longitude)
+                relatedObject = "route_waypoint"
+            }
+            mapView.overlays.add(marker)
+        }
+
+        if (geoPoints.size >= 2) {
+            val box = org.osmdroid.util.BoundingBox.fromGeoPoints(geoPoints)
+            mapView.zoomToBoundingBox(box.increaseByScale(1.2f), true, 48)
+        } else if (geoPoints.size == 1) {
+            mapView.controller.setZoom(15.0)
+            mapView.controller.setCenter(geoPoints[0])
+        }
+
+        mapView.invalidate()
     }
 }

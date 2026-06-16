@@ -11,209 +11,180 @@ import kotlin.math.atan2
 import kotlin.math.cos
 import kotlin.math.sin
 import kotlin.math.sqrt
-import androidx.core.content.edit
+import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
 
-/**
- * Singleton that plays back a route inside the Xposed module process.
- *
- * [RoutePlayer] is called by [LocationUtil.updateLocation] when
- * [PreferencesUtil.getIsPlaying] and an active route are detected. It
- * interpolates the position between two waypoints based on elapsed time
- * and the configured speed.
- *
- * The waypoint list and current progress are read from the remote preferences
- * written by the manager app.
- */
 object RoutePlayer {
     private const val TAG = "[RoutePlayer]"
-
-    /**
-     * Minimum interval between [advance] calls in nanoseconds.
-     * Location getters (getLatitude, getLongitude, etc.) are hooked individually
-     * and called in rapid succession by the target app (microseconds apart).
-     * This threshold ensures only one advance per ~100ms window, giving a
-     * meaningful time delta for interpolation.
-     */
-    private const val MIN_ADVANCE_INTERVAL_NANOS = 100_000_000L // 100ms
 
     @Volatile var logger: ((Int, String, String) -> Unit)? = null
     private fun log(msg: String, priority: Int = Log.INFO) = logger?.invoke(priority, TAG, msg)
 
     private var waypoints: List<RouteWaypoint> = emptyList()
-    private var currentIndex: Int = 0
-    private var progress: Double = 0.0
-    private var playbackSpeed: Double = 10.0 // m/s
+    private var playbackSpeed: Double = 10.0
     private var isLooping: Boolean = false
-    private var isActive: Boolean = false
+    @Volatile private var isActive: Boolean = false
+    private var isFinished: Boolean = false
 
-    /** Timestamp of the last [advance] call, used for delta calculation. */
-    private var lastUpdateTime: Long = 0L
+    private var routeStartTime: Long = 0L
+    private var segmentDistances: DoubleArray = DoubleArray(0)
+    private var totalRouteDistance: Double = 0.0
 
     private val gson = Gson()
 
-    /**
-     * Loads active route data from the remote preferences.
-     * Should be called on every [LocationUtil.updateLocation] invocation
-     * to ensure up-to-date data is used.
-     *
-     * Does NOT reset [lastUpdateTime] – that is handled by [advance] so
-     * that wall-clock delta between consecutive calls is preserved.
-     */
+    private val executor = Executors.newSingleThreadScheduledExecutor { r ->
+        Thread(r, "RoutePlayer").also { it.isDaemon = true }
+    }
+    @Volatile private var timerHandle: java.util.concurrent.ScheduledFuture<*>? = null
+
     fun loadActiveRoute() {
         try {
             val prefs = PreferencesUtil.getPreferences() ?: return
-            isActive = prefs.getBoolean("route_playing", false)
-            if (!isActive) return
+            val nowPlaying = prefs.getBoolean("route_playing", false)
 
-            playbackSpeed = java.lang.Double.longBitsToDouble(
-                prefs.getLong("route_playback_speed", java.lang.Double.doubleToRawLongBits(10.0))
-            )
-            isLooping = prefs.getBoolean("route_loop", false)
-            currentIndex = prefs.getInt("active_route_waypoint_index", 0)
-            progress = java.lang.Double.longBitsToDouble(
-                prefs.getLong("active_route_progress", java.lang.Double.doubleToRawLongBits(0.0))
-            )
-
-            val waypointsJson = prefs.getString("active_route_waypoints", null)
-            if (!waypointsJson.isNullOrBlank()) {
-                val type = object : TypeToken<List<RouteWaypoint>>() {}.type
-                waypoints = gson.fromJson(waypointsJson, type) ?: emptyList()
-            } else {
-                waypoints = emptyList()
-            }
-
-            if (waypoints.isEmpty()) {
+            if (!nowPlaying) {
+                stopTimer()
                 isActive = false
+                isFinished = false
+                log("Route stopped (nowPlaying=false)")
+                return
             }
 
-            log("Route loaded: ${waypoints.size} waypoints, index=$currentIndex, progress=$progress")
+            if (!isActive) {
+                if (isFinished) isFinished = false
+                playbackSpeed = java.lang.Double.longBitsToDouble(
+                    prefs.getLong("route_playback_speed", java.lang.Double.doubleToRawLongBits(10.0))
+                )
+                isLooping = prefs.getBoolean("route_loop", false)
+                val waypointsJson = prefs.getString("active_route_waypoints", null)
+                waypoints = if (!waypointsJson.isNullOrBlank()) {
+                    val type = object : TypeToken<List<RouteWaypoint>>() {}.type
+                    gson.fromJson(waypointsJson, type) ?: emptyList()
+                } else {
+                    emptyList()
+                }
+                if (waypoints.isEmpty()) {
+                    log("Route not started: no waypoints")
+                    return
+                }
+                precomputeSegmentDistances()
+                routeStartTime = System.nanoTime()
+                isActive = true
+                computeAndSetPosition()
+                startTimer()
+                log("Route started: ${waypoints.size} waypoints, speed=${playbackSpeed}m/s, segments=${segmentDistances.joinToString()}")
+            }
+
+            computeAndSetPosition()
         } catch (e: Exception) {
-            log("Error loading route: ${e.message}", Log.ERROR)
+            log("Error: ${e.message}", Log.ERROR)
+            stopTimer()
             isActive = false
         }
     }
 
-    /**
-     * Returns whether the RoutePlayer is active (a route is being played).
-     */
+    private fun startTimer() {
+        stopTimer()
+        timerHandle = executor.scheduleWithFixedDelay(
+            { timerTick() },
+            500, 500, TimeUnit.MILLISECONDS
+        )
+        log("Timer started (500ms)")
+    }
+
+    private fun stopTimer() {
+        timerHandle?.cancel(false)
+        timerHandle = null
+    }
+
+    private fun timerTick() {
+        if (isActive) {
+            computeAndSetPosition()
+        }
+    }
+
     fun isRouteActive(): Boolean = isActive
 
-    /**
-     * Moves the position along the route based on time elapsed since the
-     * last call. Updates [LocationUtil.latitude] and [LocationUtil.longitude]
-     * directly.
-     *
-     * Should be called by [LocationUtil.updateLocation] when the RoutePlayer
-     * is active.
-     */
-    fun advance() {
+    fun computeAndSetPosition() {
         if (!isActive || waypoints.isEmpty()) return
 
-        val now = System.nanoTime()
+        val elapsedNanos = System.nanoTime() - routeStartTime
+        val elapsedSeconds = elapsedNanos / 1_000_000_000.0
+        val totalDistance = playbackSpeed * elapsedSeconds
+        val pos = computePosition(totalDistance)
 
-        if (lastUpdateTime == 0L) {
-            lastUpdateTime = now
-            setPosition()
-            return
+        if (pos != null) {
+            LocationUtil.latitude = pos.first
+            LocationUtil.longitude = pos.second
+            val walkedWaypoints = computeWalkedWaypoints(totalDistance)
+            log("hook: elapsed=${"%.1f".format(elapsedSeconds)}s dist=${"%.1f".format(totalDistance)}m wp_idx=$walkedWaypoints lat=${"%.6f".format(pos.first)} lon=${"%.6f".format(pos.second)}")
+        }
+    }
+
+    private fun computeWalkedWaypoints(totalDistance: Double): Int {
+        var remaining = totalDistance
+        for (i in segmentDistances.indices) {
+            if (remaining <= segmentDistances[i]) return i
+            remaining -= segmentDistances[i]
+        }
+        return waypoints.size - 1
+    }
+
+    private fun computePosition(totalDistance: Double): Pair<Double, Double>? {
+        if (waypoints.isEmpty()) return null
+
+        if (totalRouteDistance <= 0.0) {
+            return Pair(waypoints[0].latitude, waypoints[0].longitude)
         }
 
-        val deltaNanos = now - lastUpdateTime
-
-        // Skip if called too frequently (microseconds between Location getters).
-        // Only advance once per ~100ms to get a meaningful time delta.
-        if (deltaNanos < MIN_ADVANCE_INTERVAL_NANOS) return
-
-        // If more than 2 seconds elapsed (stop->restart), reinitialize
-        // without jumping past waypoints.
-        if (deltaNanos > 2_000_000_000L) {
-            lastUpdateTime = now
-            setPosition()
-            return
-        }
-
-        lastUpdateTime = now
-        val deltaSeconds = deltaNanos / 1_000_000_000.0
-
-        // Calculate distance between current and next waypoint in meters
-        if (currentIndex >= waypoints.size - 1) {
-            if (isLooping) {
-                currentIndex = 0
-                progress = 0.0
-            } else {
-                if (waypoints.isNotEmpty()) {
-                    setPositionAt(waypoints.last())
-                }
-                isActive = false
-                return
-            }
-        }
-
-        val currentWp = waypoints[currentIndex]
-        val nextWp = waypoints[currentIndex + 1]
-
-        val distance = calculateDistance(
-            currentWp.latitude, currentWp.longitude,
-            nextWp.latitude, nextWp.longitude,
-        )
-
-        if (distance <= 0) {
-            currentIndex++
-            progress = 0.0
-            setPosition()
-            persistState()
-            return
-        }
-
-        val timeForSegment = distance / playbackSpeed
-
-        val deltaProgress = deltaSeconds / timeForSegment
-        progress += deltaProgress
-
-        if (progress >= 1.0) {
-            currentIndex++
-            progress = 0.0
-            setPosition()
-            persistState()
+        val effectiveDistance = if (isLooping) {
+            totalDistance % totalRouteDistance
         } else {
-            val lat = interpolate(currentWp.latitude, nextWp.latitude, progress)
-            val lon = interpolate(currentWp.longitude, nextWp.longitude, progress)
-            LocationUtil.latitude = lat
-            LocationUtil.longitude = lon
+            totalDistance
         }
-    }
 
-    /** Sets position to the current waypoint. */
-    private fun setPosition() {
-        if (waypoints.isEmpty()) return
-        val wp = waypoints[currentIndex.coerceAtMost(waypoints.size - 1)]
-        setPositionAt(wp)
-    }
+        if (effectiveDistance < 0) {
+            routeStartTime = System.nanoTime()
+            return Pair(waypoints[0].latitude, waypoints[0].longitude)
+        }
 
-    private fun setPositionAt(wp: RouteWaypoint) {
-        LocationUtil.latitude = wp.latitude
-        LocationUtil.longitude = wp.longitude
-    }
-
-    /** Persists current index and progress to remote preferences. */
-    private fun persistState() {
-        try {
-            val prefs = PreferencesUtil.getPreferences() ?: return
-            prefs.edit {
-                putInt("active_route_waypoint_index", currentIndex)
-                    .putLong(
-                        "active_route_progress",
-                        java.lang.Double.doubleToRawLongBits(progress)
-                    )
+        var remaining = effectiveDistance
+        for (i in segmentDistances.indices) {
+            if (remaining <= segmentDistances[i]) {
+                val progress = if (segmentDistances[i] > 0) remaining / segmentDistances[i] else 0.0
+                val lat = interpolate(waypoints[i].latitude, waypoints[i + 1].latitude, progress)
+                val lon = interpolate(waypoints[i].longitude, waypoints[i + 1].longitude, progress)
+                return Pair(lat, lon)
             }
-        } catch (e: Exception) {
-            log("Error persisting route state: ${e.message}", Log.ERROR)
+            remaining -= segmentDistances[i]
         }
+
+        if (!isLooping) {
+            isActive = false
+            isFinished = true
+            stopTimer()
+            log("Route finished")
+        }
+        return Pair(waypoints.last().latitude, waypoints.last().longitude)
     }
 
-    /**
-     * Calculates the distance in meters between two coordinates
-     * using the Haversine formula.
-     */
+    private fun precomputeSegmentDistances() {
+        val n = waypoints.size - 1
+        if (n <= 0) {
+            segmentDistances = DoubleArray(0)
+            totalRouteDistance = 0.0
+            return
+        }
+        segmentDistances = DoubleArray(n)
+        for (i in 0 until n) {
+            segmentDistances[i] = calculateDistance(
+                waypoints[i].latitude, waypoints[i].longitude,
+                waypoints[i + 1].latitude, waypoints[i + 1].longitude,
+            )
+        }
+        totalRouteDistance = segmentDistances.sum()
+    }
+
     private fun calculateDistance(lat1: Double, lon1: Double, lat2: Double, lon2: Double): Double {
         val dLat = Math.toRadians(lat2 - lat1)
         val dLon = Math.toRadians(lon2 - lon1)
@@ -224,6 +195,5 @@ object RoutePlayer {
         return RADIUS_EARTH * c
     }
 
-    /** Linear interpolation between two values. */
     private fun interpolate(a: Double, b: Double, t: Double): Double = a + (b - a) * t
 }

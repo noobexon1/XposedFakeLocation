@@ -45,6 +45,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.noobexon.xposedfakelocation.R
 import com.noobexon.xposedfakelocation.manager.ui.navigation.Screen
+import compose.icons.LineAwesomeIcons
+import compose.icons.lineawesomeicons.RouteSolid
 import kotlinx.coroutines.launch
 
 /**
@@ -78,6 +80,7 @@ fun MapScreen(
     val isFabClickable = uiState.isFabClickable
     val showGoToPointDialog = uiState.isGoToPointDialogVisible
     val showAddToFavoritesDialog = uiState.isAddToFavoritesDialogVisible
+    val showAddToRouteDialog = uiState.isAddToRouteDialogVisible
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
     var showOptionsMenu by remember { mutableStateOf(false) }
@@ -184,6 +187,20 @@ fun MapScreen(
                                 },
                                 enabled = isFabClickable
                             )
+                            DropdownMenuItem(
+                                leadingIcon = {
+                                    Icon(
+                                        imageVector = LineAwesomeIcons.RouteSolid,
+                                        contentDescription = stringResource(R.string.map_add_to_route)
+                                    )
+                                },
+                                text = { Text(stringResource(R.string.map_add_to_route)) },
+                                onClick = {
+                                    showOptionsMenu = false
+                                    mapViewModel.showAddToRouteDialog()
+                                },
+                                enabled = isFabClickable
+                            )
                         }
                     }
                 )
@@ -242,6 +259,7 @@ fun MapScreen(
                     isPlaying = uiState.isPlaying,
                     mapZoom = uiState.mapZoom,
                     hasResolvedInitialLocation = uiState.hasResolvedInitialLocation,
+                    activeRouteWaypoints = uiState.activeRouteWaypoints,
                     goToPointEvent = mapViewModel.goToPointEvent,
                     centerMapEvent = mapViewModel.centerMapEvent,
                     onClickedLocationChange = mapViewModel::updateClickedLocation,
@@ -283,6 +301,18 @@ fun MapScreen(
                 onLongitudeChange = mapViewModel::onFavoriteLongitudeChange,
                 onConfirm = mapViewModel::confirmAddFavorite,
                 onDismissRequest = mapViewModel::hideAddToFavoritesDialog,
+            )
+        }
+
+        if (showAddToRouteDialog) {
+            AddToRouteDialog(
+                routeNames = uiState.availableRouteNames,
+                selectedRouteName = uiState.selectedRouteName,
+                newRouteName = uiState.newRouteNameInput,
+                onRouteSelectionChange = mapViewModel::onRouteSelectionChange,
+                onNewRouteNameChange = mapViewModel::onNewRouteNameChange,
+                onConfirm = mapViewModel::confirmAddToRoute,
+                onDismissRequest = mapViewModel::hideAddToRouteDialog,
             )
         }
     }

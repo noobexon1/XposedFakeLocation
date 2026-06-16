@@ -124,7 +124,6 @@ object LocationUtil {
             // If a route is playing, let RoutePlayer control the position
             RoutePlayer.loadActiveRoute()
             if (RoutePlayer.isRouteActive()) {
-                RoutePlayer.advance()
                 return
             }
 
