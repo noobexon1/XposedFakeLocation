@@ -2,14 +2,17 @@ package com.noobexon.xposedfakelocation.manager.ui.map
 
 import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -18,6 +21,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.noobexon.xposedfakelocation.R
+import com.noobexon.xposedfakelocation.data.MAX_ROUTE_WAYPOINTS
+import com.noobexon.xposedfakelocation.data.model.RouteWaypoint
 
 /**
  * Stateless dialog that lets the user jump the camera (and spoof marker) to an arbitrary
@@ -170,6 +175,81 @@ fun AddToFavoritesDialog(
         dismissButton = {
             TextButton(onClick = onDismissRequest) {
                 Text(stringResource(R.string.action_cancel))
+            }
+        }
+    )
+}
+
+@Composable
+fun RouteDialog(
+    waypoints: List<RouteWaypoint>,
+    isLoopEnabled: Boolean,
+    isRouteMoving: Boolean,
+    onLoopChange: (Boolean) -> Unit,
+    onClearRoute: () -> Unit,
+    onDismissRequest: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismissRequest,
+        title = { Text(stringResource(R.string.map_custom_route)) },
+        text = {
+            Column {
+                Text(
+                    text = stringResource(R.string.route_point_count, waypoints.size, MAX_ROUTE_WAYPOINTS),
+                    style = MaterialTheme.typography.bodyMedium
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                if (waypoints.isEmpty()) {
+                    Text(
+                        text = stringResource(R.string.route_empty),
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                } else {
+                    waypoints.forEachIndexed { index, waypoint ->
+                        Text(
+                            text = stringResource(
+                                R.string.route_point_format,
+                                index + 1,
+                                waypoint.latitude,
+                                waypoint.longitude
+                            ),
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    }
+                }
+                Spacer(modifier = Modifier.height(12.dp))
+                HorizontalDivider()
+                Spacer(modifier = Modifier.height(12.dp))
+                Row(modifier = Modifier.fillMaxWidth()) {
+                    Text(
+                        text = stringResource(R.string.route_loop),
+                        style = MaterialTheme.typography.bodyLarge,
+                        modifier = Modifier.weight(1f)
+                    )
+                    Switch(checked = isLoopEnabled, onCheckedChange = onLoopChange)
+                }
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = stringResource(R.string.route_speed_hint),
+                    style = MaterialTheme.typography.bodySmall
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = stringResource(
+                        if (isRouteMoving) R.string.route_status_moving else R.string.route_status_idle
+                    ),
+                    style = MaterialTheme.typography.bodySmall
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismissRequest) {
+                Text(stringResource(R.string.action_ok))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onClearRoute, enabled = waypoints.isNotEmpty()) {
+                Text(stringResource(R.string.route_clear))
             }
         }
     )

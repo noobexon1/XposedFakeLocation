@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.LocationSearching
@@ -78,11 +79,13 @@ fun MapScreen(
     val isFabClickable = uiState.isFabClickable
     val showGoToPointDialog = uiState.isGoToPointDialogVisible
     val showAddToFavoritesDialog = uiState.isAddToFavoritesDialogVisible
+    val showRouteDialog = uiState.isRouteDialogVisible
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
     var showOptionsMenu by remember { mutableStateOf(false) }
     val fakeLocationSet = stringResource(R.string.toast_fake_location_set)
     val fakeLocationUnset = stringResource(R.string.toast_unset_fake_location)
+    val routePointAdded = stringResource(R.string.toast_route_point_added)
 
     BackHandler(enabled = drawerState.isOpen) {
         scope.launch { drawerState.close() }
@@ -173,6 +176,35 @@ fun MapScreen(
                             DropdownMenuItem(
                                 leadingIcon = {
                                     Icon(
+                                        imageVector = Icons.Default.Add,
+                                        contentDescription = stringResource(R.string.map_add_route_point)
+                                    )
+                                },
+                                text = { Text(stringResource(R.string.map_add_route_point)) },
+                                onClick = {
+                                    showOptionsMenu = false
+                                    if (mapViewModel.addCurrentLocationToRoute()) {
+                                        Toast.makeText(context, routePointAdded, Toast.LENGTH_SHORT).show()
+                                    }
+                                },
+                                enabled = uiState.canAddRouteWaypoint
+                            )
+                            DropdownMenuItem(
+                                leadingIcon = {
+                                    Icon(
+                                        imageVector = Icons.Default.LocationSearching,
+                                        contentDescription = stringResource(R.string.map_custom_route)
+                                    )
+                                },
+                                text = { Text(stringResource(R.string.map_custom_route)) },
+                                onClick = {
+                                    showOptionsMenu = false
+                                    mapViewModel.showRouteDialog()
+                                }
+                            )
+                            DropdownMenuItem(
+                                leadingIcon = {
+                                    Icon(
                                         imageVector = Icons.Default.Clear,
                                         contentDescription = stringResource(R.string.map_clear_location)
                                     )
@@ -182,7 +214,7 @@ fun MapScreen(
                                     showOptionsMenu = false
                                     mapViewModel.updateClickedLocation(null)
                                 },
-                                enabled = isFabClickable
+                                enabled = uiState.canClearLocation
                             )
                         }
                     }
@@ -283,6 +315,17 @@ fun MapScreen(
                 onLongitudeChange = mapViewModel::onFavoriteLongitudeChange,
                 onConfirm = mapViewModel::confirmAddFavorite,
                 onDismissRequest = mapViewModel::hideAddToFavoritesDialog,
+            )
+        }
+
+        if (showRouteDialog) {
+            RouteDialog(
+                waypoints = uiState.routeWaypoints,
+                isLoopEnabled = uiState.isRouteLoopEnabled,
+                isRouteMoving = uiState.isRouteMoving,
+                onLoopChange = mapViewModel::setRouteLoopEnabled,
+                onClearRoute = mapViewModel::clearRoute,
+                onDismissRequest = mapViewModel::hideRouteDialog,
             )
         }
     }

@@ -48,6 +48,9 @@ const val KEY_ENABLE_SYSTEM_HOOKS = "enable_system_hooks"
 
 const val KEY_THEME_OPTION = "theme_option"
 
+const val KEY_ROUTE_WAYPOINTS = "route_waypoints"
+const val KEY_ROUTE_LOOP_ENABLED = "route_loop_enabled"
+
 // Packages added/removed from module scope when system-level hooks are toggled.
 val SYSTEM_HOOK_PACKAGES = listOf("android", "com.android.phone")
 
@@ -85,6 +88,8 @@ const val DEFAULT_ENABLE_SYSTEM_HOOKS = false
 
 const val DEFAULT_THEME_OPTION = ""
 
+const val DEFAULT_ROUTE_LOOP_ENABLED = false
+
 // MATH & PHYS
 const val PI = 3.14159265359
 const val RADIUS_EARTH = 6378137.0 // Approximately Earth's radius in meters
@@ -95,3 +100,6 @@ const val DEFAULT_MAP_ZOOM = 18.0
 const val WORLD_MAP_ZOOM = 2.0
 const val LOCATION_DETECTION_MAX_ATTEMPTS = 80
 const val LOCATION_DETECTION_DELAY_MS = 100L
+const val MAX_ROUTE_WAYPOINTS = 4
+const val ROUTE_TICK_INTERVAL_MS = 1000L
+const val DEFAULT_ROUTE_SPEED_MPS = 1.4f

@@ -130,13 +130,24 @@
 
     <string name="map_go_to_point">Go to Point</string>
     <string name="map_add_to_favorites">Add to Favorites</string>
+    <string name="map_add_route_point">Add Route Point</string>
+    <string name="map_custom_route">Custom Route</string>
     <string name="map_add_to_templates">Add to Templates</string>
     <string name="map_update_template_location">Update Template Location</string>
     <string name="map_clear_location">Clear Location</string>
     <string name="toast_fake_location_set">Fake Location Set</string>
     <string name="toast_unset_fake_location">Unset Fake Location</string>
+    <string name="toast_route_point_added">Route point added</string>
     <string name="toast_user_location_not_available">User location not available</string>
     <string name="map_updating">Updating Map…</string>
+    <string name="route_point_count">Route points: %1$d/%2$d</string>
+    <string name="route_empty">Place a marker on the map, then use Add Route Point to build a route.</string>
+    <string name="route_point_format">Point %1$d: %2$.6f, %3$.6f</string>
+    <string name="route_loop">Loop route</string>
+    <string name="route_speed_hint">Route playback uses the Custom Speed setting when enabled; otherwise it uses 1.4 m/s.</string>
+    <string name="route_status_idle">Route playback starts when spoofing is turned on and at least two points are set.</string>
+    <string name="route_status_moving">Route playback is running.</string>
+    <string name="route_clear">Clear route</string>
 
     <string name="field_name">Name</string>
     <string name="field_description">Description (optional)</string>

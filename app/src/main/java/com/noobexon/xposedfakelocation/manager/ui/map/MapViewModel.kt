@@ -5,17 +5,26 @@ import androidx.annotation.StringRes
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.noobexon.xposedfakelocation.R
+import com.noobexon.xposedfakelocation.data.DEFAULT_ROUTE_SPEED_MPS
+import com.noobexon.xposedfakelocation.data.MAX_ROUTE_WAYPOINTS
+import com.noobexon.xposedfakelocation.data.ROUTE_TICK_INTERVAL_MS
 import com.noobexon.xposedfakelocation.data.model.FavoriteLocation
+import com.noobexon.xposedfakelocation.data.model.RouteWaypoint
 import com.noobexon.xposedfakelocation.data.repository.PreferencesRepository
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import org.osmdroid.util.GeoPoint
+import kotlin.math.max
 
 /** Valid latitude values accepted by the "Go to point" and "Add to favorites" dialogs. */
 private val LATITUDE_RANGE = -90.0..90.0
@@ -45,6 +54,7 @@ private val LONGITUDE_RANGE = -180.0..180.0
  */
 class MapViewModel(application: Application) : AndroidViewModel(application) {
     private val preferencesRepository = PreferencesRepository(application)
+    private var routeJob: Job? = null
 
     private val _uiState = MutableStateFlow(
         MapUiState(mapZoom = preferencesRepository.getMapZoom())
@@ -78,6 +88,7 @@ class MapViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             preferencesRepository.getIsPlayingFlow().collect { isPlaying ->
                 _uiState.update { it.copy(isPlaying = isPlaying) }
+                if (!isPlaying) stopRoutePlayback()
             }
         }
 
@@ -85,6 +96,20 @@ class MapViewModel(application: Application) : AndroidViewModel(application) {
             preferencesRepository.getLastClickedLocationFlow().collect { location ->
                 val geoPoint = location?.let { GeoPoint(it.latitude, it.longitude) }
                 _uiState.update { it.copy(lastClickedLocation = geoPoint) }
+            }
+        }
+
+        viewModelScope.launch {
+            preferencesRepository.getRouteWaypointsFlow().collect { waypoints ->
+                _uiState.update { it.copy(routeWaypoints = waypoints) }
+                if (_uiState.value.isPlaying) restartRoutePlaybackIfAvailable()
+            }
+        }
+
+        viewModelScope.launch {
+            preferencesRepository.getRouteLoopEnabledFlow().collect { enabled ->
+                _uiState.update { it.copy(isRouteLoopEnabled = enabled) }
+                if (_uiState.value.isPlaying) restartRoutePlaybackIfAvailable()
             }
         }
     }
@@ -101,6 +126,11 @@ class MapViewModel(application: Application) : AndroidViewModel(application) {
 
         viewModelScope.launch {
             preferencesRepository.saveIsPlaying(currentIsPlaying)
+            if (currentIsPlaying) {
+                restartRoutePlaybackIfAvailable()
+            } else {
+                stopRoutePlayback()
+            }
         }
     }
 
@@ -129,6 +159,42 @@ class MapViewModel(application: Application) : AndroidViewModel(application) {
             geoPoint?.let {
                 preferencesRepository.saveLastClickedLocation(it.latitude, it.longitude)
             } ?: preferencesRepository.clearLastClickedLocation()
+        }
+    }
+
+    fun showRouteDialog() {
+        _uiState.update { it.copy(isRouteDialogVisible = true) }
+    }
+
+    fun hideRouteDialog() {
+        _uiState.update { it.copy(isRouteDialogVisible = false) }
+    }
+
+    fun addCurrentLocationToRoute(): Boolean {
+        val state = _uiState.value
+        val marker = state.lastClickedLocation ?: return false
+        if (state.isRouteMoving || state.routeWaypoints.size >= MAX_ROUTE_WAYPOINTS) return false
+        val currentWaypoints = state.routeWaypoints
+        val updated = currentWaypoints + RouteWaypoint(marker.latitude, marker.longitude)
+        _uiState.update { it.copy(routeWaypoints = updated) }
+        viewModelScope.launch {
+            preferencesRepository.saveRouteWaypoints(updated)
+        }
+        return true
+    }
+
+    fun clearRoute() {
+        stopRoutePlayback()
+        _uiState.update { it.copy(routeWaypoints = emptyList(), isRouteMoving = false) }
+        viewModelScope.launch {
+            preferencesRepository.clearRouteWaypoints()
+        }
+    }
+
+    fun setRouteLoopEnabled(enabled: Boolean) {
+        _uiState.update { it.copy(isRouteLoopEnabled = enabled) }
+        viewModelScope.launch {
+            preferencesRepository.saveRouteLoopEnabled(enabled)
         }
     }
 
@@ -404,5 +470,81 @@ class MapViewModel(application: Application) : AndroidViewModel(application) {
     ): Int? {
         val value = input.toDoubleOrNull()
         return if (value == null || value !in range) errorMessageRes else null
+    }
+
+    private fun restartRoutePlaybackIfAvailable() {
+        stopRoutePlayback()
+        val state = _uiState.value
+        if (!state.isPlaying || state.routeWaypoints.size < 2) return
+        routeJob = viewModelScope.launch {
+            runRoutePlayback(
+                waypoints = state.routeWaypoints,
+                loop = state.isRouteLoopEnabled
+            )
+        }
+    }
+
+    private fun stopRoutePlayback() {
+        routeJob?.cancel()
+        routeJob = null
+        _uiState.update { it.copy(isRouteMoving = false) }
+    }
+
+    private suspend fun runRoutePlayback(waypoints: List<RouteWaypoint>, loop: Boolean) {
+        if (waypoints.size < 2) return
+
+        _uiState.update { it.copy(isRouteMoving = true) }
+        var currentIndex = 0
+        var direction = 1
+
+        while (currentCoroutineContext().isActive) {
+            val nextIndex = currentIndex + direction
+            if (nextIndex !in waypoints.indices) {
+                if (!loop) break
+                direction *= -1
+                continue
+            }
+
+            moveAlongSegment(waypoints[currentIndex], waypoints[nextIndex])
+            currentIndex = nextIndex
+        }
+
+        _uiState.update { it.copy(isRouteMoving = false) }
+    }
+
+    private suspend fun moveAlongSegment(start: RouteWaypoint, end: RouteWaypoint) {
+        val speed = routeSpeedMetersPerSecond()
+        val distanceMeters = RoutePlaybackCalculator.distanceBetween(start, end)
+        val durationMs = max(ROUTE_TICK_INTERVAL_MS, ((distanceMeters / speed) * 1000).toLong())
+        val startedAt = System.currentTimeMillis()
+
+        while (currentCoroutineContext().isActive) {
+            val elapsedMs = System.currentTimeMillis() - startedAt
+            val progress = (elapsedMs.toDouble() / durationMs).coerceIn(0.0, 1.0)
+            val latitude = RoutePlaybackCalculator.interpolate(start.latitude, end.latitude, progress)
+            val longitude = RoutePlaybackCalculator.interpolateLongitude(start.longitude, end.longitude, progress)
+            publishRouteLocation(latitude, longitude)
+            if (progress >= 1.0) break
+            delay(ROUTE_TICK_INTERVAL_MS)
+        }
+    }
+
+    private suspend fun publishRouteLocation(latitude: Double, longitude: Double) {
+        _uiState.update { it.copy(lastClickedLocation = GeoPoint(latitude, longitude)) }
+        preferencesRepository.saveLastClickedLocation(latitude, longitude)
+    }
+
+    private fun routeSpeedMetersPerSecond(): Float {
+        val speed = if (preferencesRepository.getUseSpeed()) {
+            preferencesRepository.getSpeed()
+        } else {
+            DEFAULT_ROUTE_SPEED_MPS
+        }
+        return speed.takeIf { it > 0f } ?: DEFAULT_ROUTE_SPEED_MPS
+    }
+
+    override fun onCleared() {
+        stopRoutePlayback()
+        super.onCleared()
     }
 }

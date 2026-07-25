@@ -18,6 +18,7 @@ import com.noobexon.xposedfakelocation.data.DEFAULT_MAP_ZOOM
 import com.noobexon.xposedfakelocation.data.DEFAULT_MEAN_SEA_LEVEL
 import com.noobexon.xposedfakelocation.data.DEFAULT_MEAN_SEA_LEVEL_ACCURACY
 import com.noobexon.xposedfakelocation.data.DEFAULT_RANDOMIZE_RADIUS
+import com.noobexon.xposedfakelocation.data.DEFAULT_ROUTE_LOOP_ENABLED
 import com.noobexon.xposedfakelocation.data.DEFAULT_SPEED
 import com.noobexon.xposedfakelocation.data.DEFAULT_SPEED_ACCURACY
 import com.noobexon.xposedfakelocation.data.DEFAULT_THEME_OPTION
@@ -43,6 +44,8 @@ import com.noobexon.xposedfakelocation.data.KEY_MAP_ZOOM
 import com.noobexon.xposedfakelocation.data.KEY_MEAN_SEA_LEVEL
 import com.noobexon.xposedfakelocation.data.KEY_MEAN_SEA_LEVEL_ACCURACY
 import com.noobexon.xposedfakelocation.data.KEY_RANDOMIZE_RADIUS
+import com.noobexon.xposedfakelocation.data.KEY_ROUTE_LOOP_ENABLED
+import com.noobexon.xposedfakelocation.data.KEY_ROUTE_WAYPOINTS
 import com.noobexon.xposedfakelocation.data.KEY_SPEED
 import com.noobexon.xposedfakelocation.data.KEY_SPEED_ACCURACY
 import com.noobexon.xposedfakelocation.data.KEY_TARGET_APPS
@@ -60,13 +63,18 @@ import com.noobexon.xposedfakelocation.data.REMOTE_PREFS_GROUP
 import com.noobexon.xposedfakelocation.data.SHARED_PREFS_FILE
 import com.noobexon.xposedfakelocation.data.model.FavoriteLocation
 import com.noobexon.xposedfakelocation.data.model.LastClickedLocation
+import com.noobexon.xposedfakelocation.data.model.RouteWaypoint
 import com.noobexon.xposedfakelocation.manager.App
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 
 /**
  * Single-source-of-truth preferences store.
@@ -75,7 +83,7 @@ import kotlinx.coroutines.flow.flowOf
  *  - Hook-shared settings (read by the Xposed module) live in the LSPosed remote
  *    preferences exposed through [App.service]. They are only available while the
  *    XposedService is bound; when it isn't, reads fall back to defaults and writes
- *    are dropped (the UI is gated behind a bound service anyway).
+ *    wait briefly for the service before reporting that the write was skipped.
  *  - Manager-only settings (language, favorites, broadcast control) live in a local
  *    [SharedPreferences] file so they are always available, including at startup and
  *    when the module is disabled.
@@ -86,6 +94,10 @@ import kotlinx.coroutines.flow.flowOf
 class PreferencesRepository(context: Context) {
     private val tag = "PreferencesRepository"
 
+    private companion object {
+        const val REMOTE_PREFS_BIND_TIMEOUT_MS = 3_000L
+    }
+
     private val gson = Gson()
 
     private val localPrefs: SharedPreferences =
@@ -93,6 +105,16 @@ class PreferencesRepository(context: Context) {
 
     private fun remotePrefs(): SharedPreferences? =
         App.service?.getRemotePreferences(REMOTE_PREFS_GROUP)
+
+    private suspend fun remotePrefsWhenAvailable(): SharedPreferences? {
+        remotePrefs()?.let { return it }
+
+        val service = withTimeoutOrNull(REMOTE_PREFS_BIND_TIMEOUT_MS) {
+            App.serviceState.first { it != null }
+        } ?: return null
+
+        return service.getRemotePreferences(REMOTE_PREFS_GROUP)
+    }
 
     // region Flow helpers
 
@@ -127,13 +149,20 @@ class PreferencesRepository(context: Context) {
 
     // region Write helpers
 
-    private inline fun editRemote(action: SharedPreferences.Editor.() -> Unit) {
-        val prefs = remotePrefs()
+    private suspend fun editRemote(action: SharedPreferences.Editor.() -> Unit) {
+        val prefs = remotePrefsWhenAvailable()
         if (prefs == null) {
             Log.w(tag, "Remote preferences unavailable (service not bound); write skipped")
             return
         }
-        prefs.edit(action = action)
+        val committed = withContext(Dispatchers.IO) {
+            val editor = prefs.edit()
+            editor.action()
+            editor.commit()
+        }
+        if (!committed) {
+            Log.w(tag, "Remote preferences commit failed")
+        }
     }
 
     private inline fun editLocal(action: SharedPreferences.Editor.() -> Unit) {
@@ -150,7 +179,15 @@ class PreferencesRepository(context: Context) {
 
     // region Is Playing (remote)
     fun getIsPlayingFlow(): Flow<Boolean> = remoteFlow(KEY_IS_PLAYING, false) { it.getBoolean(KEY_IS_PLAYING, false) }
-    suspend fun saveIsPlaying(isPlaying: Boolean) = editRemote { putBoolean(KEY_IS_PLAYING, isPlaying) }
+    suspend fun saveIsPlaying(isPlaying: Boolean) {
+        editRemote {
+            if (isPlaying) {
+                putBoolean(KEY_IS_PLAYING, true)
+            } else {
+                remove(KEY_IS_PLAYING)
+            }
+        }
+    }
     fun getIsPlaying(): Boolean = remotePrefs()?.getBoolean(KEY_IS_PLAYING, false) ?: false
     // endregion
 
@@ -340,6 +377,40 @@ class PreferencesRepository(context: Context) {
             emptyList()
         }
     }
+    // endregion
+
+    // region Route Waypoints (local)
+    fun getRouteWaypointsFlow(): Flow<List<RouteWaypoint>> =
+        localFlow(KEY_ROUTE_WAYPOINTS) { parseRouteWaypoints(it.getString(KEY_ROUTE_WAYPOINTS, null)) }
+
+    fun getRouteWaypoints(): List<RouteWaypoint> =
+        parseRouteWaypoints(localPrefs.getString(KEY_ROUTE_WAYPOINTS, null))
+
+    suspend fun saveRouteWaypoints(waypoints: List<RouteWaypoint>) {
+        val json = gson.toJson(waypoints)
+        editLocal { putString(KEY_ROUTE_WAYPOINTS, json) }
+    }
+
+    suspend fun clearRouteWaypoints() {
+        editLocal { remove(KEY_ROUTE_WAYPOINTS) }
+    }
+
+    private fun parseRouteWaypoints(json: String?): List<RouteWaypoint> {
+        if (json.isNullOrBlank()) return emptyList()
+        return try {
+            val type = object : TypeToken<List<RouteWaypoint>>() {}.type
+            gson.fromJson(json, type)
+        } catch (e: JsonSyntaxException) {
+            Log.e(tag, "Error parsing route waypoints: ${e.message}")
+            emptyList()
+        }
+    }
+
+    fun getRouteLoopEnabledFlow(): Flow<Boolean> =
+        localFlow(KEY_ROUTE_LOOP_ENABLED) { it.getBoolean(KEY_ROUTE_LOOP_ENABLED, DEFAULT_ROUTE_LOOP_ENABLED) }
+
+    suspend fun saveRouteLoopEnabled(enabled: Boolean) =
+        editLocal { putBoolean(KEY_ROUTE_LOOP_ENABLED, enabled) }
     // endregion
 
     // region Map Zoom (local)

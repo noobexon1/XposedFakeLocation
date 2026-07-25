@@ -128,13 +128,24 @@
 
     <string name="map_go_to_point">前往坐标点</string>
     <string name="map_add_to_favorites">添加到收藏</string>
+    <string name="map_add_route_point">添加路线点</string>
+    <string name="map_custom_route">自定义路线</string>
     <string name="map_add_to_templates">添加到模板</string>
     <string name="map_update_template_location">更新模板位置</string>
     <string name="map_clear_location">清除位置</string>
     <string name="toast_fake_location_set">已设置虚拟位置</string>
     <string name="toast_unset_fake_location">已取消虚拟位置</string>
+    <string name="toast_route_point_added">已添加路线点</string>
     <string name="toast_user_location_not_available">用户位置不可用</string>
     <string name="map_updating">正在更新地图…</string>
+    <string name="route_point_count">路线点：%1$d/%2$d</string>
+    <string name="route_empty">先在地图上放置标记，再使用“添加路线点”创建路线。</string>
+    <string name="route_point_format">点 %1$d：%2$.6f，%3$.6f</string>
+    <string name="route_loop">循环路线</string>
+    <string name="route_speed_hint">路线播放会优先使用“自定义速度”设置；未启用时使用 1.4 m/s。</string>
+    <string name="route_status_idle">设置至少两个点后，开启虚拟定位时会启动路线播放。</string>
+    <string name="route_status_moving">路线正在播放。</string>
+    <string name="route_clear">清空路线</string>
 
     <string name="field_name">名称</string>
     <string name="field_description">描述（可选）</string>

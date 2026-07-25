@@ -2,6 +2,8 @@ package com.noobexon.xposedfakelocation.manager.ui.map
 
 import androidx.annotation.StringRes
 import androidx.compose.runtime.Immutable
+import com.noobexon.xposedfakelocation.data.model.RouteWaypoint
+import com.noobexon.xposedfakelocation.data.MAX_ROUTE_WAYPOINTS
 import org.osmdroid.util.GeoPoint
 
 /**
@@ -61,8 +63,21 @@ data class MapUiState(
     val isAddToFavoritesDialogVisible: Boolean = false,
     val goToPointState: GoToPointInputState = GoToPointInputState(),
     val hasResolvedInitialLocation: Boolean = false,
+    val routeWaypoints: List<RouteWaypoint> = emptyList(),
+    val isRouteLoopEnabled: Boolean = false,
+    val isRouteDialogVisible: Boolean = false,
+    val isRouteMoving: Boolean = false,
 ) {
-    /** `true` when the FAB should be interactive, i.e. a spoof target has been placed on the map. */
+    /** `true` when the FAB can start/stop spoofing or route playback. */
     val isFabClickable: Boolean
+        get() = lastClickedLocation != null || canPlayRoute
+
+    val canAddRouteWaypoint: Boolean
+        get() = lastClickedLocation != null && !isRouteMoving && routeWaypoints.size < MAX_ROUTE_WAYPOINTS
+
+    val canPlayRoute: Boolean
+        get() = routeWaypoints.size >= 2
+
+    val canClearLocation: Boolean
         get() = lastClickedLocation != null
 }
