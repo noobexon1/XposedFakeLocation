@@ -30,10 +30,9 @@ class LocationManagerApiHooks(
     /**
      * Resolves [android.location.LocationManager] and hooks `getLastKnownLocation(provider)`.
      *
-     * When [PreferencesUtil.getIsPlaying] is `true`, calls [LocationUtil.updateLocation] to
-     * refresh the current spoofed state, then returns a fake [Location] via
-     * [LocationUtil.createFakeLocation] using the requested provider. Otherwise, the original
-     * result is passed through unchanged.
+     * When [PreferencesUtil.getIsPlaying] is `true`, returns a fake [Location] via
+     * [LocationUtil.createFakeLocation] using the requested provider (which refreshes the
+     * spoofed state internally). Otherwise, the original result is passed through unchanged.
      */
     private fun hookLocationManager() {
         runCatching {
@@ -47,7 +46,6 @@ class LocationManagerApiHooks(
                 module.log(Log.INFO, tag, "\tRequested data from: $provider")
                 module.log(Log.INFO, tag, "\tOriginal location: $original")
                 if (PreferencesUtil.getIsPlaying() == true) {
-                    LocationUtil.updateLocation()
                     val fakeLocation = LocationUtil.createFakeLocation(provider = provider)
                     module.log(Log.INFO, tag, "\tModified location: $fakeLocation")
                     fakeLocation

@@ -77,6 +77,11 @@ object LocationUtil {
     /**
      * Builds a [Location] object populated with the current spoofed field values.
      *
+     * [updateLocation] is invoked first so the spoofed fields always reflect the latest
+     * preferences, regardless of which hook path calls this method. Without this, callers
+     * that skip [updateLocation] (e.g. the system_server hooks) build a location from the
+     * initial `0.0` coordinates.
+     *
      * If [originalLocation] is provided its metadata (time, bearing, elapsed realtime, etc.)
      * is preserved; otherwise a fresh [Location] is created with a slightly backdated timestamp
      * to satisfy recency checks in some apps.
@@ -92,6 +97,8 @@ object LocationUtil {
      */
     @Synchronized
     fun createFakeLocation(originalLocation: Location? = null, provider: String = LocationManager.GPS_PROVIDER): Location {
+        updateLocation()
+
         val fakeLocation = if (originalLocation == null) {
             Location(provider).apply {
                 time = System.currentTimeMillis() - 300
