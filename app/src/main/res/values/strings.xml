@@ -15,6 +15,7 @@
     <string name="action_update">Update</string>
     <string name="action_go">Go</string>
     <string name="action_reset">Reset</string>
+    <string name="action_import">Import</string>
 
     <string name="cd_back">Back</string>
     <string name="cd_navigate_back">Navigate back</string>
@@ -106,6 +107,16 @@
     <string name="settings_reset_title">Reset all settings?</string>
     <string name="settings_reset_message">This restores every setting to its default value. This can\'t be undone.</string>
     <string name="settings_reset_done">Settings reset to defaults</string>
+    <string name="settings_export">Export settings</string>
+    <string name="settings_import">Import settings</string>
+    <string name="settings_import_title">Import settings?</string>
+    <string name="settings_import_message">Replace all current settings with this file? This cannot be undone.</string>
+    <string name="settings_export_success">Settings exported</string>
+    <string name="settings_import_success">Settings imported</string>
+    <string name="settings_import_partial">Imported favorites &amp; appearance. Enable the module in LSPosed, then import again to restore spoofing settings.</string>
+    <string name="settings_import_invalid">That file isn\'t a valid settings backup</string>
+    <string name="settings_export_module_inactive">Enable the module in LSPosed before exporting spoofing settings</string>
+    <string name="settings_backup_error">Couldn\'t complete that: %1$s</string>
     <string name="setting_reset_title">Reset to default?</string>
     <string name="setting_reset_message">Restore %1$s to its default value?</string>
 
