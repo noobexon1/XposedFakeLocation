@@ -348,6 +348,8 @@ class PreferencesRepository(context: Context) {
         editRemote { putString(KEY_TARGET_APPS, json) }
     }
 
+    fun getTargetApps(): Set<String> = parseTargetApps(remotePrefs()?.getString(KEY_TARGET_APPS, null))
+
     private fun parseTargetApps(json: String?): Set<String> {
         if (json.isNullOrBlank()) return emptySet()
         return try {
@@ -383,6 +385,12 @@ class PreferencesRepository(context: Context) {
         }
         saveFavorites(updated)
         Log.d(tag, "Updated Favorite: $old -> $new")
+    }
+
+    /** Replaces the entire favorites list (used by settings import). */
+    suspend fun replaceFavorites(favorites: List<FavoriteLocation>) {
+        saveFavorites(favorites)
+        Log.d(tag, "Replaced favorites with ${favorites.size} entries")
     }
 
     fun getFavorites(): List<FavoriteLocation> = parseFavorites(localPrefs.getString(KEY_FAVORITES, null))

@@ -15,6 +15,7 @@
     <string name="action_update">Aktualisieren</string>
     <string name="action_go">Los</string>
     <string name="action_reset">Zurücksetzen</string>
+    <string name="action_import">Importieren</string>
 
     <string name="cd_back">Zurück</string>
     <string name="cd_navigate_back">Zurück navigieren</string>
@@ -96,6 +97,16 @@
     <string name="settings_reset_done">Einstellungen auf Standardwerte zurückgesetzt</string>
     <string name="setting_reset_title">Auf Standard zurücksetzen?</string>
     <string name="setting_reset_message">%1$s auf den Standardwert zurücksetzen?</string>
+    <string name="settings_export">Einstellungen exportieren</string>
+    <string name="settings_import">Einstellungen importieren</string>
+    <string name="settings_import_title">Einstellungen importieren?</string>
+    <string name="settings_import_message">Alle aktuellen Einstellungen durch diese Datei ersetzen? Dies kann nicht rückgängig gemacht werden.</string>
+    <string name="settings_export_success">Einstellungen exportiert</string>
+    <string name="settings_import_success">Einstellungen importiert</string>
+    <string name="settings_import_partial">Favoriten &amp; Darstellung importiert. Aktiviere das Modul in LSPosed und importiere erneut, um die Spoofing-Einstellungen wiederherzustellen.</string>
+    <string name="settings_import_invalid">Diese Datei ist keine gültige Einstellungssicherung</string>
+    <string name="settings_export_module_inactive">Aktiviere das Modul in LSPosed, bevor du Spoofing-Einstellungen exportierst</string>
+    <string name="settings_backup_error">Konnte nicht abgeschlossen werden: %1$s</string>
 
     <string name="setting_randomize_title">Standort in der Nähe randomisieren</string>
     <string name="setting_randomize_description">Platziert deinen Standort zufällig innerhalb des angegebenen Radius</string>

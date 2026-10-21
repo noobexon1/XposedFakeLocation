@@ -3,6 +3,9 @@ package com.noobexon.xposedfakelocation.manager.ui.settings
 import android.app.Activity
 import android.content.Context
 import android.content.ContextWrapper
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -93,6 +96,8 @@ import com.noobexon.xposedfakelocation.manager.localization.LanguageOption
 import com.noobexon.xposedfakelocation.manager.localization.LocaleController
 import com.noobexon.xposedfakelocation.manager.ui.theme.ThemeOption
 import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
+import java.util.Date
 import java.util.Locale
 
 /**
@@ -138,19 +143,50 @@ fun SettingsScreen(
     val lifecycleOwner = LocalLifecycleOwner.current
     LaunchedEffect(lifecycleOwner, settingsViewModel) {
         lifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
-            settingsViewModel.systemHooksEvents.collect { event ->
-                when (event) {
-                    is SystemHooksEvent.RestartRequired -> restartDialogEnabled = event.enabled
-                    is SystemHooksEvent.ModuleNotActive ->
-                        snackbarHostState.showSnackbar(context.getString(R.string.system_hooks_module_inactive))
-                    is SystemHooksEvent.ScopeRequestFailed ->
-                        snackbarHostState.showSnackbar(context.getString(R.string.system_hooks_scope_failed, event.message))
+            launch {
+                settingsViewModel.systemHooksEvents.collect { event ->
+                    when (event) {
+                        is SystemHooksEvent.RestartRequired -> restartDialogEnabled = event.enabled
+                        is SystemHooksEvent.ModuleNotActive ->
+                            snackbarHostState.showSnackbar(context.getString(R.string.system_hooks_module_inactive))
+                        is SystemHooksEvent.ScopeRequestFailed ->
+                            snackbarHostState.showSnackbar(context.getString(R.string.system_hooks_scope_failed, event.message))
+                    }
+                }
+            }
+            launch {
+                settingsViewModel.settingsBackupEvents.collect { event ->
+                    val message = when (event) {
+                        SettingsBackupEvent.ExportSuccess -> context.getString(R.string.settings_export_success)
+                        SettingsBackupEvent.ImportSuccess -> context.getString(R.string.settings_import_success)
+                        SettingsBackupEvent.ImportPartial -> context.getString(R.string.settings_import_partial)
+                        SettingsBackupEvent.InvalidFile -> context.getString(R.string.settings_import_invalid)
+                        SettingsBackupEvent.ModuleNotActive -> context.getString(R.string.settings_export_module_inactive)
+                        is SettingsBackupEvent.Error -> context.getString(R.string.settings_backup_error, event.message)
+                    }
+                    snackbarHostState.showSnackbar(message)
                 }
             }
         }
     }
 
     val uiState by settingsViewModel.uiState.collectAsStateWithLifecycle()
+
+    var pendingImportUri by remember { mutableStateOf<Uri?>(null) }
+
+    val exportLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.CreateDocument("application/json")
+    ) { uri -> if (uri != null) settingsViewModel.exportTo(uri) }
+
+    val importLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocument()
+    ) { uri -> if (uri != null) pendingImportUri = uri }
+
+    val exportFileName = remember {
+        val date = SimpleDateFormat("yyyyMMdd", Locale.US).format(Date())
+        "xposedfakelocation-settings-$date.json"
+    }
+
     val selectedLanguage = LanguageOption.fromTag(uiState.languageTag)
 
     val categories: List<Pair<SettingsCategory, List<SettingEntry>>> = listOf(
@@ -209,8 +245,31 @@ fun SettingsScreen(
             scope.launch {
                 snackbarHostState.showSnackbar(context.getString(R.string.settings_reset_done))
             }
-        }
+        },
+        onExport = { exportLauncher.launch(exportFileName) },
+        onImport = { importLauncher.launch(arrayOf("application/json")) }
     )
+
+    pendingImportUri?.let { uri ->
+        AlertDialog(
+            onDismissRequest = { pendingImportUri = null },
+            title = { Text(stringResource(R.string.settings_import_title)) },
+            text = { Text(stringResource(R.string.settings_import_message)) },
+            confirmButton = {
+                TextButton(onClick = {
+                    pendingImportUri = null
+                    settingsViewModel.importFrom(uri)
+                }) {
+                    Text(stringResource(R.string.action_import))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { pendingImportUri = null }) {
+                    Text(stringResource(R.string.action_cancel))
+                }
+            }
+        )
+    }
 }
 
 /**
@@ -239,7 +298,9 @@ private fun SettingsContent(
     restartDialogEnabled: Boolean?,
     onRestartDialogDismiss: () -> Unit,
     onBack: () -> Unit,
-    onResetConfirmed: () -> Unit
+    onResetConfirmed: () -> Unit,
+    onExport: () -> Unit,
+    onImport: () -> Unit
 ) {
     val focusManager = LocalFocusManager.current
     val context = LocalContext.current
@@ -343,6 +404,20 @@ private fun SettingsContent(
                             expanded = menuExpanded,
                             onDismissRequest = { menuExpanded = false }
                         ) {
+                            DropdownMenuItem(
+                                text = { Text(stringResource(R.string.settings_export)) },
+                                onClick = {
+                                    menuExpanded = false
+                                    onExport()
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text(stringResource(R.string.settings_import)) },
+                                onClick = {
+                                    menuExpanded = false
+                                    onImport()
+                                }
+                            )
                             DropdownMenuItem(
                                 text = { Text(stringResource(R.string.settings_reset_all)) },
                                 onClick = {

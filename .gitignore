@@ -1,3 +1,6 @@
+# === Superpowers SDD scratch ===
+/.superpowers/
+
 # === Android build artifacts ===
 /build/
 /app/build/
