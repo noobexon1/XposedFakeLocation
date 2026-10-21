@@ -45,8 +45,7 @@ import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.material3.pulltorefresh.PullToRefreshContainer
-import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -57,12 +56,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
@@ -140,7 +137,7 @@ fun TargetAppsScreen(
  *
  * Renders a [TopAppBar] with an inline search field, a filter dropdown, a summary line showing the
  * selected-app count, and a [LazyColumn] of [TargetAppRow]s. Supports swipe-to-refresh via
- * [PullToRefreshContainer] and shows appropriate empty-state messages when no apps match the
+ * [PullToRefreshBox] and shows appropriate empty-state messages when no apps match the
  * active search query or filter settings.
  *
  * @param uiState Current screen state produced by [TargetAppsViewModel].
@@ -170,16 +167,15 @@ private fun TargetAppsContent(
     var filterExpanded by remember { mutableStateOf(false) }
     val focusManager = LocalFocusManager.current
 
-    val pullRefreshState = rememberPullToRefreshState()
-    LaunchedEffect(pullRefreshState.isRefreshing) {
-        if (pullRefreshState.isRefreshing) onRefresh()
-    }
     val listState = rememberLazyListState()
+    // PullToRefreshBox owns the indicator/refresh animation; we only keep the original
+    // "scroll back to top once a refresh finishes" behaviour, animated for smoothness.
+    var wasRefreshing by remember { mutableStateOf(false) }
     LaunchedEffect(uiState.isRefreshing) {
-        if (!uiState.isRefreshing && pullRefreshState.isRefreshing) {
-            pullRefreshState.endRefresh()
-            listState.scrollToItem(0)
+        if (wasRefreshing && !uiState.isRefreshing) {
+            listState.animateScrollToItem(0)
         }
+        wasRefreshing = uiState.isRefreshing
     }
 
     BackHandler(enabled = searchActive) {
@@ -380,27 +376,23 @@ private fun TargetAppsContent(
                         }
                     }
                     else -> {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .clipToBounds()
-                                .nestedScroll(pullRefreshState.nestedScrollConnection)
+                        PullToRefreshBox(
+                            isRefreshing = uiState.isRefreshing,
+                            onRefresh = onRefresh,
+                            modifier = Modifier.fillMaxSize()
                         ) {
                             LazyColumn(state = listState, modifier = Modifier.fillMaxSize()) {
                                 items(uiState.filteredApps, key = { it.packageName }) { app ->
-                                    TargetAppRow(
-                                        app = app,
-                                        onToggle = { onToggle(app.packageName) },
-                                        onRelaunch = { onRelaunch(app.packageName) }
-                                    )
-                                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
+                                    Column(modifier = Modifier.animateItem()) {
+                                        TargetAppRow(
+                                            app = app,
+                                            onToggle = { onToggle(app.packageName) },
+                                            onRelaunch = { onRelaunch(app.packageName) }
+                                        )
+                                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
+                                    }
                                 }
                             }
-                            // TODO: Improve refresh animation
-                            PullToRefreshContainer(
-                                state = pullRefreshState,
-                                modifier = Modifier.align(Alignment.TopCenter)
-                            )
                         }
                     }
                 }
