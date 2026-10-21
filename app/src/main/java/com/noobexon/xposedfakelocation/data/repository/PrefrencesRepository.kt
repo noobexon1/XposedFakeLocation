@@ -348,6 +348,8 @@ class PreferencesRepository(context: Context) {
         editRemote { putString(KEY_TARGET_APPS, json) }
     }
 
+    fun getTargetApps(): Set<String> = parseTargetApps(remotePrefs()?.getString(KEY_TARGET_APPS, null))
+
     private fun parseTargetApps(json: String?): Set<String> {
         if (json.isNullOrBlank()) return emptySet()
         return try {

@@ -3,7 +3,14 @@ package com.noobexon.xposedfakelocation.manager.ui.settings
 import android.app.Application
 import android.content.ComponentName
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.util.Log
+import com.noobexon.xposedfakelocation.BuildConfig
+import com.noobexon.xposedfakelocation.data.backup.SettingsBackupManager
+import com.noobexon.xposedfakelocation.data.model.AppearanceBackup
+import com.noobexon.xposedfakelocation.data.model.SETTINGS_BACKUP_VERSION
+import com.noobexon.xposedfakelocation.data.model.SettingsBackup
+import com.noobexon.xposedfakelocation.data.model.SpoofingBackup
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.noobexon.xposedfakelocation.data.DEFAULT_ACCURACY
@@ -84,6 +91,31 @@ sealed interface SystemHooksEvent {
     data class ScopeRequestFailed(val message: String) : SystemHooksEvent
 }
 
+/**
+ * One-shot outcomes of a settings export/import, consumed exactly once by the settings UI as a
+ * snackbar. Delivered through a [kotlinx.coroutines.channels.Channel] so events survive
+ * configuration changes without being replayed.
+ */
+sealed interface SettingsBackupEvent {
+    /** Export wrote the file successfully. */
+    data object ExportSuccess : SettingsBackupEvent
+
+    /** Import applied everything (module was active, so spoofing settings were restored too). */
+    data object ImportSuccess : SettingsBackupEvent
+
+    /** Import applied favorites + appearance, but skipped spoofing because the module is inactive. */
+    data object ImportPartial : SettingsBackupEvent
+
+    /** The chosen file was not a valid/supported settings backup. */
+    data object InvalidFile : SettingsBackupEvent
+
+    /** Export was blocked because the Xposed module is not active (no [App.service]). */
+    data object ModuleNotActive : SettingsBackupEvent
+
+    /** An IO or unexpected error occurred. [message] is surfaced to the user. */
+    data class Error(val message: String) : SettingsBackupEvent
+}
+
 private const val TAG = "SettingsViewModel"
 
 /**
@@ -97,6 +129,7 @@ private const val TAG = "SettingsViewModel"
  */
 class SettingsViewModel(application: Application) : AndroidViewModel(application) {
     private val preferencesRepository = PreferencesRepository(application)
+    private val backupManager = SettingsBackupManager(preferencesRepository)
 
     /**
      * Holds a single preference value as a hot [StateFlow] and wires it to disk persistence.
@@ -638,6 +671,115 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                 } catch (e: XposedService.ServiceException) {
                     _systemHooksEvents.trySend(SystemHooksEvent.ScopeRequestFailed(e.message ?: e.toString()))
                 }
+            }
+        }
+    }
+
+    // ---- Settings backup (export / import) ---------------------------------------------------
+
+    private val _backupEvents = Channel<SettingsBackupEvent>(Channel.BUFFERED)
+
+    /**
+     * Stream of one-shot [SettingsBackupEvent]s produced by [exportTo] / [importFrom]. Collect
+     * inside `repeatOnLifecycle(STARTED)`.
+     */
+    val settingsBackupEvents: Flow<SettingsBackupEvent> = _backupEvents.receiveAsFlow()
+
+    private fun currentBackup(): SettingsBackup {
+        val ui = uiState.value
+        return SettingsBackup(
+            version = SETTINGS_BACKUP_VERSION,
+            exportedAt = System.currentTimeMillis(),
+            appVersion = BuildConfig.VERSION_NAME,
+            spoofing = SpoofingBackup(
+                useRandomize = ui.useRandomize,
+                randomizeRadius = ui.randomizeRadius.toDouble(),
+                useAccuracy = ui.useAccuracy,
+                accuracy = ui.accuracy.toDouble(),
+                useAltitude = ui.useAltitude,
+                altitude = ui.altitude.toDouble(),
+                useVerticalAccuracy = ui.useVerticalAccuracy,
+                verticalAccuracy = ui.verticalAccuracy,
+                useMeanSeaLevel = ui.useMeanSeaLevel,
+                meanSeaLevel = ui.meanSeaLevel.toDouble(),
+                useMeanSeaLevelAccuracy = ui.useMeanSeaLevelAccuracy,
+                meanSeaLevelAccuracy = ui.meanSeaLevelAccuracy,
+                useSpeed = ui.useSpeed,
+                speed = ui.speed,
+                useSpeedAccuracy = ui.useSpeedAccuracy,
+                speedAccuracy = ui.speedAccuracy,
+                hideFakeLocationToast = ui.hideFakeLocationToast,
+                targetApps = preferencesRepository.getTargetApps().toList(),
+                wifiIdentityEnabled = ui.wifiIdentityEnabled,
+                wifiSsid = ui.wifiSsid,
+                wifiBssid = ui.wifiBssid,
+                wifiRssi = ui.wifiRssi,
+            ),
+            favorites = preferencesRepository.getFavorites(),
+            appearance = AppearanceBackup(
+                themeOption = ui.themeOption.tag,
+                languageTag = ui.languageTag,
+            ),
+        )
+    }
+
+    /**
+     * Serialises the current configuration to [uri]. Blocked (emits [SettingsBackupEvent.ModuleNotActive])
+     * when the Xposed service is unbound, because spoofing values would just be defaults.
+     */
+    fun exportTo(uri: Uri) {
+        if (App.service == null) {
+            _backupEvents.trySend(SettingsBackupEvent.ModuleNotActive)
+            return
+        }
+        viewModelScope.launch {
+            try {
+                val json = backupManager.toJson(currentBackup())
+                withContext(Dispatchers.IO) {
+                    getApplication<Application>().contentResolver.openOutputStream(uri)?.use { out ->
+                        out.write(json.toByteArray(Charsets.UTF_8))
+                    } ?: throw java.io.IOException("Could not open destination file")
+                }
+                _backupEvents.trySend(SettingsBackupEvent.ExportSuccess)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Log.e(TAG, "Export failed", e)
+                _backupEvents.trySend(SettingsBackupEvent.Error(e.message ?: e.toString()))
+            }
+        }
+    }
+
+    /**
+     * Reads, validates, and applies a settings file from [uri] with replace semantics. Local parts
+     * (favorites + appearance) always apply; spoofing parts apply only when the module is active,
+     * otherwise [SettingsBackupEvent.ImportPartial] is emitted.
+     */
+    fun importFrom(uri: Uri) {
+        viewModelScope.launch {
+            try {
+                val json = withContext(Dispatchers.IO) {
+                    getApplication<Application>().contentResolver.openInputStream(uri)?.use { input ->
+                        input.readBytes().toString(Charsets.UTF_8)
+                    } ?: throw java.io.IOException("Could not open source file")
+                }
+                val parsed = backupManager.parse(json)
+                val backup = parsed.getOrElse {
+                    Log.w(TAG, "Invalid settings file", it)
+                    _backupEvents.trySend(SettingsBackupEvent.InvalidFile)
+                    return@launch
+                }
+                val canWriteRemote = App.service != null
+                backupManager.apply(backup, canWriteRemote)
+                _backupEvents.trySend(
+                    if (canWriteRemote) SettingsBackupEvent.ImportSuccess
+                    else SettingsBackupEvent.ImportPartial
+                )
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Log.e(TAG, "Import failed", e)
+                _backupEvents.trySend(SettingsBackupEvent.Error(e.message ?: e.toString()))
             }
         }
     }
