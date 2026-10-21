@@ -15,6 +15,7 @@
     <string name="action_update">更新</string>
     <string name="action_go">前往</string>
     <string name="action_reset">重置</string>
+    <string name="action_import">导入</string>
 
     <string name="cd_back">返回</string>
     <string name="cd_navigate_back">返回上一页</string>
@@ -106,6 +107,16 @@
     <string name="settings_reset_done">设置已重置为默认值</string>
     <string name="setting_reset_title">重置为默认值？</string>
     <string name="setting_reset_message">将 %1$s 重置为默认值？</string>
+    <string name="settings_export">导出设置</string>
+    <string name="settings_import">导入设置</string>
+    <string name="settings_import_title">导入设置？</string>
+    <string name="settings_import_message">用此文件替换所有当前设置？此操作无法撤销。</string>
+    <string name="settings_export_success">设置已导出</string>
+    <string name="settings_import_success">设置已导入</string>
+    <string name="settings_import_partial">已导入收藏夹和外观。请在 LSPosed 中启用模块，然后重新导入以恢复伪装设置。</string>
+    <string name="settings_import_invalid">该文件不是有效的设置备份</string>
+    <string name="settings_export_module_inactive">导出伪装设置前，请先在 LSPosed 中启用模块</string>
+    <string name="settings_backup_error">无法完成：%1$s</string>
 
     <string name="setting_randomize_title">随机附近位置</string>
     <string name="setting_randomize_description">在指定半径内随机放置你的位置</string>
