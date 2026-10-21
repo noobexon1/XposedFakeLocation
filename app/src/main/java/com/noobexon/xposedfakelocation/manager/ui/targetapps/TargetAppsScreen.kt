@@ -314,7 +314,6 @@ private fun TargetAppsContent(
                     }
                 }
         ) {
-            // TODO: Improve list animation to be smoother
             Column(
                 modifier = Modifier
                     .fillMaxSize()
