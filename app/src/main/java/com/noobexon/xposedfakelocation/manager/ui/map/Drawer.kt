@@ -3,6 +3,8 @@ package com.noobexon.xposedfakelocation.manager.ui.map
 import android.content.Intent
 import android.net.Uri
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -109,82 +111,86 @@ fun DrawerContent(
                 .fillMaxHeight()
                 .padding(DrawerDimensions.DRAWER_PADDING)
         ) {
-            DrawerHeader()
-            Spacer(modifier = Modifier.height(DrawerDimensions.SECTION_SPACING))
-            DrawerSectionHeader(stringResource(R.string.drawer_navigation))
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .verticalScroll(rememberScrollState())
+            ) {
+                DrawerHeader()
+                Spacer(modifier = Modifier.height(DrawerDimensions.SECTION_SPACING))
+                DrawerSectionHeader(stringResource(R.string.drawer_navigation))
 
-            DrawerItem(
-                icon = LineAwesomeIcons.MapSolid,
-                label = stringResource(R.string.drawer_map),
-                onClick = { navigateTo(Screen.Map.route) },
-                isSelected = currentRoute == Screen.Map.route
-            )
+                DrawerItem(
+                    icon = LineAwesomeIcons.MapSolid,
+                    label = stringResource(R.string.drawer_map),
+                    onClick = { navigateTo(Screen.Map.route) },
+                    isSelected = currentRoute == Screen.Map.route
+                )
 
-            DrawerItem(
-                icon = LineAwesomeIcons.HeartSolid,
-                label = stringResource(R.string.screen_favorites),
-                onClick = { navigateTo(Screen.Favorites.route) },
-                isSelected = currentRoute == Screen.Favorites.route
-            )
+                DrawerItem(
+                    icon = LineAwesomeIcons.HeartSolid,
+                    label = stringResource(R.string.screen_favorites),
+                    onClick = { navigateTo(Screen.Favorites.route) },
+                    isSelected = currentRoute == Screen.Favorites.route
+                )
 
-            DrawerItem(
-                icon = LineAwesomeIcons.MobileAltSolid,
-                label = stringResource(R.string.screen_target_apps),
-                onClick = { navigateTo(Screen.TargetApps.route) },
-                isSelected = currentRoute == Screen.TargetApps.route
-            )
+                DrawerItem(
+                    icon = LineAwesomeIcons.MobileAltSolid,
+                    label = stringResource(R.string.screen_target_apps),
+                    onClick = { navigateTo(Screen.TargetApps.route) },
+                    isSelected = currentRoute == Screen.TargetApps.route
+                )
 
-            DrawerItem(
-                icon = Icons.Default.Settings,
-                label = stringResource(R.string.screen_settings),
-                onClick = { navigateTo(Screen.Settings.route) },
-                isSelected = currentRoute == Screen.Settings.route
-            )
+                DrawerItem(
+                    icon = Icons.Default.Settings,
+                    label = stringResource(R.string.screen_settings),
+                    onClick = { navigateTo(Screen.Settings.route) },
+                    isSelected = currentRoute == Screen.Settings.route
+                )
 
-            Spacer(modifier = Modifier.height(DrawerDimensions.SECTION_SPACING))
-            DrawerSectionHeader(stringResource(R.string.drawer_community))
+                Spacer(modifier = Modifier.height(DrawerDimensions.SECTION_SPACING))
+                DrawerSectionHeader(stringResource(R.string.drawer_community))
 
-            DrawerItem(
-                icon = LineAwesomeIcons.Telegram,
-                label = "Telegram",
-                onClick = {
-                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://t.me/XposedFakeLocationChat"))
-                    context.startActivity(intent)
-                    onCloseDrawer()
-                }
-            )
+                DrawerItem(
+                    icon = LineAwesomeIcons.Telegram,
+                    label = "Telegram",
+                    onClick = {
+                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://t.me/XposedFakeLocationChat"))
+                        context.startActivity(intent)
+                        onCloseDrawer()
+                    }
+                )
 
-            DrawerItem(
-                icon = LineAwesomeIcons.Discord,
-                label = "Discord",
-                onClick = {
-                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://discord.gg/8eCRU3KzVS"))
-                    context.startActivity(intent)
-                    onCloseDrawer()
-                }
-            )
+                DrawerItem(
+                    icon = LineAwesomeIcons.Discord,
+                    label = "Discord",
+                    onClick = {
+                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://discord.gg/8eCRU3KzVS"))
+                        context.startActivity(intent)
+                        onCloseDrawer()
+                    }
+                )
 
-            DrawerItem(
-                icon = LineAwesomeIcons.Github,
-                label = "GitHub",
-                onClick = {
-                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/noobexon1/XposedFakeLocation"))
-                    context.startActivity(intent)
-                    onCloseDrawer()
-                }
-            )
+                DrawerItem(
+                    icon = LineAwesomeIcons.Github,
+                    label = "GitHub",
+                    onClick = {
+                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/noobexon1/XposedFakeLocation"))
+                        context.startActivity(intent)
+                        onCloseDrawer()
+                    }
+                )
 
-            Spacer(modifier = Modifier.height(DrawerDimensions.SECTION_SPACING))
-            DrawerSectionHeader(stringResource(R.string.drawer_app_info))
+                Spacer(modifier = Modifier.height(DrawerDimensions.SECTION_SPACING))
+                DrawerSectionHeader(stringResource(R.string.drawer_app_info))
 
-            DrawerItem(
-                icon = LineAwesomeIcons.InfoCircleSolid,
-                label = stringResource(R.string.screen_about),
-                onClick = { navigateTo(Screen.About.route) },
-                isSelected = currentRoute == Screen.About.route
-            )
-
-            Spacer(modifier = Modifier.weight(1f))
+                DrawerItem(
+                    icon = LineAwesomeIcons.InfoCircleSolid,
+                    label = stringResource(R.string.screen_about),
+                    onClick = { navigateTo(Screen.About.route) },
+                    isSelected = currentRoute == Screen.About.route
+                )
+            }
 
             Text(
                 text = stringResource(R.string.drawer_version, BuildConfig.VERSION_NAME),
