@@ -60,8 +60,6 @@ private object DrawerDimensions {
     val ITEM_CORNER_RADIUS = 12.dp
 }
 
-// TODO: Think on how to ask users for stars on github if they like the module.
-
 /**
  * Content of the [ModalNavigationDrawer] used throughout the app.
  *

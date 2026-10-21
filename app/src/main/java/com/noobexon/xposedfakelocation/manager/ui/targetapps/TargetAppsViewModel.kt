@@ -219,7 +219,6 @@ class TargetAppsViewModel(application: Application) : AndroidViewModel(applicati
         }
     }
 
-    // TODO: perform the root request using libsu https://github.com/topjohnwu/libsu
     /** Verifies (and, on first use, requests) root by running `su -c id` and checking for uid=0. */
     private fun hasRootAccess(): Boolean = try {
         val process = Runtime.getRuntime().exec(arrayOf("su", "-c", "id"))
