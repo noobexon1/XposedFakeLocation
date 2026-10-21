@@ -50,14 +50,76 @@ class SettingsBackupCodecTest {
         val json = codec.toJson(sampleBackup()).replace(
             "\"version\":1", "\"version\":999"
         )
-        assertTrue(codec.fromJson(json).isFailure)
+        val result = codec.fromJson(json)
+        assertTrue(result.isFailure)
+        assertTrue(result.exceptionOrNull() is SettingsBackupException)
     }
 
     @Test
     fun malformedJsonIsRejectedWithoutThrowing() {
         assertTrue(codec.fromJson("not valid json at all").isFailure)
         assertTrue(codec.fromJson("").isFailure)
-        assertTrue(codec.fromJson("{}").isFailure)
+        // "{}" parses but version == 0 → SettingsBackupException from version gate
+        val emptyObjResult = codec.fromJson("{}")
+        assertTrue(emptyObjResult.isFailure)
+        assertTrue(emptyObjResult.exceptionOrNull() is SettingsBackupException)
+    }
+
+    // Shared minimal spoofing/appearance JSON fragment reused in raw-JSON tests.
+    private val minimalSpoofingJson = """
+        "spoofing":{"useRandomize":false,"randomizeRadius":0.0,"useAccuracy":false,"accuracy":0.0,
+          "useAltitude":false,"altitude":0.0,"useVerticalAccuracy":false,"verticalAccuracy":0.0,
+          "useMeanSeaLevel":false,"meanSeaLevel":0.0,"useMeanSeaLevelAccuracy":false,"meanSeaLevelAccuracy":0.0,
+          "useSpeed":false,"speed":0.0,"useSpeedAccuracy":false,"speedAccuracy":0.0,
+          "hideFakeLocationToast":false,"targetApps":[],"wifiIdentityEnabled":false,
+          "wifiSsid":"AndroidAP","wifiBssid":"02:00:00:00:00:00","wifiRssi":-60}
+    """.trimIndent()
+
+    @Test
+    fun nullNameFavoriteIsSkippedNotFailed() {
+        // The first favorite omits "name" entirely; Gson leaves it null at runtime.
+        val json = """
+            {"version":1,"exportedAt":0,"appVersion":"x",
+             $minimalSpoofingJson,
+             "favorites":[{"latitude":1.0,"longitude":2.0,"description":""},
+                          {"name":"Valid","latitude":3.0,"longitude":4.0,"description":""}],
+             "appearance":{"themeOption":"","languageTag":""}}
+        """.trimIndent()
+        val result = codec.fromJson(json)
+        assertTrue(result.isSuccess)
+        val restored = result.getOrThrow()
+        assertEquals(1, restored.favorites.size)
+        assertEquals("Valid", restored.favorites.first().name)
+    }
+
+    @Test
+    fun missingSpoofingSectionIsRejected() {
+        // version:1 passes the version gate but the absent spoofing section must be rejected.
+        val json = """
+            {"version":1,"exportedAt":0,"appVersion":"x",
+             "favorites":[],
+             "appearance":{"themeOption":"","languageTag":""}}
+        """.trimIndent()
+        val result = codec.fromJson(json)
+        assertTrue(result.isFailure)
+        assertTrue(result.exceptionOrNull() is SettingsBackupException)
+    }
+
+    @Test
+    fun nonFiniteCoordinateFavoriteIsDropped() {
+        // 1e999 overflows to Double.POSITIVE_INFINITY when Gson parses it; isFinite() == false.
+        val json = """
+            {"version":1,"exportedAt":0,"appVersion":"x",
+             $minimalSpoofingJson,
+             "favorites":[{"name":"Bad","latitude":1e999,"longitude":0.0,"description":""},
+                          {"name":"Good","latitude":1.0,"longitude":2.0,"description":""}],
+             "appearance":{"themeOption":"","languageTag":""}}
+        """.trimIndent()
+        val result = codec.fromJson(json)
+        assertTrue(result.isSuccess)
+        val restored = result.getOrThrow()
+        assertEquals(1, restored.favorites.size)
+        assertEquals("Good", restored.favorites.first().name)
     }
 
     @Test

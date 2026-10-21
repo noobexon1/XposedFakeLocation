@@ -30,11 +30,17 @@ class SettingsBackupCodec(
         if (parsed.version != SETTINGS_BACKUP_VERSION) {
             throw SettingsBackupException("Unsupported settings version: ${parsed.version}")
         }
-        if (parsed.spoofing == null || parsed.appearance == null) {
+        // Gson bypasses Kotlin non-null guarantees via Unsafe; these sections may actually be null.
+        @Suppress("SENSELESS_COMPARISON")
+        val hasMissingSections = parsed.spoofing == null || parsed.appearance == null
+        if (hasMissingSections) {
             throw SettingsBackupException("Settings file is missing required sections")
         }
         val favorites = (parsed.favorites ?: emptyList()).filter { fav ->
-            fav.name.isNotBlank() &&
+            // Gson may leave name null even though Kotlin types say non-null (missing JSON field).
+            @Suppress("SENSELESS_COMPARISON")
+            val nameOk = fav.name != null && fav.name.isNotBlank()
+            nameOk &&
                 fav.latitude.isFinite() &&
                 fav.longitude.isFinite()
         }
