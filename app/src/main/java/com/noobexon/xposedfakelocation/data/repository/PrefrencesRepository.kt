@@ -385,6 +385,12 @@ class PreferencesRepository(context: Context) {
         Log.d(tag, "Updated Favorite: $old -> $new")
     }
 
+    /** Replaces the entire favorites list (used by settings import). */
+    suspend fun replaceFavorites(favorites: List<FavoriteLocation>) {
+        saveFavorites(favorites)
+        Log.d(tag, "Replaced favorites with ${favorites.size} entries")
+    }
+
     fun getFavorites(): List<FavoriteLocation> = parseFavorites(localPrefs.getString(KEY_FAVORITES, null))
 
     private fun saveFavorites(favorites: List<FavoriteLocation>) {
