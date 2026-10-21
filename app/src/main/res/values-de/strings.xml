@@ -87,12 +87,15 @@
     <string name="setting_disable">%1$s deaktivieren</string>
     <string name="setting_enable">%1$s aktivieren</string>
     <string name="setting_adjust_value">Wert für %1$s anpassen</string>
+    <string name="cd_reset_setting">%1$s auf Standard zurücksetzen</string>
     <string name="settings_search_hint">Einstellungen suchen</string>
     <string name="settings_search_empty">Keine Einstellungen gefunden</string>
     <string name="settings_reset_all">Alle Einstellungen zurücksetzen</string>
     <string name="settings_reset_title">Alle Einstellungen zurücksetzen?</string>
     <string name="settings_reset_message">Dies setzt jede Einstellung auf ihren Standardwert zurück. Dies kann nicht rückgängig gemacht werden.</string>
     <string name="settings_reset_done">Einstellungen auf Standardwerte zurückgesetzt</string>
+    <string name="setting_reset_title">Auf Standard zurücksetzen?</string>
+    <string name="setting_reset_message">%1$s auf den Standardwert zurücksetzen?</string>
 
     <string name="setting_randomize_title">Standort in der Nähe randomisieren</string>
     <string name="setting_randomize_description">Platziert deinen Standort zufällig innerhalb des angegebenen Radius</string>

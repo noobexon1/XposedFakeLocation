@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
@@ -28,6 +29,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Restore
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
@@ -153,18 +155,18 @@ fun SettingsScreen(
 
     val categories: List<Pair<SettingsCategory, List<SettingEntry>>> = listOf(
         SettingsCategory.LOCATION to listOf(
-            SettingEntry.Numeric(NumericSetting.RANDOMIZE_RADIUS, uiState.useRandomize, settingsViewModel::setUseRandomize, uiState.randomizeRadius) { settingsViewModel.setRandomizeRadius(it.toDouble()) },
-            SettingEntry.Numeric(NumericSetting.HORIZONTAL_ACCURACY, uiState.useAccuracy, settingsViewModel::setUseAccuracy, uiState.accuracy) { settingsViewModel.setAccuracy(it.toDouble()) },
-            SettingEntry.Numeric(NumericSetting.VERTICAL_ACCURACY, uiState.useVerticalAccuracy, settingsViewModel::setUseVerticalAccuracy, uiState.verticalAccuracy, settingsViewModel::setVerticalAccuracy)
+            SettingEntry.Numeric(NumericSetting.RANDOMIZE_RADIUS, uiState.useRandomize, settingsViewModel::setUseRandomize, uiState.randomizeRadius, onValueChange = { settingsViewModel.setRandomizeRadius(it.toDouble()) }, onReset = { settingsViewModel.resetNumeric(NumericSetting.RANDOMIZE_RADIUS) }),
+            SettingEntry.Numeric(NumericSetting.HORIZONTAL_ACCURACY, uiState.useAccuracy, settingsViewModel::setUseAccuracy, uiState.accuracy, onValueChange = { settingsViewModel.setAccuracy(it.toDouble()) }, onReset = { settingsViewModel.resetNumeric(NumericSetting.HORIZONTAL_ACCURACY) }),
+            SettingEntry.Numeric(NumericSetting.VERTICAL_ACCURACY, uiState.useVerticalAccuracy, settingsViewModel::setUseVerticalAccuracy, uiState.verticalAccuracy, settingsViewModel::setVerticalAccuracy, onReset = { settingsViewModel.resetNumeric(NumericSetting.VERTICAL_ACCURACY) })
         ),
         SettingsCategory.ALTITUDE to listOf(
-            SettingEntry.Numeric(NumericSetting.ALTITUDE, uiState.useAltitude, settingsViewModel::setUseAltitude, uiState.altitude) { settingsViewModel.setAltitude(it.toDouble()) },
-            SettingEntry.Numeric(NumericSetting.MEAN_SEA_LEVEL, uiState.useMeanSeaLevel, settingsViewModel::setUseMeanSeaLevel, uiState.meanSeaLevel) { settingsViewModel.setMeanSeaLevel(it.toDouble()) },
-            SettingEntry.Numeric(NumericSetting.MEAN_SEA_LEVEL_ACCURACY, uiState.useMeanSeaLevelAccuracy, settingsViewModel::setUseMeanSeaLevelAccuracy, uiState.meanSeaLevelAccuracy, settingsViewModel::setMeanSeaLevelAccuracy)
+            SettingEntry.Numeric(NumericSetting.ALTITUDE, uiState.useAltitude, settingsViewModel::setUseAltitude, uiState.altitude, onValueChange = { settingsViewModel.setAltitude(it.toDouble()) }, onReset = { settingsViewModel.resetNumeric(NumericSetting.ALTITUDE) }),
+            SettingEntry.Numeric(NumericSetting.MEAN_SEA_LEVEL, uiState.useMeanSeaLevel, settingsViewModel::setUseMeanSeaLevel, uiState.meanSeaLevel, onValueChange = { settingsViewModel.setMeanSeaLevel(it.toDouble()) }, onReset = { settingsViewModel.resetNumeric(NumericSetting.MEAN_SEA_LEVEL) }),
+            SettingEntry.Numeric(NumericSetting.MEAN_SEA_LEVEL_ACCURACY, uiState.useMeanSeaLevelAccuracy, settingsViewModel::setUseMeanSeaLevelAccuracy, uiState.meanSeaLevelAccuracy, settingsViewModel::setMeanSeaLevelAccuracy, onReset = { settingsViewModel.resetNumeric(NumericSetting.MEAN_SEA_LEVEL_ACCURACY) })
         ),
         SettingsCategory.MOVEMENT to listOf(
-            SettingEntry.Numeric(NumericSetting.SPEED, uiState.useSpeed, settingsViewModel::setUseSpeed, uiState.speed, settingsViewModel::setSpeed),
-            SettingEntry.Numeric(NumericSetting.SPEED_ACCURACY, uiState.useSpeedAccuracy, settingsViewModel::setUseSpeedAccuracy, uiState.speedAccuracy, settingsViewModel::setSpeedAccuracy)
+            SettingEntry.Numeric(NumericSetting.SPEED, uiState.useSpeed, settingsViewModel::setUseSpeed, uiState.speed, settingsViewModel::setSpeed, onReset = { settingsViewModel.resetNumeric(NumericSetting.SPEED) }),
+            SettingEntry.Numeric(NumericSetting.SPEED_ACCURACY, uiState.useSpeedAccuracy, settingsViewModel::setUseSpeedAccuracy, uiState.speedAccuracy, settingsViewModel::setSpeedAccuracy, onReset = { settingsViewModel.resetNumeric(NumericSetting.SPEED_ACCURACY) })
         ),
         SettingsCategory.NOTIFICATIONS to listOf(
             SettingEntry.Switch(SettingKeys.HIDE_TOAST, R.string.setting_hide_toast_title, R.string.setting_hide_toast_description, uiState.hideFakeLocationToast, settingsViewModel::setHideFakeLocationToast)
@@ -175,9 +177,9 @@ fun SettingsScreen(
         SettingsCategory.WIFI_IDENTITY to buildList {
             add(SettingEntry.Switch(SettingKeys.WIFI_IDENTITY, R.string.setting_wifi_identity_title, R.string.setting_wifi_identity_description, uiState.wifiIdentityEnabled, settingsViewModel::setEnableWifiIdentity))
             if (uiState.wifiIdentityEnabled) {
-                add(SettingEntry.Text(SettingKeys.WIFI_SSID, R.string.setting_wifi_ssid_title, R.string.setting_wifi_ssid_description, R.string.setting_wifi_ssid_label, uiState.wifiSsid, onValueChange = settingsViewModel::setWifiSsid))
-                add(SettingEntry.Text(SettingKeys.WIFI_BSSID, R.string.setting_wifi_bssid_title, R.string.setting_wifi_bssid_description, R.string.setting_wifi_bssid_label, uiState.wifiBssid, onValueChange = settingsViewModel::setWifiBssid))
-                add(SettingEntry.Text(SettingKeys.WIFI_RSSI, R.string.setting_wifi_rssi_title, R.string.setting_wifi_rssi_description, R.string.setting_wifi_rssi_label, uiState.wifiRssi.toString(), TextInputKind.SIGNED_NUMBER, settingsViewModel::setWifiRssi))
+                add(SettingEntry.Text(SettingKeys.WIFI_SSID, R.string.setting_wifi_ssid_title, R.string.setting_wifi_ssid_description, R.string.setting_wifi_ssid_label, uiState.wifiSsid, onValueChange = settingsViewModel::setWifiSsid, onReset = settingsViewModel::resetWifiSsid))
+                add(SettingEntry.Text(SettingKeys.WIFI_BSSID, R.string.setting_wifi_bssid_title, R.string.setting_wifi_bssid_description, R.string.setting_wifi_bssid_label, uiState.wifiBssid, onValueChange = settingsViewModel::setWifiBssid, onReset = settingsViewModel::resetWifiBssid))
+                add(SettingEntry.Text(SettingKeys.WIFI_RSSI, R.string.setting_wifi_rssi_title, R.string.setting_wifi_rssi_description, R.string.setting_wifi_rssi_label, uiState.wifiRssi.toString(), TextInputKind.SIGNED_NUMBER, settingsViewModel::setWifiRssi, onReset = settingsViewModel::resetWifiRssi))
             }
         },
         SettingsCategory.EXTERNAL_CONTROL to listOf(
@@ -536,7 +538,8 @@ private fun SettingEntryRow(entry: SettingEntry) {
             useValue = entry.enabled,
             onUseValueChange = entry.onEnabledChange,
             value = entry.value,
-            onValueChange = entry.onValueChange
+            onValueChange = entry.onValueChange,
+            onReset = entry.onReset
         )
         is SettingEntry.Text -> TextSettingItem(
             title = stringResource(entry.titleRes),
@@ -544,7 +547,8 @@ private fun SettingEntryRow(entry: SettingEntry) {
             label = stringResource(entry.labelRes),
             value = entry.value,
             inputKind = entry.inputKind,
-            onValueChange = entry.onValueChange
+            onValueChange = entry.onValueChange,
+            onReset = entry.onReset
         )
         is SettingEntry.Language -> LanguageSettingItem(
             selectedLanguage = entry.selected,
@@ -590,6 +594,9 @@ private fun CategoryLabel(title: String) {
  * @param onToggleTooltip Invoked when the info icon is tapped to toggle [showTooltip].
  * @param onClick Optional click handler applied to the entire row. When non-null the row becomes
  *   tappable; the info [IconButton] still consumes its own clicks independently.
+ * @param onReset Optional "reset this setting to default" handler. When non-null, a reset icon is
+ *   rendered just before [trailing]; tapping it opens a confirmation dialog and only invokes this
+ *   callback once the user confirms. It consumes its own clicks independently of [onClick].
  * @param trailing Slot composable placed at the end of the row (e.g. [SettingSwitch]).
  */
 @Composable
@@ -599,9 +606,12 @@ private fun SettingHeader(
     showTooltip: Boolean,
     onToggleTooltip: () -> Unit,
     onClick: (() -> Unit)? = null,
+    onReset: (() -> Unit)? = null,
     trailing: @Composable () -> Unit
 ) {
     val moreInfoDescription = stringResource(R.string.setting_more_info, title)
+    val resetDescription = stringResource(R.string.cd_reset_setting, title)
+    var showResetConfirmation by remember { mutableStateOf(false) }
     Column(modifier = Modifier.fillMaxWidth()) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
@@ -631,6 +641,21 @@ private fun SettingHeader(
                 }
             }
 
+            if (onReset != null) {
+                IconButton(
+                    onClick = { showResetConfirmation = true },
+                    modifier = Modifier.size(24.dp)
+                ) {
+                    Icon(
+                        Icons.Default.Restore,
+                        contentDescription = resetDescription,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+                Spacer(modifier = Modifier.width(Dimensions.SPACING_SMALL))
+            }
+
             trailing()
         }
 
@@ -642,6 +667,27 @@ private fun SettingHeader(
                 modifier = Modifier.padding(top = Dimensions.SPACING_EXTRA_SMALL)
             )
         }
+    }
+
+    if (onReset != null && showResetConfirmation) {
+        AlertDialog(
+            onDismissRequest = { showResetConfirmation = false },
+            title = { Text(stringResource(R.string.setting_reset_title)) },
+            text = { Text(stringResource(R.string.setting_reset_message, title)) },
+            confirmButton = {
+                TextButton(onClick = {
+                    showResetConfirmation = false
+                    onReset()
+                }) {
+                    Text(stringResource(R.string.action_reset))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showResetConfirmation = false }) {
+                    Text(stringResource(R.string.action_cancel))
+                }
+            }
+        )
     }
 }
 
@@ -976,7 +1022,8 @@ private fun TextSettingItem(
     label: String,
     value: String,
     inputKind: TextInputKind,
-    onValueChange: (String) -> Unit
+    onValueChange: (String) -> Unit,
+    onReset: (() -> Unit)? = null
 ) {
     val focusManager = LocalFocusManager.current
     var showTooltip by remember { mutableStateOf(false) }
@@ -997,6 +1044,7 @@ private fun TextSettingItem(
             description = description,
             showTooltip = showTooltip,
             onToggleTooltip = { showTooltip = !showTooltip },
+            onReset = onReset,
             trailing = {}
         )
 
@@ -1060,7 +1108,8 @@ private fun NumericSettingItem(
     useValue: Boolean,
     onUseValueChange: (Boolean) -> Unit,
     value: Float,
-    onValueChange: (Float) -> Unit
+    onValueChange: (Float) -> Unit,
+    onReset: (() -> Unit)? = null
 ) {
     val title = stringResource(setting.titleRes)
     val description = stringResource(setting.descriptionRes)
@@ -1083,6 +1132,8 @@ private fun NumericSettingItem(
             description = description,
             showTooltip = showTooltip,
             onToggleTooltip = { showTooltip = !showTooltip },
+            // Only offer a value reset when the setting is enabled (i.e. a value is in play).
+            onReset = onReset?.takeIf { useValue },
             trailing = {
                 SettingSwitch(title = title, checked = useValue, onCheckedChange = onUseValueChange)
             }

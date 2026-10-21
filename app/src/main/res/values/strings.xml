@@ -99,12 +99,15 @@
     <string name="setting_disable">Disable %1$s</string>
     <string name="setting_enable">Enable %1$s</string>
     <string name="setting_adjust_value">Adjust %1$s value</string>
+    <string name="cd_reset_setting">Reset %1$s to default</string>
     <string name="settings_search_hint">Search settings</string>
     <string name="settings_search_empty">No settings found</string>
     <string name="settings_reset_all">Reset all settings</string>
     <string name="settings_reset_title">Reset all settings?</string>
     <string name="settings_reset_message">This restores every setting to its default value. This can\'t be undone.</string>
     <string name="settings_reset_done">Settings reset to defaults</string>
+    <string name="setting_reset_title">Reset to default?</string>
+    <string name="setting_reset_message">Restore %1$s to its default value?</string>
 
     <string name="setting_randomize_title">Randomize Nearby Location</string>
     <string name="setting_randomize_description">Randomly places your location within the specified radius</string>

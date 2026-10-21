@@ -522,11 +522,43 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         )
     }
 
-    // TODO: add an icon for each setting row to reset to default only that specific one setting.
+    // ---- Per-setting reset -------------------------------------------------------------------
+
+    /**
+     * Resets only the **value** of a single numeric row to its default from `data/Constants.kt`,
+     * leaving the row's enable toggle untouched. Backs the per-row reset icon in the settings UI,
+     * which is intended to clear a customised value without turning the setting off.
+     *
+     * @param setting The numeric row whose value to restore to its default.
+     */
+    fun resetNumeric(setting: NumericSetting) {
+        when (setting) {
+            NumericSetting.RANDOMIZE_RADIUS -> setRandomizeRadius(DEFAULT_RANDOMIZE_RADIUS)
+            NumericSetting.HORIZONTAL_ACCURACY -> setAccuracy(DEFAULT_ACCURACY)
+            NumericSetting.VERTICAL_ACCURACY -> setVerticalAccuracy(DEFAULT_VERTICAL_ACCURACY)
+            NumericSetting.ALTITUDE -> setAltitude(DEFAULT_ALTITUDE)
+            NumericSetting.MEAN_SEA_LEVEL -> setMeanSeaLevel(DEFAULT_MEAN_SEA_LEVEL)
+            NumericSetting.MEAN_SEA_LEVEL_ACCURACY -> setMeanSeaLevelAccuracy(DEFAULT_MEAN_SEA_LEVEL_ACCURACY)
+            NumericSetting.SPEED -> setSpeed(DEFAULT_SPEED)
+            NumericSetting.SPEED_ACCURACY -> setSpeedAccuracy(DEFAULT_SPEED_ACCURACY)
+        }
+    }
+
+    /** Resets the Wi-Fi SSID row value to its default. */
+    fun resetWifiSsid() = setWifiSsid(DEFAULT_WIFI_SSID)
+
+    /** Resets the Wi-Fi BSSID row value to its default. */
+    fun resetWifiBssid() = setWifiBssid(DEFAULT_WIFI_BSSID)
+
+    /** Resets the Wi-Fi RSSI row value to its default. */
+    fun resetWifiRssi() = setWifiRssi(DEFAULT_WIFI_RSSI.toString())
+
     /**
      * Restores every spoofing and behavioural preference to its constant default value (see
-     * `data/Constants.kt`). Updates all flows optimistically so the UI reflects the reset
-     * immediately without waiting for disk writes.
+     * `data/Constants.kt`). Unlike the per-row reset icons (which only clear a value), this bulk
+     * action also turns every optional "use" toggle and plain switch back off. Numeric and Wi-Fi
+     * values are delegated to the same per-row reset helpers so values stay in sync. Updates all
+     * flows optimistically so the UI reflects the reset immediately without waiting for disk writes.
      *
      * Three preferences are intentionally excluded from this reset:
      * - **[enableSystemHooks]** — resetting it would trigger a live Xposed scope change, which
@@ -538,27 +570,23 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
      *   behaviour; excluded for the same reason as language.
      */
     fun resetToDefaults() {
-        setUseAccuracy(DEFAULT_USE_ACCURACY)
-        setAccuracy(DEFAULT_ACCURACY)
-        setUseAltitude(DEFAULT_USE_ALTITUDE)
-        setAltitude(DEFAULT_ALTITUDE)
+        // Turn every optional "use" toggle back off.
         setUseRandomize(DEFAULT_USE_RANDOMIZE)
-        setRandomizeRadius(DEFAULT_RANDOMIZE_RADIUS)
+        setUseAccuracy(DEFAULT_USE_ACCURACY)
         setUseVerticalAccuracy(DEFAULT_USE_VERTICAL_ACCURACY)
-        setVerticalAccuracy(DEFAULT_VERTICAL_ACCURACY)
+        setUseAltitude(DEFAULT_USE_ALTITUDE)
         setUseMeanSeaLevel(DEFAULT_USE_MEAN_SEA_LEVEL)
-        setMeanSeaLevel(DEFAULT_MEAN_SEA_LEVEL)
         setUseMeanSeaLevelAccuracy(DEFAULT_USE_MEAN_SEA_LEVEL_ACCURACY)
-        setMeanSeaLevelAccuracy(DEFAULT_MEAN_SEA_LEVEL_ACCURACY)
         setUseSpeed(DEFAULT_USE_SPEED)
-        setSpeed(DEFAULT_SPEED)
         setUseSpeedAccuracy(DEFAULT_USE_SPEED_ACCURACY)
-        setSpeedAccuracy(DEFAULT_SPEED_ACCURACY)
+        // Reset every numeric value.
+        NumericSetting.entries.forEach(::resetNumeric)
+        // Reset plain switches and Wi-Fi identity (enable flag + values).
         setHideFakeLocationToast(DEFAULT_HIDE_FAKE_LOCATION_TOAST)
         setEnableWifiIdentity(DEFAULT_ENABLE_WIFI_IDENTITY)
-        setWifiSsid(DEFAULT_WIFI_SSID)
-        setWifiBssid(DEFAULT_WIFI_BSSID)
-        setWifiRssi(DEFAULT_WIFI_RSSI.toString())
+        resetWifiSsid()
+        resetWifiBssid()
+        resetWifiRssi()
         setEnableBroadcastControl(DEFAULT_ENABLE_BROADCAST_CONTROL)
     }
 

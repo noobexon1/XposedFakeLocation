@@ -187,6 +187,13 @@ sealed interface SettingEntry {
     @get:StringRes val descriptionRes: Int
 
     /**
+     * Optional per-row "reset to default" action. When non-null, the row renders a reset icon that
+     * invokes this callback; when `null` (the default), no reset icon is shown. Rows whose reset
+     * would be disruptive or meaningless (system hooks, theme, language) leave this `null`.
+     */
+    val onReset: (() -> Unit)? get() = null
+
+    /**
      * A boolean on/off row backed by a Switch.
      *
      * @property key Stable row identifier.
@@ -220,7 +227,8 @@ sealed interface SettingEntry {
         val enabled: Boolean,
         val onEnabledChange: (Boolean) -> Unit,
         val value: Float,
-        val onValueChange: (Float) -> Unit
+        val onValueChange: (Float) -> Unit,
+        override val onReset: (() -> Unit)? = null
     ) : SettingEntry {
         override val key: String get() = setting.name
         override val titleRes: Int get() = setting.titleRes
@@ -238,7 +246,8 @@ sealed interface SettingEntry {
         @StringRes val labelRes: Int,
         val value: String,
         val inputKind: TextInputKind = TextInputKind.TEXT,
-        val onValueChange: (String) -> Unit
+        val onValueChange: (String) -> Unit,
+        override val onReset: (() -> Unit)? = null
     ) : SettingEntry
 
     /**

@@ -97,12 +97,15 @@
     <string name="setting_disable">关闭 %1$s</string>
     <string name="setting_enable">开启 %1$s</string>
     <string name="setting_adjust_value">调整 %1$s 的值</string>
+    <string name="cd_reset_setting">将 %1$s 重置为默认值</string>
     <string name="settings_search_hint">搜索设置</string>
     <string name="settings_search_empty">未找到设置</string>
     <string name="settings_reset_all">重置所有设置</string>
     <string name="settings_reset_title">重置所有设置？</string>
     <string name="settings_reset_message">这会将所有设置恢复为默认值，且无法撤消。</string>
     <string name="settings_reset_done">设置已重置为默认值</string>
+    <string name="setting_reset_title">重置为默认值？</string>
+    <string name="setting_reset_message">将 %1$s 重置为默认值？</string>
 
     <string name="setting_randomize_title">随机附近位置</string>
     <string name="setting_randomize_description">在指定半径内随机放置你的位置</string>
