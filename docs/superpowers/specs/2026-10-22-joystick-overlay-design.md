@@ -112,7 +112,7 @@ fun step(state: MovementState, input: MovementInput, config: MovementConfig, dtS
 | `KEY_JOYSTICK_SELECTED_PRESET` | `WALK` |
 | `KEY_JOYSTICK_OVERLAY_X/Y` | unset (default placement bottom-start) |
 
-- New "Joystick" section in the Settings screen for mode default, max speed and the four presets
+- New "Joystick" section in the Settings screen for max speed and the four presets
   (with per-row reset, following the existing pattern). Speeds shown in km/h in the UI, stored in m/s.
 - The mode and selected preset chosen in the overlay are persisted, so the overlay reopens in the
   same configuration.
