@@ -63,6 +63,7 @@
     <string name="category_location">位置</string>
     <string name="category_altitude">海拔</string>
     <string name="category_movement">移动</string>
+    <string name="category_joystick">摇杆</string>
 
     <string name="setting_theme_title">应用主题</string>
     <string name="setting_theme_description">设置管理器应用全局使用的配色方案。</string>
@@ -144,6 +145,22 @@
     <string name="setting_speed_accuracy_title">自定义速度精度</string>
     <string name="setting_speed_accuracy_description">设置速度值的精度</string>
     <string name="setting_speed_accuracy_label">速度精度</string>
+
+    <string name="setting_joystick_max_speed_title">摇杆最大速度</string>
+    <string name="setting_joystick_max_speed_description">动态模式下摇杆推到底时的最高速度</string>
+    <string name="setting_joystick_max_speed_label">最大速度</string>
+    <string name="setting_joystick_walk_title">步行预设速度</string>
+    <string name="setting_joystick_walk_description">恒定模式下“步行”预设使用的速度</string>
+    <string name="setting_joystick_walk_label">步行</string>
+    <string name="setting_joystick_run_title">跑步预设速度</string>
+    <string name="setting_joystick_run_description">恒定模式下“跑步”预设使用的速度</string>
+    <string name="setting_joystick_run_label">跑步</string>
+    <string name="setting_joystick_bike_title">骑行预设速度</string>
+    <string name="setting_joystick_bike_description">恒定模式下“骑行”预设使用的速度</string>
+    <string name="setting_joystick_bike_label">骑行</string>
+    <string name="setting_joystick_drive_title">驾车预设速度</string>
+    <string name="setting_joystick_drive_description">恒定模式下“驾车”预设使用的速度</string>
+    <string name="setting_joystick_drive_label">驾车</string>
 
     <string name="gps_noise_low">低</string>
     <string name="gps_noise_normal">正常</string>

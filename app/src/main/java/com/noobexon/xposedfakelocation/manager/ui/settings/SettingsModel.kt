@@ -8,6 +8,11 @@ import com.noobexon.xposedfakelocation.data.DEFAULT_ENABLE_BROADCAST_CONTROL
 import com.noobexon.xposedfakelocation.data.DEFAULT_ENABLE_SYSTEM_HOOKS
 import com.noobexon.xposedfakelocation.data.DEFAULT_ENABLE_WIFI_IDENTITY
 import com.noobexon.xposedfakelocation.data.DEFAULT_HIDE_FAKE_LOCATION_TOAST
+import com.noobexon.xposedfakelocation.data.DEFAULT_JOYSTICK_MAX_SPEED
+import com.noobexon.xposedfakelocation.data.DEFAULT_JOYSTICK_PRESET_BIKE
+import com.noobexon.xposedfakelocation.data.DEFAULT_JOYSTICK_PRESET_DRIVE
+import com.noobexon.xposedfakelocation.data.DEFAULT_JOYSTICK_PRESET_RUN
+import com.noobexon.xposedfakelocation.data.DEFAULT_JOYSTICK_PRESET_WALK
 import com.noobexon.xposedfakelocation.data.DEFAULT_LANGUAGE_TAG
 import com.noobexon.xposedfakelocation.data.DEFAULT_MEAN_SEA_LEVEL
 import com.noobexon.xposedfakelocation.data.DEFAULT_MEAN_SEA_LEVEL_ACCURACY
@@ -27,6 +32,7 @@ import com.noobexon.xposedfakelocation.data.DEFAULT_VERTICAL_ACCURACY
 import com.noobexon.xposedfakelocation.data.DEFAULT_WIFI_BSSID
 import com.noobexon.xposedfakelocation.data.DEFAULT_WIFI_RSSI
 import com.noobexon.xposedfakelocation.data.DEFAULT_WIFI_SSID
+import com.noobexon.xposedfakelocation.data.MPS_TO_KMH
 import com.noobexon.xposedfakelocation.manager.localization.LanguageOption
 import com.noobexon.xposedfakelocation.manager.ui.theme.ThemeOption
 import kotlin.math.round
@@ -41,6 +47,7 @@ enum class SettingsCategory(@StringRes val titleRes: Int) {
     LOCATION(R.string.category_location),
     ALTITUDE(R.string.category_altitude),
     MOVEMENT(R.string.category_movement),
+    JOYSTICK(R.string.category_joystick),
     NOTIFICATIONS(R.string.category_notifications),
     SYSTEM_HOOKS(R.string.category_system_hooks),
     WIFI_IDENTITY(R.string.category_wifi_identity),
@@ -124,6 +131,36 @@ enum class NumericSetting(
         R.string.setting_speed_accuracy_description,
         R.string.setting_speed_accuracy_label,
         unitRes = R.string.unit_meters_per_second, min = 0f, max = 100f, precision = 0.01f, default = DEFAULT_SPEED_ACCURACY
+    ),
+    JOYSTICK_MAX_SPEED(
+        R.string.setting_joystick_max_speed_title,
+        R.string.setting_joystick_max_speed_description,
+        R.string.setting_joystick_max_speed_label,
+        unitRes = R.string.unit_kilometers_per_hour, min = 1f, max = 200f, precision = 0.1f, default = DEFAULT_JOYSTICK_MAX_SPEED * MPS_TO_KMH
+    ),
+    JOYSTICK_PRESET_WALK(
+        R.string.setting_joystick_walk_title,
+        R.string.setting_joystick_walk_description,
+        R.string.setting_joystick_walk_label,
+        unitRes = R.string.unit_kilometers_per_hour, min = 1f, max = 200f, precision = 0.1f, default = DEFAULT_JOYSTICK_PRESET_WALK * MPS_TO_KMH
+    ),
+    JOYSTICK_PRESET_RUN(
+        R.string.setting_joystick_run_title,
+        R.string.setting_joystick_run_description,
+        R.string.setting_joystick_run_label,
+        unitRes = R.string.unit_kilometers_per_hour, min = 1f, max = 200f, precision = 0.1f, default = DEFAULT_JOYSTICK_PRESET_RUN * MPS_TO_KMH
+    ),
+    JOYSTICK_PRESET_BIKE(
+        R.string.setting_joystick_bike_title,
+        R.string.setting_joystick_bike_description,
+        R.string.setting_joystick_bike_label,
+        unitRes = R.string.unit_kilometers_per_hour, min = 1f, max = 200f, precision = 0.1f, default = DEFAULT_JOYSTICK_PRESET_BIKE * MPS_TO_KMH
+    ),
+    JOYSTICK_PRESET_DRIVE(
+        R.string.setting_joystick_drive_title,
+        R.string.setting_joystick_drive_description,
+        R.string.setting_joystick_drive_label,
+        unitRes = R.string.unit_kilometers_per_hour, min = 1f, max = 200f, precision = 0.1f, default = DEFAULT_JOYSTICK_PRESET_DRIVE * MPS_TO_KMH
     );
 
     /**
@@ -221,6 +258,8 @@ sealed interface SettingEntry {
      * @property value Currently committed value in the unit described by [NumericSetting.unitRes].
      * @property onValueChange Callback invoked with the new [Float] once the user finishes editing
      *   (field blur / IME Done / slider release), never on every keystroke or drag frame.
+     * @property showToggle When `false` the row has no enable switch and its value controls are
+     *   always visible (for settings that are always in effect).
      */
     data class Numeric(
         val setting: NumericSetting,
@@ -228,7 +267,8 @@ sealed interface SettingEntry {
         val onEnabledChange: (Boolean) -> Unit,
         val value: Float,
         val onValueChange: (Float) -> Unit,
-        override val onReset: (() -> Unit)? = null
+        override val onReset: (() -> Unit)? = null,
+        val showToggle: Boolean = true
     ) : SettingEntry {
         override val key: String get() = setting.name
         override val titleRes: Int get() = setting.titleRes

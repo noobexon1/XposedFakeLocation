@@ -27,6 +27,7 @@
     <string name="cd_more_options">Weitere Optionen</string>
     <string name="unit_meters" translatable="false">m</string>
     <string name="unit_meters_per_second" translatable="false">m/s</string>
+    <string name="unit_kilometers_per_hour" translatable="false">km/h</string>
     <string name="cd_menu">Menü</string>
     <string name="cd_center">Zentrieren</string>
     <string name="cd_options">Optionen</string>
@@ -64,6 +65,7 @@
     <string name="category_location">Standort</string>
     <string name="category_altitude">Höhe</string>
     <string name="category_movement">Bewegung</string>
+    <string name="category_joystick">Joystick</string>
 
     <string name="setting_theme_title">App-Design</string>
     <string name="setting_theme_description">Legt das Farbschema für die gesamte Manager-App fest.</string>
@@ -134,6 +136,22 @@
     <string name="setting_speed_accuracy_title">Benutzerdefinierte Geschwindigkeitsgenauigkeit</string>
     <string name="setting_speed_accuracy_description">Legt die Genauigkeit deines Geschwindigkeitswerts fest</string>
     <string name="setting_speed_accuracy_label">Geschwindigkeitsgenauigkeit</string>
+
+    <string name="setting_joystick_max_speed_title">Maximale Joystick-Geschwindigkeit</string>
+    <string name="setting_joystick_max_speed_description">Höchstgeschwindigkeit im dynamischen Modus bei vollem Ausschlag des Sticks</string>
+    <string name="setting_joystick_max_speed_label">Max. Geschwindigkeit</string>
+    <string name="setting_joystick_walk_title">Geschwindigkeit „Gehen“</string>
+    <string name="setting_joystick_walk_description">Geschwindigkeit der Voreinstellung „Gehen“ im konstanten Modus</string>
+    <string name="setting_joystick_walk_label">Gehen</string>
+    <string name="setting_joystick_run_title">Geschwindigkeit „Laufen“</string>
+    <string name="setting_joystick_run_description">Geschwindigkeit der Voreinstellung „Laufen“ im konstanten Modus</string>
+    <string name="setting_joystick_run_label">Laufen</string>
+    <string name="setting_joystick_bike_title">Geschwindigkeit „Fahrrad“</string>
+    <string name="setting_joystick_bike_description">Geschwindigkeit der Voreinstellung „Fahrrad“ im konstanten Modus</string>
+    <string name="setting_joystick_bike_label">Fahrrad</string>
+    <string name="setting_joystick_drive_title">Geschwindigkeit „Auto“</string>
+    <string name="setting_joystick_drive_description">Geschwindigkeit der Voreinstellung „Auto“ im konstanten Modus</string>
+    <string name="setting_joystick_drive_label">Auto</string>
 
     <string name="gps_noise_low">Niedrig</string>
     <string name="gps_noise_normal">Normal</string>
