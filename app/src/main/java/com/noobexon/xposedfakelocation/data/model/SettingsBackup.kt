@@ -1,6 +1,7 @@
 package com.noobexon.xposedfakelocation.data.model
 
 import com.noobexon.xposedfakelocation.data.JOYSTICK_MAX_SPEED_MPS
+import com.noobexon.xposedfakelocation.data.JOYSTICK_MIN_SPEED_MPS
 
 /** Current on-disk schema version for exported settings. Bump only with a migration. */
 const val SETTINGS_BACKUP_VERSION = 1
@@ -60,7 +61,7 @@ data class JoystickBackup(
     val selectedPreset: String,
 ) {
     fun isValid(): Boolean = listOf(maxSpeed, walkSpeed, runSpeed, bikeSpeed, driveSpeed)
-        .all { it.isFinite() && it > 0f && it <= JOYSTICK_MAX_SPEED_MPS }
+        .all { it.isFinite() && it in JOYSTICK_MIN_SPEED_MPS..JOYSTICK_MAX_SPEED_MPS }
 
     fun toSettings(): JoystickSettings {
         val defaults = JoystickSettings()

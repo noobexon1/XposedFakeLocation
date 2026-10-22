@@ -34,6 +34,8 @@ import com.noobexon.xposedfakelocation.data.DEFAULT_VERTICAL_ACCURACY
 import com.noobexon.xposedfakelocation.data.DEFAULT_WIFI_BSSID
 import com.noobexon.xposedfakelocation.data.DEFAULT_WIFI_RSSI
 import com.noobexon.xposedfakelocation.data.DEFAULT_WIFI_SSID
+import com.noobexon.xposedfakelocation.data.JOYSTICK_MAX_SPEED_MPS
+import com.noobexon.xposedfakelocation.data.JOYSTICK_MIN_SPEED_MPS
 import com.noobexon.xposedfakelocation.data.KEY_ACCURACY
 import com.noobexon.xposedfakelocation.data.KEY_ALTITUDE
 import com.noobexon.xposedfakelocation.data.KEY_ENABLE_BROADCAST_CONTROL
@@ -509,14 +511,18 @@ class PreferencesRepository(context: Context) {
         val presetName = prefs.getString(KEY_JOYSTICK_SELECTED_PRESET, null)
         return JoystickSettings(
             mode = JoystickMode.entries.firstOrNull { it.name == modeName } ?: defaults.mode,
-            maxSpeedMps = prefs.getFloat(KEY_JOYSTICK_MAX_SPEED, defaults.maxSpeedMps),
-            walkSpeedMps = prefs.getFloat(KEY_JOYSTICK_PRESET_WALK, defaults.walkSpeedMps),
-            runSpeedMps = prefs.getFloat(KEY_JOYSTICK_PRESET_RUN, defaults.runSpeedMps),
-            bikeSpeedMps = prefs.getFloat(KEY_JOYSTICK_PRESET_BIKE, defaults.bikeSpeedMps),
-            driveSpeedMps = prefs.getFloat(KEY_JOYSTICK_PRESET_DRIVE, defaults.driveSpeedMps),
+            maxSpeedMps = readJoystickSpeed(prefs, KEY_JOYSTICK_MAX_SPEED, defaults.maxSpeedMps),
+            walkSpeedMps = readJoystickSpeed(prefs, KEY_JOYSTICK_PRESET_WALK, defaults.walkSpeedMps),
+            runSpeedMps = readJoystickSpeed(prefs, KEY_JOYSTICK_PRESET_RUN, defaults.runSpeedMps),
+            bikeSpeedMps = readJoystickSpeed(prefs, KEY_JOYSTICK_PRESET_BIKE, defaults.bikeSpeedMps),
+            driveSpeedMps = readJoystickSpeed(prefs, KEY_JOYSTICK_PRESET_DRIVE, defaults.driveSpeedMps),
             selectedPreset = JoystickPreset.entries.firstOrNull { it.name == presetName } ?: defaults.selectedPreset,
         )
     }
+
+    /** A stored speed outside the supported range (e.g. hand-edited prefs) falls back to [default]. */
+    private fun readJoystickSpeed(prefs: SharedPreferences, key: String, default: Float): Float =
+        prefs.getFloat(key, default).takeIf { it in JOYSTICK_MIN_SPEED_MPS..JOYSTICK_MAX_SPEED_MPS } ?: default
 
     private fun presetSpeedKey(preset: JoystickPreset): String = when (preset) {
         JoystickPreset.WALK -> KEY_JOYSTICK_PRESET_WALK

@@ -177,6 +177,20 @@ class SettingsBackupCodecTest {
     }
 
     @Test
+    fun joystickSpeedAboveSettingsRangeDropsTheJoystickSection() {
+        // 60 m/s = 216 km/h, above the 200 km/h Settings slider maximum.
+        val json = """
+            {"version":1,"exportedAt":0,"appVersion":"x",
+             $minimalSpoofingJson,
+             "favorites":[],
+             "appearance":{"themeOption":"","languageTag":""},
+             "joystick":{"mode":"DYNAMIC","maxSpeed":60.0,"walkSpeed":1.4,"runSpeed":3.0,
+                         "bikeSpeed":5.5,"driveSpeed":14.0,"selectedPreset":"WALK"}}
+        """.trimIndent()
+        assertNull(codec.fromJson(json).getOrThrow().joystick)
+    }
+
+    @Test
     fun unknownJoystickEnumNamesFallBackToDefaults() {
         val settings = JoystickBackup("TELEPORT", 3f, 1.4f, 3f, 5.5f, 14f, "JETPACK").toSettings()
         assertEquals(JoystickMode.DYNAMIC, settings.mode)

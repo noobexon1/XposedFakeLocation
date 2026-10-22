@@ -143,6 +143,7 @@ const val DEFAULT_JOYSTICK_PRESET_DRIVE = 14.0f
 /** Hooks ignore a joystick state older than this, so a killed overlay can't freeze the motion override. */
 const val JOYSTICK_STALE_MS = 5_000L
 const val JOYSTICK_SPEED_ACCURACY = 0.5f
-/** Upper bound accepted for imported joystick speeds. */
-const val JOYSTICK_MAX_SPEED_MPS = 100f
 const val MPS_TO_KMH = 3.6f
+/** Accepted joystick speed range (m/s), matching the 1..200 km/h Settings sliders. */
+const val JOYSTICK_MIN_SPEED_MPS = 1f / MPS_TO_KMH
+const val JOYSTICK_MAX_SPEED_MPS = 200f / MPS_TO_KMH
