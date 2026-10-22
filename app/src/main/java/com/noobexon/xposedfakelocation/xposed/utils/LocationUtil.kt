@@ -12,17 +12,12 @@ import com.noobexon.xposedfakelocation.data.DEFAULT_RANDOMIZE_RADIUS
 import com.noobexon.xposedfakelocation.data.DEFAULT_SPEED
 import com.noobexon.xposedfakelocation.data.DEFAULT_SPEED_ACCURACY
 import com.noobexon.xposedfakelocation.data.DEFAULT_VERTICAL_ACCURACY
-import com.noobexon.xposedfakelocation.data.PI
-import com.noobexon.xposedfakelocation.data.RADIUS_EARTH
+import com.noobexon.xposedfakelocation.data.GeoMath
 import com.noobexon.xposedfakelocation.xposed.utils.LocationUtil.attemptHideMockProvider
 import com.noobexon.xposedfakelocation.xposed.utils.LocationUtil.createFakeLocation
 import com.noobexon.xposedfakelocation.xposed.utils.LocationUtil.log
 import com.noobexon.xposedfakelocation.xposed.utils.LocationUtil.updateLocation
 import org.lsposed.hiddenapibypass.HiddenApiBypass
-import kotlin.math.asin
-import kotlin.math.atan2
-import kotlin.math.cos
-import kotlin.math.sin
 import kotlin.math.sqrt
 import kotlin.random.Random
 
@@ -213,37 +208,9 @@ object LocationUtil {
      *         to valid WGS-84 ranges.
      */
     private fun getRandomLocation(lat: Double, lon: Double, radiusInMeters: Double): Pair<Double, Double> {
-        val radiusInRadians = radiusInMeters / RADIUS_EARTH
-
-        val latRad = Math.toRadians(lat)
-        val lonRad = Math.toRadians(lon)
-
-        val sinLat = sin(latRad)
-        val cosLat = cos(latRad)
-
-        val rand1 = Random.nextDouble()
-        val rand2 = Random.nextDouble()
-
-        val distance = radiusInRadians * sqrt(rand1)
-        val bearing = 2 * PI * rand2
-
-        val sinDistance = sin(distance)
-        val cosDistance = cos(distance)
-
-        val newLatRad = asin(sinLat * cosDistance + cosLat * sinDistance * cos(bearing))
-        val newLonRad = lonRad + atan2(
-            sin(bearing) * sinDistance * cosLat,
-            cosDistance - sinLat * sin(newLatRad)
-        )
-
-        val newLat = Math.toDegrees(newLatRad)
-        var newLon = Math.toDegrees(newLonRad)
-
-        newLon = ((newLon + 180) % 360 + 360) % 360 - 180
-
-        val finalLat = newLat.coerceIn(-90.0, 90.0)
-
-        return Pair(finalLat, newLon)
+        val distance = radiusInMeters * sqrt(Random.nextDouble())
+        val bearing = 360.0 * Random.nextDouble()
+        return GeoMath.destination(lat, lon, bearing, distance)
     }
 
     /**
