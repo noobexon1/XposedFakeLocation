@@ -4,6 +4,7 @@ import android.view.MotionEvent
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.drag
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -24,6 +25,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -41,18 +43,26 @@ import androidx.compose.ui.input.pointer.pointerInteropFilter
 import androidx.compose.ui.platform.LocalViewConfiguration
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.noobexon.xposedfakelocation.R
+import com.noobexon.xposedfakelocation.manager.joystick.displayKmh
 import kotlin.math.hypot
 
-/** Root of the floating overlay: an expanded control panel or a collapsed bubble. */
+/**
+ * Root of the floating overlay: an expanded control panel or a collapsed bubble.
+ *
+ * @param speedMps Current speed; a lambda so only the speed readout recomposes on every tick.
+ */
 @Composable
 fun JoystickOverlay(
     collapsed: Boolean,
+    speedMps: () -> Float,
     onInput: (x: Float, y: Float) -> Unit,
     onRelease: () -> Unit,
     onCollapsedChange: (Boolean) -> Unit,
@@ -64,6 +74,7 @@ fun JoystickOverlay(
         CollapsedBubble(onExpand = { onCollapsedChange(false) }, onDrag = onDrag, onDragEnd = onDragEnd)
     } else {
         ExpandedPanel(
+            speedMps = speedMps,
             onInput = onInput,
             onRelease = onRelease,
             onCollapse = {
@@ -79,6 +90,7 @@ fun JoystickOverlay(
 
 @Composable
 private fun ExpandedPanel(
+    speedMps: () -> Float,
     onInput: (x: Float, y: Float) -> Unit,
     onRelease: () -> Unit,
     onCollapse: () -> Unit,
@@ -102,7 +114,7 @@ private fun ExpandedPanel(
                     contentDescription = stringResource(R.string.cd_joystick_drag),
                     modifier = Modifier.size(32.dp).then(rememberOverlayDragModifier(onDrag, onDragEnd)),
                 )
-                Spacer(Modifier.weight(1f))
+                SpeedReadout(speedMps = speedMps, modifier = Modifier.weight(1f))
                 IconButton(onClick = onCollapse) {
                     Icon(Icons.Default.Remove, contentDescription = stringResource(R.string.cd_joystick_collapse))
                 }
@@ -113,6 +125,31 @@ private fun ExpandedPanel(
             Spacer(Modifier.height(8.dp))
             JoystickPad(onInput = onInput, onRelease = onRelease)
         }
+    }
+}
+
+/** Car-style digital speedometer: whole km/h with the unit beside it. */
+@Composable
+private fun SpeedReadout(speedMps: () -> Float, modifier: Modifier = Modifier) {
+    val kmh = displayKmh(speedMps())
+    val description = stringResource(R.string.cd_joystick_speed, kmh)
+    Row(
+        horizontalArrangement = Arrangement.Center,
+        modifier = modifier.clearAndSetSemantics { contentDescription = description },
+    ) {
+        Text(
+            text = kmh.toString(),
+            style = MaterialTheme.typography.titleLarge.copy(fontFeatureSettings = "tnum"),
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.alignByBaseline(),
+        )
+        Spacer(Modifier.width(4.dp))
+        Text(
+            text = stringResource(R.string.unit_kilometers_per_hour),
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.alignByBaseline(),
+        )
     }
 }
 

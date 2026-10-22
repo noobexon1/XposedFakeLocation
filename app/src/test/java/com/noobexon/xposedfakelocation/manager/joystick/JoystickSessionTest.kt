@@ -125,6 +125,29 @@ class JoystickSessionTest {
         assertEquals(s.currentState.latitude, frame.latitude, 0.0)
     }
 
+    @Test
+    fun speedFollowsEveryTickAndResetsOnRelease() {
+        val s = session()
+        assertEquals(0f, s.speedMps.value, 0f)
+        s.setInput(0f, 1f)
+        s.tick(0)
+        s.tick(50)
+        assertEquals(3f, s.speedMps.value, 1e-4f)
+        s.setInput(0f, 0f)
+        s.tick(100)
+        assertEquals(0f, s.speedMps.value, 0f)
+    }
+
+    @Test
+    fun stopResetsSpeed() {
+        val s = session()
+        s.setInput(0f, 1f)
+        s.tick(0)
+        s.tick(50)
+        s.stop()
+        assertEquals(0f, s.speedMps.value, 0f)
+    }
+
     private fun liveSession(
         scope: CoroutineScope,
         publish: (JoystickFrame) -> Unit,

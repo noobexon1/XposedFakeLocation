@@ -10,7 +10,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlin.math.abs
 
@@ -77,8 +79,12 @@ class JoystickSession(
     private var jobs: List<Job> = emptyList()
     private val lock = Any()
     private var stopped = false
+    private val _speedMps = MutableStateFlow(0f)
 
     val currentState: MovementState get() = state
+
+    /** Speed reported to target apps, updated every tick; 0 once stopped. */
+    val speedMps: StateFlow<Float> = _speedMps.asStateFlow()
 
     fun start() {
         jobs = listOf(
@@ -110,6 +116,7 @@ class JoystickSession(
         synchronized(lock) { stopped = true }
         jobs.forEach { it.cancel() }
         frames.close()
+        _speedMps.value = 0f
         return frame(active = false)
     }
 
@@ -117,6 +124,7 @@ class JoystickSession(
         val dtSeconds = lastTickMs?.let { (nowMs - it) / 1000.0 } ?: 0.0
         lastTickMs = nowMs
         state = MovementEngine.step(state, input, settings.value, dtSeconds)
+        _speedMps.value = state.speedMps
 
         val moving = state.speedMps > 0f
         val lastWrite = lastWriteMs

@@ -249,6 +249,7 @@
     <string name="cd_joystick_collapse">Minimize joystick</string>
     <string name="cd_joystick_expand">Expand joystick</string>
     <string name="cd_joystick_close">Close joystick</string>
+    <string name="cd_joystick_speed">Current speed: %1$d km/h</string>
     <string name="joystick_notification_channel">Joystick overlay</string>
     <string name="joystick_notification_title">Joystick active</string>
     <string name="joystick_notification_text">Tap to open the app. Use Stop to close the joystick.</string>
