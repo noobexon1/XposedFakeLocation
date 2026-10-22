@@ -22,15 +22,16 @@ class SettingsBackupManager(
     /**
      * Writes [backup] into the repository with **replace** semantics.
      *
-     * Favorites and appearance (local prefs) are always applied. Spoofing values (remote prefs)
-     * are applied only when [canWriteRemote] is `true`; otherwise they are skipped so the caller
-     * can tell the user to re-import once the module is active.
+     * Favorites, appearance and joystick settings (local prefs) are always applied; a missing
+     * joystick section leaves them untouched. Spoofing values (remote prefs) are applied only
+     * when [canWriteRemote] is `true`; otherwise they are skipped so the caller can tell the user to re-import once the module is active.
      */
     suspend fun apply(backup: SettingsBackup, canWriteRemote: Boolean) {
         // Local parts — always safe to write.
         repository.replaceFavorites(backup.favorites)
         repository.saveThemeOption(backup.appearance.themeOption)
         repository.saveLanguageTag(backup.appearance.languageTag)
+        backup.joystick?.let { repository.saveJoystickSettings(it.toSettings()) }
 
         if (!canWriteRemote) return
 

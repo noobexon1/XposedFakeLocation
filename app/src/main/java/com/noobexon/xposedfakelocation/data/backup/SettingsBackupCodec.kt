@@ -44,6 +44,6 @@ class SettingsBackupCodec(
                 fav.latitude.isFinite() &&
                 fav.longitude.isFinite()
         }
-        parsed.copy(favorites = favorites)
+        parsed.copy(favorites = favorites, joystick = parsed.joystick?.takeIf { it.isValid() })
     }
 }

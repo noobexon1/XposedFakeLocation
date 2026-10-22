@@ -8,6 +8,7 @@ import android.util.Log
 import com.noobexon.xposedfakelocation.BuildConfig
 import com.noobexon.xposedfakelocation.data.backup.SettingsBackupManager
 import com.noobexon.xposedfakelocation.data.model.AppearanceBackup
+import com.noobexon.xposedfakelocation.data.model.JoystickBackup
 import com.noobexon.xposedfakelocation.data.model.SETTINGS_BACKUP_VERSION
 import com.noobexon.xposedfakelocation.data.model.SettingsBackup
 import com.noobexon.xposedfakelocation.data.model.SpoofingBackup
@@ -720,6 +721,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                 themeOption = ui.themeOption.tag,
                 languageTag = ui.languageTag,
             ),
+            joystick = JoystickBackup.from(preferencesRepository.getJoystickSettings()),
         )
     }
 

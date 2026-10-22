@@ -2,10 +2,14 @@ package com.noobexon.xposedfakelocation.data.backup
 
 import com.noobexon.xposedfakelocation.data.model.AppearanceBackup
 import com.noobexon.xposedfakelocation.data.model.FavoriteLocation
+import com.noobexon.xposedfakelocation.data.model.JoystickBackup
+import com.noobexon.xposedfakelocation.data.model.JoystickMode
+import com.noobexon.xposedfakelocation.data.model.JoystickPreset
 import com.noobexon.xposedfakelocation.data.model.SETTINGS_BACKUP_VERSION
 import com.noobexon.xposedfakelocation.data.model.SettingsBackup
 import com.noobexon.xposedfakelocation.data.model.SpoofingBackup
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -36,6 +40,10 @@ class SettingsBackupCodecTest {
             FavoriteLocation("Work", 41.0, -74.0),
         ),
         appearance = AppearanceBackup(themeOption = "DARK", languageTag = "de"),
+        joystick = JoystickBackup(
+            mode = "CONSTANT", maxSpeed = 4f, walkSpeed = 1.5f, runSpeed = 3.2f,
+            bikeSpeed = 6f, driveSpeed = 15f, selectedPreset = "BIKE",
+        ),
     )
 
     @Test
@@ -139,5 +147,39 @@ class SettingsBackupCodecTest {
         val restored = codec.fromJson(json).getOrThrow()
         assertEquals(1, restored.favorites.size)
         assertEquals("Good", restored.favorites.first().name)
+    }
+
+    @Test
+    fun fileWithoutJoystickSectionImportsWithNullJoystick() {
+        val json = """
+            {"version":1,"exportedAt":0,"appVersion":"x",
+             $minimalSpoofingJson,
+             "favorites":[],
+             "appearance":{"themeOption":"","languageTag":""}}
+        """.trimIndent()
+        val restored = codec.fromJson(json).getOrThrow()
+        assertNull(restored.joystick)
+    }
+
+    @Test
+    fun invalidJoystickSpeedsDropOnlyTheJoystickSection() {
+        val json = """
+            {"version":1,"exportedAt":0,"appVersion":"x",
+             $minimalSpoofingJson,
+             "favorites":[{"name":"Good","latitude":1.0,"longitude":2.0,"description":""}],
+             "appearance":{"themeOption":"","languageTag":""},
+             "joystick":{"mode":"DYNAMIC","maxSpeed":-1.0,"walkSpeed":1.4,"runSpeed":3.0,
+                         "bikeSpeed":5.5,"driveSpeed":14.0,"selectedPreset":"WALK"}}
+        """.trimIndent()
+        val restored = codec.fromJson(json).getOrThrow()
+        assertNull(restored.joystick)
+        assertEquals(1, restored.favorites.size)
+    }
+
+    @Test
+    fun unknownJoystickEnumNamesFallBackToDefaults() {
+        val settings = JoystickBackup("TELEPORT", 3f, 1.4f, 3f, 5.5f, 14f, "JETPACK").toSettings()
+        assertEquals(JoystickMode.DYNAMIC, settings.mode)
+        assertEquals(JoystickPreset.WALK, settings.selectedPreset)
     }
 }
