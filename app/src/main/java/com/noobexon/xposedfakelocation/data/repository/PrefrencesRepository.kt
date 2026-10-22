@@ -111,6 +111,11 @@ import java.util.Locale
  * keeping read/write symmetry with the hook-side PreferencesUtil.
  */
 class PreferencesRepository(context: Context) {
+    private companion object {
+        /** Process-wide: serializes marker writes across the per-caller repository instances. */
+        val markerLock = Any()
+    }
+
     private val tag = "PreferencesRepository"
 
     private val gson = Gson()
@@ -192,14 +197,14 @@ class PreferencesRepository(context: Context) {
 
     suspend fun saveLastClickedLocation(latitude: Double, longitude: Double) {
         val json = gson.toJson(LastClickedLocation(latitude, longitude))
-        editRemote { putString(KEY_LAST_CLICKED_LOCATION, json) }
+        synchronized(markerLock) { editRemote { putString(KEY_LAST_CLICKED_LOCATION, json) } }
     }
 
     fun getLastClickedLocation(): LastClickedLocation? =
         parseLastClickedLocation(remotePrefs()?.getString(KEY_LAST_CLICKED_LOCATION, null))
 
     suspend fun clearLastClickedLocation() {
-        editRemote { remove(KEY_LAST_CLICKED_LOCATION) }
+        synchronized(markerLock) { editRemote { remove(KEY_LAST_CLICKED_LOCATION) } }
         saveIsPlaying(false)
         Log.d(tag, "Cleared 'LastClickedLocation' and set 'IsPlaying' to false")
     }
@@ -220,11 +225,20 @@ class PreferencesRepository(context: Context) {
     fun saveJoystickState(state: JoystickState) =
         editRemote { putString(KEY_JOYSTICK_STATE, gson.toJson(state)) }
 
-    /** Writes the marker position and joystick state in a single remote-prefs commit. */
-    fun saveJoystickFrame(latitude: Double, longitude: Double, state: JoystickState) = editRemote {
-        putString(KEY_LAST_CLICKED_LOCATION, gson.toJson(LastClickedLocation(latitude, longitude)))
-        putString(KEY_JOYSTICK_STATE, gson.toJson(state))
-    }
+    /**
+     * Writes the joystick state and, if the marker still exists, its new position in a single
+     * remote-prefs edit; serialized with [clearLastClickedLocation] so a cleared marker is never revived.
+     */
+    fun saveJoystickFrame(latitude: Double, longitude: Double, state: JoystickState) =
+        synchronized(markerLock) {
+            val markerExists = getLastClickedLocation() != null
+            editRemote {
+                if (markerExists) {
+                    putString(KEY_LAST_CLICKED_LOCATION, gson.toJson(LastClickedLocation(latitude, longitude)))
+                }
+                putString(KEY_JOYSTICK_STATE, gson.toJson(state))
+            }
+        }
     // endregion
 
     // region Use Accuracy / Accuracy (remote)
