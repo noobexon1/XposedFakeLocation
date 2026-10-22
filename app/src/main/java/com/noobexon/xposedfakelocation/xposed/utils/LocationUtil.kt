@@ -13,6 +13,7 @@ import com.noobexon.xposedfakelocation.data.DEFAULT_SPEED
 import com.noobexon.xposedfakelocation.data.DEFAULT_SPEED_ACCURACY
 import com.noobexon.xposedfakelocation.data.DEFAULT_VERTICAL_ACCURACY
 import com.noobexon.xposedfakelocation.data.GeoMath
+import com.noobexon.xposedfakelocation.xposed.hooks.JoystickHookPolicy
 import com.noobexon.xposedfakelocation.xposed.utils.LocationUtil.attemptHideMockProvider
 import com.noobexon.xposedfakelocation.xposed.utils.LocationUtil.createFakeLocation
 import com.noobexon.xposedfakelocation.xposed.utils.LocationUtil.log
@@ -68,6 +69,15 @@ object LocationUtil {
     /** Current spoofed speed accuracy in m/s. Zero means "not overridden". */
     var speedAccuracy: Float = 0F
         private set
+    /** Current spoofed bearing in degrees. Only reported while [motionOverride] is `true`. */
+    var bearing: Float = 0F
+        private set
+    /**
+     * `true` while a live joystick session drives speed and bearing. Speed and bearing are then
+     * reported even when zero, because a stationary joystick must report 0 m/s, not the real speed.
+     */
+    var motionOverride: Boolean = false
+        private set
 
     /**
      * Builds a [Location] object populated with the current spoofed field values.
@@ -117,12 +127,18 @@ object LocationUtil {
             fakeLocation.verticalAccuracyMeters = verticalAccuracy
         }
 
-        if (speed != 0F) {
+        if (motionOverride) {
             fakeLocation.speed = speed
-        }
-
-        if (speedAccuracy != 0F) {
             fakeLocation.speedAccuracyMetersPerSecond = speedAccuracy
+            fakeLocation.bearing = bearing
+        } else {
+            if (speed != 0F) {
+                fakeLocation.speed = speed
+            }
+
+            if (speedAccuracy != 0F) {
+                fakeLocation.speedAccuracyMetersPerSecond = speedAccuracy
+            }
         }
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
@@ -149,6 +165,9 @@ object LocationUtil {
      * (accuracy, altitude, speed, etc.) are only updated when their corresponding
      * "use" flag is enabled in preferences.
      *
+     * While a fresh joystick state is published (see [JoystickHookPolicy.activeState]), randomize
+     * and the custom speed settings are paused and the joystick's speed and bearing are used.
+     *
      * This method is `@Synchronized` to guarantee that [createFakeLocation] always sees a
      * consistent snapshot even when called from a different thread.
      */
@@ -160,7 +179,16 @@ object LocationUtil {
                 return
             }
 
-            if (PreferencesUtil.getUseRandomize() == true) {
+            val motion = JoystickHookPolicy.resolveMotion(
+                joystick = JoystickHookPolicy.activeState(PreferencesUtil.getJoystickState(), System.currentTimeMillis()),
+                useRandomize = PreferencesUtil.getUseRandomize() == true,
+                useSpeed = PreferencesUtil.getUseSpeed() == true,
+                speed = PreferencesUtil.getSpeed() ?: DEFAULT_SPEED,
+                useSpeedAccuracy = PreferencesUtil.getUseSpeedAccuracy() == true,
+                speedAccuracy = PreferencesUtil.getSpeedAccuracy() ?: DEFAULT_SPEED_ACCURACY,
+            )
+
+            if (motion.randomize) {
                 val randomizationRadius = PreferencesUtil.getRandomizeRadius() ?: DEFAULT_RANDOMIZE_RADIUS
                 val (randomLat, randomLon) = getRandomLocation(location.latitude, location.longitude, randomizationRadius)
                 latitude = randomLat
@@ -190,13 +218,10 @@ object LocationUtil {
                 meanSeaLevelAccuracy = PreferencesUtil.getMeanSeaLevelAccuracy() ?: DEFAULT_MEAN_SEA_LEVEL_ACCURACY
             }
 
-            if (PreferencesUtil.getUseSpeed() == true) {
-                speed = PreferencesUtil.getSpeed() ?: DEFAULT_SPEED
-            }
-
-            if (PreferencesUtil.getUseSpeedAccuracy() == true) {
-                speedAccuracy = PreferencesUtil.getSpeedAccuracy() ?: DEFAULT_SPEED_ACCURACY
-            }
+            motionOverride = motion.override
+            speed = motion.speed
+            speedAccuracy = motion.speedAccuracy
+            bearing = motion.bearing
         }.onFailure { log("Error - ${it.message}", priority = Log.ERROR) }
     }
 

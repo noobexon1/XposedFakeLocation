@@ -39,8 +39,11 @@ class LocationApiHooks(private val module: XposedInterface, private val classLoa
                 hookMethod("getAccuracy", enabled = { PreferencesUtil.getUseAccuracy() == true }) { LocationUtil.accuracy }
                 hookMethod("getAltitude", enabled = { PreferencesUtil.getUseAltitude() == true }) { LocationUtil.altitude }
                 hookMethod("getVerticalAccuracyMeters", enabled = { PreferencesUtil.getUseVerticalAccuracy() == true }) { LocationUtil.verticalAccuracy }
-                hookMethod("getSpeed", enabled = { PreferencesUtil.getUseSpeed() == true }) { LocationUtil.speed }
-                hookMethod("getSpeedAccuracyMetersPerSecond", enabled = { PreferencesUtil.getUseSpeedAccuracy() == true }) { LocationUtil.speedAccuracy }
+                hookMethod("getSpeed", enabled = { LocationUtil.motionOverride || PreferencesUtil.getUseSpeed() == true }) { LocationUtil.speed }
+                hookMethod("getSpeedAccuracyMetersPerSecond", enabled = { LocationUtil.motionOverride || PreferencesUtil.getUseSpeedAccuracy() == true }) { LocationUtil.speedAccuracy }
+                hookMethod("getBearing", enabled = { LocationUtil.motionOverride }) { LocationUtil.bearing }
+                hookMethod("hasSpeed", enabled = { LocationUtil.motionOverride }) { true }
+                hookMethod("hasBearing", enabled = { LocationUtil.motionOverride }) { true }
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
                     hookMethod("getMslAltitudeMeters", enabled = { PreferencesUtil.getUseMeanSeaLevel() == true }) { LocationUtil.meanSeaLevel }
                     hookMethod("getMslAltitudeAccuracyMeters", enabled = { PreferencesUtil.getUseMeanSeaLevelAccuracy() == true }) { LocationUtil.meanSeaLevelAccuracy }
