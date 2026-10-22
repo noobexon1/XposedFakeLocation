@@ -195,6 +195,7 @@ enum class NumericSetting(
  */
 object SettingKeys {
     const val HIDE_TOAST = "hide_toast"
+    const val JOYSTICK_CONSTANT_MODE = "joystick_constant_mode"
     const val SYSTEM_HOOKS = "system_hooks"
     const val WIFI_IDENTITY = "wifi_identity"
     const val WIFI_SSID = "wifi_ssid"

@@ -136,7 +136,6 @@ class JoystickOverlayService : LifecycleService(), SavedStateRegistryOwner {
                     collapsed = isCollapsed,
                     onInput = newSession::setInput,
                     onRelease = { newSession.setInput(0f, 0f) },
-                    onModeChange = repository::saveJoystickMode,
                     onPresetChange = repository::saveJoystickSelectedPreset,
                     onCollapsedChange = { collapsed.value = it },
                     onClose = { endSession(keepPosition = true) },

@@ -93,6 +93,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.noobexon.xposedfakelocation.R
 import com.noobexon.xposedfakelocation.data.MPS_TO_KMH
+import com.noobexon.xposedfakelocation.data.model.JoystickMode
 import com.noobexon.xposedfakelocation.data.model.JoystickPreset
 import com.noobexon.xposedfakelocation.manager.localization.LanguageOption
 import com.noobexon.xposedfakelocation.manager.localization.LocaleController
@@ -218,6 +219,9 @@ fun SettingsScreen(
             SettingEntry.Numeric(NumericSetting.SPEED_ACCURACY, uiState.useSpeedAccuracy, settingsViewModel::setUseSpeedAccuracy, uiState.speedAccuracy, settingsViewModel::setSpeedAccuracy, onReset = { settingsViewModel.resetNumeric(NumericSetting.SPEED_ACCURACY) })
         ),
         SettingsCategory.JOYSTICK to listOf(
+            SettingEntry.Switch(SettingKeys.JOYSTICK_CONSTANT_MODE, R.string.setting_joystick_constant_mode_title, R.string.setting_joystick_constant_mode_description, joystick.mode == JoystickMode.CONSTANT) { constant ->
+                settingsViewModel.setJoystickMode(if (constant) JoystickMode.CONSTANT else JoystickMode.DYNAMIC)
+            },
             joystickSpeedEntry(NumericSetting.JOYSTICK_MAX_SPEED, joystick.maxSpeedMps, settingsViewModel::setJoystickMaxSpeed),
             joystickSpeedEntry(NumericSetting.JOYSTICK_PRESET_WALK, joystick.walkSpeedMps) { settingsViewModel.setJoystickPresetSpeed(JoystickPreset.WALK, it) },
             joystickSpeedEntry(NumericSetting.JOYSTICK_PRESET_RUN, joystick.runSpeedMps) { settingsViewModel.setJoystickPresetSpeed(JoystickPreset.RUN, it) },

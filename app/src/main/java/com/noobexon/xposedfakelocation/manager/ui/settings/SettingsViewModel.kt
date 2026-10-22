@@ -9,6 +9,7 @@ import com.noobexon.xposedfakelocation.BuildConfig
 import com.noobexon.xposedfakelocation.data.backup.SettingsBackupManager
 import com.noobexon.xposedfakelocation.data.model.AppearanceBackup
 import com.noobexon.xposedfakelocation.data.model.JoystickBackup
+import com.noobexon.xposedfakelocation.data.model.JoystickMode
 import com.noobexon.xposedfakelocation.data.model.JoystickPreset
 import com.noobexon.xposedfakelocation.data.model.JoystickSettings
 import com.noobexon.xposedfakelocation.data.model.SETTINGS_BACKUP_VERSION
@@ -320,6 +321,8 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     /** Joystick configuration; speeds in m/s. */
     val joystickSettings: StateFlow<JoystickSettings> = preferencesRepository.getJoystickSettingsFlow()
         .stateIn(viewModelScope, SharingStarted.Eagerly, preferencesRepository.getJoystickSettings())
+
+    fun setJoystickMode(mode: JoystickMode) = preferencesRepository.saveJoystickMode(mode)
 
     /** @param speedMps Dynamic-mode top speed in m/s. */
     fun setJoystickMaxSpeed(speedMps: Float) = preferencesRepository.saveJoystickMaxSpeed(speedMps)
@@ -647,6 +650,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         resetWifiBssid()
         resetWifiRssi()
         setEnableBroadcastControl(DEFAULT_ENABLE_BROADCAST_CONTROL)
+        setJoystickMode(JoystickSettings().mode)
     }
 
     /**

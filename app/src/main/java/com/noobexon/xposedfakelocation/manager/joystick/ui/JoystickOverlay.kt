@@ -65,7 +65,6 @@ fun JoystickOverlay(
     collapsed: Boolean,
     onInput: (x: Float, y: Float) -> Unit,
     onRelease: () -> Unit,
-    onModeChange: (JoystickMode) -> Unit,
     onPresetChange: (JoystickPreset) -> Unit,
     onCollapsedChange: (Boolean) -> Unit,
     onClose: () -> Unit,
@@ -79,7 +78,6 @@ fun JoystickOverlay(
             settings = settings,
             onInput = onInput,
             onRelease = onRelease,
-            onModeChange = onModeChange,
             onPresetChange = onPresetChange,
             onCollapse = {
                 onRelease()
@@ -98,7 +96,6 @@ private fun ExpandedPanel(
     settings: JoystickSettings,
     onInput: (x: Float, y: Float) -> Unit,
     onRelease: () -> Unit,
-    onModeChange: (JoystickMode) -> Unit,
     onPresetChange: (JoystickPreset) -> Unit,
     onCollapse: () -> Unit,
     onClose: () -> Unit,
@@ -128,18 +125,6 @@ private fun ExpandedPanel(
                 IconButton(onClick = onClose) {
                     Icon(Icons.Default.Close, contentDescription = stringResource(R.string.cd_joystick_close))
                 }
-            }
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                FilterChip(
-                    selected = settings.mode == JoystickMode.DYNAMIC,
-                    onClick = { onModeChange(JoystickMode.DYNAMIC) },
-                    label = { Text(stringResource(R.string.joystick_mode_dynamic)) },
-                )
-                FilterChip(
-                    selected = settings.mode == JoystickMode.CONSTANT,
-                    onClick = { onModeChange(JoystickMode.CONSTANT) },
-                    label = { Text(stringResource(R.string.joystick_mode_constant)) },
-                )
             }
             if (settings.mode == JoystickMode.CONSTANT) {
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {

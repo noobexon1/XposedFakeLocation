@@ -146,6 +146,8 @@
     <string name="setting_speed_accuracy_description">设置速度值的精度</string>
     <string name="setting_speed_accuracy_label">速度精度</string>
 
+    <string name="setting_joystick_constant_mode_title">恒定速度</string>
+    <string name="setting_joystick_constant_mode_description">开启：摇杆按悬浮窗中选择的预设速度（步行、跑步、骑行或驾车）移动，只控制方向。关闭（动态）：速度取决于摇杆推动的幅度，最高为最大速度</string>
     <string name="setting_joystick_max_speed_title">摇杆最大速度</string>
     <string name="setting_joystick_max_speed_description">动态模式下摇杆推到底时的最高速度</string>
     <string name="setting_joystick_max_speed_label">最大速度</string>
@@ -238,8 +240,6 @@
     <string name="about_contributors_empty">未找到贡献者。</string>
     <string name="about_contributors_retry">重试</string>
 
-    <string name="joystick_mode_dynamic">动态</string>
-    <string name="joystick_mode_constant">恒定</string>
     <string name="cd_joystick_drag">移动摇杆</string>
     <string name="cd_joystick_collapse">最小化摇杆</string>
     <string name="cd_joystick_expand">展开摇杆</string>
