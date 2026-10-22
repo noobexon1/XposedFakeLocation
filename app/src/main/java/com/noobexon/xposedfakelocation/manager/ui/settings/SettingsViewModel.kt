@@ -324,6 +324,9 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
 
     fun setJoystickMode(mode: JoystickMode) = preferencesRepository.saveJoystickMode(mode)
 
+    /** @param preset Speed preset used in Constant mode. */
+    fun setJoystickSelectedPreset(preset: JoystickPreset) = preferencesRepository.saveJoystickSelectedPreset(preset)
+
     /** @param speedMps Dynamic-mode top speed in m/s. */
     fun setJoystickMaxSpeed(speedMps: Float) = preferencesRepository.saveJoystickMaxSpeed(speedMps)
 
@@ -650,7 +653,10 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         resetWifiBssid()
         resetWifiRssi()
         setEnableBroadcastControl(DEFAULT_ENABLE_BROADCAST_CONTROL)
-        setJoystickMode(JoystickSettings().mode)
+        JoystickSettings().let { defaults ->
+            setJoystickMode(defaults.mode)
+            setJoystickSelectedPreset(defaults.selectedPreset)
+        }
     }
 
     /**

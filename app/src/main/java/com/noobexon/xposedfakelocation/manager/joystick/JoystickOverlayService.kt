@@ -129,14 +129,11 @@ class JoystickOverlayService : LifecycleService(), SavedStateRegistryOwner {
         ) {
             val themeOption by themeOptionFlow.collectAsState(initial = ThemeOption.SYSTEM)
             XposedFakeLocationTheme(darkTheme = themeOption.isDark()) {
-                val currentSettings by settings.collectAsState()
                 val isCollapsed by collapsed.collectAsState()
                 JoystickOverlay(
-                    settings = currentSettings,
                     collapsed = isCollapsed,
                     onInput = newSession::setInput,
                     onRelease = { newSession.setInput(0f, 0f) },
-                    onPresetChange = repository::saveJoystickSelectedPreset,
                     onCollapsedChange = { collapsed.value = it },
                     onClose = { endSession(keepPosition = true) },
                     onDrag = { dx, dy -> window?.moveBy(dx, dy) },

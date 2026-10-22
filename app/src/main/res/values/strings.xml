@@ -150,7 +150,9 @@
     <string name="setting_speed_accuracy_label">Speed Accuracy</string>
 
     <string name="setting_joystick_constant_mode_title">Constant speed</string>
-    <string name="setting_joystick_constant_mode_description">On: the joystick moves at the speed preset picked on the overlay (Walk, Run, Bike or Drive) and only steers the direction. Off (Dynamic): speed follows how far the stick is pushed, up to the max speed</string>
+    <string name="setting_joystick_constant_mode_description">On: the joystick moves at the selected speed preset (Walk, Run, Bike or Drive) and only steers the direction. Off (Dynamic): speed follows how far the stick is pushed, up to the max speed</string>
+    <string name="setting_joystick_preset_title">Speed preset</string>
+    <string name="setting_joystick_preset_description">Which preset speed the joystick moves at in Constant speed mode</string>
     <string name="setting_joystick_max_speed_title">Joystick max speed</string>
     <string name="setting_joystick_max_speed_description">Top speed in Dynamic mode, reached when the stick is pushed all the way</string>
     <string name="setting_joystick_max_speed_label">Max speed</string>
