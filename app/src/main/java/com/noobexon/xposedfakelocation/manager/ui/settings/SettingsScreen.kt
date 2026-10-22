@@ -7,7 +7,6 @@ import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.compose.BackHandler
-import androidx.annotation.StringRes
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -219,19 +218,16 @@ fun SettingsScreen(
             SettingEntry.Numeric(NumericSetting.SPEED, uiState.useSpeed, settingsViewModel::setUseSpeed, uiState.speed, settingsViewModel::setSpeed, onReset = { settingsViewModel.resetNumeric(NumericSetting.SPEED) }),
             SettingEntry.Numeric(NumericSetting.SPEED_ACCURACY, uiState.useSpeedAccuracy, settingsViewModel::setUseSpeedAccuracy, uiState.speedAccuracy, settingsViewModel::setSpeedAccuracy, onReset = { settingsViewModel.resetNumeric(NumericSetting.SPEED_ACCURACY) })
         ),
-        SettingsCategory.JOYSTICK to buildList {
-            add(SettingEntry.Switch(SettingKeys.JOYSTICK_CONSTANT_MODE, R.string.setting_joystick_constant_mode_title, R.string.setting_joystick_constant_mode_description, joystick.mode == JoystickMode.CONSTANT) { constant ->
+        SettingsCategory.JOYSTICK to listOf(
+            SettingEntry.Switch(SettingKeys.JOYSTICK_CONSTANT_MODE, R.string.setting_joystick_constant_mode_title, R.string.setting_joystick_constant_mode_description, joystick.mode == JoystickMode.CONSTANT) { constant ->
                 settingsViewModel.setJoystickMode(if (constant) JoystickMode.CONSTANT else JoystickMode.DYNAMIC)
-            })
-            if (joystick.mode == JoystickMode.CONSTANT) {
-                add(SettingEntry.JoystickPresetChoice(joystick.selectedPreset, settingsViewModel::setJoystickSelectedPreset))
-            }
-            add(joystickSpeedEntry(NumericSetting.JOYSTICK_MAX_SPEED, joystick.maxSpeedMps, settingsViewModel::setJoystickMaxSpeed))
-            add(joystickSpeedEntry(NumericSetting.JOYSTICK_PRESET_WALK, joystick.walkSpeedMps) { settingsViewModel.setJoystickPresetSpeed(JoystickPreset.WALK, it) })
-            add(joystickSpeedEntry(NumericSetting.JOYSTICK_PRESET_RUN, joystick.runSpeedMps) { settingsViewModel.setJoystickPresetSpeed(JoystickPreset.RUN, it) })
-            add(joystickSpeedEntry(NumericSetting.JOYSTICK_PRESET_BIKE, joystick.bikeSpeedMps) { settingsViewModel.setJoystickPresetSpeed(JoystickPreset.BIKE, it) })
-            add(joystickSpeedEntry(NumericSetting.JOYSTICK_PRESET_DRIVE, joystick.driveSpeedMps) { settingsViewModel.setJoystickPresetSpeed(JoystickPreset.DRIVE, it) })
-        },
+            },
+            joystickSpeedEntry(NumericSetting.JOYSTICK_MAX_SPEED, joystick.maxSpeedMps, settingsViewModel::setJoystickMaxSpeed),
+            joystickSpeedEntry(NumericSetting.JOYSTICK_PRESET_WALK, joystick.walkSpeedMps) { settingsViewModel.setJoystickPresetSpeed(JoystickPreset.WALK, it) },
+            joystickSpeedEntry(NumericSetting.JOYSTICK_PRESET_RUN, joystick.runSpeedMps) { settingsViewModel.setJoystickPresetSpeed(JoystickPreset.RUN, it) },
+            joystickSpeedEntry(NumericSetting.JOYSTICK_PRESET_BIKE, joystick.bikeSpeedMps) { settingsViewModel.setJoystickPresetSpeed(JoystickPreset.BIKE, it) },
+            joystickSpeedEntry(NumericSetting.JOYSTICK_PRESET_DRIVE, joystick.driveSpeedMps) { settingsViewModel.setJoystickPresetSpeed(JoystickPreset.DRIVE, it) },
+        ),
         SettingsCategory.NOTIFICATIONS to listOf(
             SettingEntry.Switch(SettingKeys.HIDE_TOAST, R.string.setting_hide_toast_title, R.string.setting_hide_toast_description, uiState.hideFakeLocationToast, settingsViewModel::setHideFakeLocationToast)
         ),
@@ -662,14 +658,6 @@ private fun SettingEntryRow(entry: SettingEntry) {
             selectedTheme = entry.selected,
             onThemeSelected = entry.onSelected
         )
-        is SettingEntry.JoystickPresetChoice -> SingleChoiceSettingItem(
-            titleRes = entry.titleRes,
-            descriptionRes = entry.descriptionRes,
-            options = JoystickPreset.entries,
-            selected = entry.selected,
-            labelRes = { it.labelRes },
-            onSelected = entry.onSelected
-        )
     }
 }
 
@@ -968,44 +956,18 @@ private fun LanguageSelectionDialog(
 }
 
 /**
- * Theme picker row. Selecting an option applies it immediately — no Activity recreation is
- * required.
+ * Theme picker row. Displays the setting title with an info tooltip button and the currently
+ * active theme name on the right. Tapping anywhere on the row opens [ThemeSelectionDialog];
+ * selecting an option there applies it immediately — no Activity recreation is required.
  *
  * @param selectedTheme Currently active [ThemeOption], shown in the collapsed row.
- * @param onThemeSelected Invoked with the chosen [ThemeOption].
+ * @param onThemeSelected Invoked with the chosen [ThemeOption] after the user taps an item in
+ *   the dialog.
  */
 @Composable
 private fun ThemeSettingItem(
     selectedTheme: ThemeOption,
     onThemeSelected: (ThemeOption) -> Unit
-) {
-    SingleChoiceSettingItem(
-        titleRes = R.string.setting_theme_title,
-        descriptionRes = R.string.setting_theme_description,
-        options = ThemeOption.entries,
-        selected = selectedTheme,
-        labelRes = { it.labelRes },
-        onSelected = onThemeSelected
-    )
-}
-
-/**
- * Generic single-choice row. Displays the setting title with an info tooltip button and the
- * selected option's label on the right. Tapping anywhere on the row opens [SingleChoiceDialog].
- *
- * @param options Choices listed in the dialog, in display order.
- * @param selected Currently active option, shown in the collapsed row.
- * @param labelRes Maps an option to its display-name string resource.
- * @param onSelected Invoked with the option the user taps in the dialog.
- */
-@Composable
-private fun <T> SingleChoiceSettingItem(
-    @StringRes titleRes: Int,
-    @StringRes descriptionRes: Int,
-    options: List<T>,
-    selected: T,
-    labelRes: (T) -> Int,
-    onSelected: (T) -> Unit
 ) {
     var showDialog by remember { mutableStateOf(false) }
     var showTooltip by remember { mutableStateOf(false) }
@@ -1016,14 +978,14 @@ private fun <T> SingleChoiceSettingItem(
             .padding(Dimensions.SPACING_SMALL)
     ) {
         SettingHeader(
-            title = stringResource(titleRes),
-            description = stringResource(descriptionRes),
+            title = stringResource(R.string.setting_theme_title),
+            description = stringResource(R.string.setting_theme_description),
             showTooltip = showTooltip,
             onToggleTooltip = { showTooltip = !showTooltip },
             onClick = { showDialog = true },
             trailing = {
                 Text(
-                    text = stringResource(labelRes(selected)),
+                    text = stringResource(selectedTheme.labelRes),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(start = Dimensions.SPACING_SMALL)
@@ -1033,13 +995,10 @@ private fun <T> SingleChoiceSettingItem(
     }
 
     if (showDialog) {
-        SingleChoiceDialog(
-            titleRes = titleRes,
-            options = options,
-            selected = selected,
-            labelRes = labelRes,
-            onSelected = {
-                onSelected(it)
+        ThemeSelectionDialog(
+            selectedTheme = selectedTheme,
+            onThemeSelected = {
+                onThemeSelected(it)
                 showDialog = false
             },
             onDismiss = { showDialog = false }
@@ -1048,44 +1007,43 @@ private fun <T> SingleChoiceSettingItem(
 }
 
 /**
- * Single-choice picker dialog. Each option is displayed as a radio row with its localised label.
+ * Single-choice theme picker dialog. Each [ThemeOption] is displayed as a radio row with its
+ * localised label. Selecting a row immediately applies the theme — no restart needed.
  *
- * @param selected Currently active option, pre-selected in the list.
- * @param onSelected Invoked with the tapped option; the caller dismisses the dialog.
+ * @param selectedTheme Currently active option, pre-selected in the list.
+ * @param onThemeSelected Invoked with the tapped [ThemeOption]; the dialog is then dismissed by
+ *   the caller ([ThemeSettingItem]).
  * @param onDismiss Invoked when the dialog is dismissed without selecting an option (Cancel button
  *   or outside tap).
  */
 @Composable
-private fun <T> SingleChoiceDialog(
-    @StringRes titleRes: Int,
-    options: List<T>,
-    selected: T,
-    labelRes: (T) -> Int,
-    onSelected: (T) -> Unit,
+private fun ThemeSelectionDialog(
+    selectedTheme: ThemeOption,
+    onThemeSelected: (ThemeOption) -> Unit,
     onDismiss: () -> Unit
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(stringResource(titleRes)) },
+        title = { Text(stringResource(R.string.setting_theme_title)) },
         text = {
             Column(modifier = Modifier.selectableGroup()) {
-                options.forEach { option ->
-                    val isSelected = option == selected
+                ThemeOption.entries.forEach { option ->
+                    val selected = option == selectedTheme
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(Dimensions.SPACING_MEDIUM),
                         modifier = Modifier
                             .fillMaxWidth()
                             .selectable(
-                                selected = isSelected,
+                                selected = selected,
                                 role = Role.RadioButton,
-                                onClick = { onSelected(option) }
+                                onClick = { onThemeSelected(option) }
                             )
                             .padding(vertical = Dimensions.SPACING_SMALL)
                     ) {
-                        RadioButton(selected = isSelected, onClick = null)
+                        RadioButton(selected = selected, onClick = null)
                         Text(
-                            text = stringResource(labelRes(option)),
+                            text = stringResource(option.labelRes),
                             style = MaterialTheme.typography.bodyLarge
                         )
                     }

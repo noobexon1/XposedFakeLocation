@@ -138,9 +138,7 @@
     <string name="setting_speed_accuracy_label">Geschwindigkeitsgenauigkeit</string>
 
     <string name="setting_joystick_constant_mode_title">Konstante Geschwindigkeit</string>
-    <string name="setting_joystick_constant_mode_description">An: Der Joystick bewegt sich mit der gewählten Geschwindigkeitsvoreinstellung (Gehen, Laufen, Fahrrad oder Auto) und steuert nur die Richtung. Aus (Dynamisch): Die Geschwindigkeit hängt davon ab, wie weit der Stick ausgelenkt wird, bis zur Höchstgeschwindigkeit</string>
-    <string name="setting_joystick_preset_title">Geschwindigkeitsvoreinstellung</string>
-    <string name="setting_joystick_preset_description">Mit welcher Voreinstellung sich der Joystick im Modus „Konstante Geschwindigkeit“ bewegt</string>
+    <string name="setting_joystick_constant_mode_description">An: Der Joystick bewegt sich mit der im Overlay gewählten Voreinstellung (Gehen, Laufen, Fahrrad oder Auto) und steuert nur die Richtung. Aus (Dynamisch): Die Geschwindigkeit hängt davon ab, wie weit der Stick ausgelenkt wird, bis zur Höchstgeschwindigkeit</string>
     <string name="setting_joystick_max_speed_title">Maximale Joystick-Geschwindigkeit</string>
     <string name="setting_joystick_max_speed_description">Höchstgeschwindigkeit im dynamischen Modus bei vollem Ausschlag des Sticks</string>
     <string name="setting_joystick_max_speed_label">Max. Geschwindigkeit</string>
