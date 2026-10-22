@@ -1,4 +1,4 @@
-﻿package com.noobexon.xposedfakelocation.manager.joystick
+package com.noobexon.xposedfakelocation.manager.joystick
 
 import com.noobexon.xposedfakelocation.data.model.JoystickSettings
 import kotlinx.coroutines.CoroutineScope
