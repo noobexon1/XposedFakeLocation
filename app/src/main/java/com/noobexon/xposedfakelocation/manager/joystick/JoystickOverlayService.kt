@@ -144,7 +144,14 @@ class JoystickOverlayService : LifecycleService(), SavedStateRegistryOwner {
                     onDragEnd = { window?.commitPosition() },
                 )
             }
-        }.also { it.show() }
+        }
+
+        // The overlay permission can be revoked between the check above and addView.
+        runCatching { window?.show() }.onFailure { error ->
+            Log.w(TAG, "Could not show the joystick overlay; stopping", error)
+            endSession(keepPosition = false)
+            return
+        }
 
         newSession.start()
         observeStopConditions()
