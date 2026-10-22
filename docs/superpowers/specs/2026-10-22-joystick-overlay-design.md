@@ -15,7 +15,7 @@ target app: position changes continuously, and reported bearing/speed match the 
 |---|---|
 | Motion model | Two modes, chosen in Settings ("Constant speed" switch): **Dynamic** (speed ∝ stick deflection, up to a max) and **Constant** (fixed preset speed; stick sets direction only). |
 | Placement | System overlay (`TYPE_APPLICATION_OVERLAY`) hosted by a foreground service in the manager app. Not shown in the map screen itself. |
-| Overlay contents | Joystick pad, preset chips (Constant mode only), collapse-to-bubble, close. Draggable. |
+| Overlay contents | Joystick pad, collapse-to-bubble, close. Draggable. Mode and preset are chosen in Settings. |
 | Lifecycle | Launched from the map screen; requires spoofing ON and a marker set. Starts from the current marker. Moving updates the persisted marker. Closing keeps the last position; spoofing state is untouched. |
 | Realism | While active: bearing = movement direction, speed = actual movement speed (0 when idle). Settings that interfere with motion are paused (see below). |
 | Architecture | Manager-side simulation; position written to remote prefs (throttled). Hook-side extrapolation was rejected for complexity/robustness. |
@@ -46,7 +46,6 @@ mean sea level, mean sea level accuracy.
 
 - `JoystickPad`: circular base + thumb; emits a normalized vector `(x, y)` in `[-1, 1]`
   (clamped to the unit circle); thumb snaps back to centre on release.
-- Preset chips (Constant mode only): Walk, Run, Bike, Drive.
 - Collapse button (shrinks to a small bubble; tap bubble to expand) and close button.
 - A drag handle moves the window by updating `WindowManager.LayoutParams.x/y`. The position is
   clamped to screen bounds and persisted in local prefs so it is restored next time.
@@ -115,7 +114,7 @@ fun step(state: MovementState, input: MovementInput, config: MovementConfig, dtS
 | `KEY_JOYSTICK_SELECTED_PRESET` | `WALK` |
 | `KEY_JOYSTICK_OVERLAY_X/Y` | unset (default placement bottom-start) |
 
-- New "Joystick" section in the Settings screen for the mode ("Constant speed" switch), max speed and the four presets
+- New "Joystick" section in the Settings screen for the mode ("Constant speed" switch), the selected preset (shown only in Constant mode), max speed and the four presets
   (with per-row reset, following the existing pattern). Speeds shown in km/h in the UI, stored in m/s.
 - The mode and selected preset chosen in the overlay are persisted, so the overlay reopens in the
   same configuration.

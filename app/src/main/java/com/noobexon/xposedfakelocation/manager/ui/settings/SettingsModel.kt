@@ -33,6 +33,7 @@ import com.noobexon.xposedfakelocation.data.DEFAULT_WIFI_BSSID
 import com.noobexon.xposedfakelocation.data.DEFAULT_WIFI_RSSI
 import com.noobexon.xposedfakelocation.data.DEFAULT_WIFI_SSID
 import com.noobexon.xposedfakelocation.data.MPS_TO_KMH
+import com.noobexon.xposedfakelocation.data.model.JoystickPreset
 import com.noobexon.xposedfakelocation.manager.localization.LanguageOption
 import com.noobexon.xposedfakelocation.manager.ui.theme.ThemeOption
 import kotlin.math.round
@@ -196,6 +197,7 @@ enum class NumericSetting(
 object SettingKeys {
     const val HIDE_TOAST = "hide_toast"
     const val JOYSTICK_CONSTANT_MODE = "joystick_constant_mode"
+    const val JOYSTICK_PRESET = "joystick_preset"
     const val SYSTEM_HOOKS = "system_hooks"
     const val WIFI_IDENTITY = "wifi_identity"
     const val WIFI_SSID = "wifi_ssid"
@@ -324,7 +326,32 @@ sealed interface SettingEntry {
         override val titleRes: Int get() = R.string.setting_theme_title
         override val descriptionRes: Int get() = R.string.setting_theme_description
     }
+
+    /**
+     * The joystick's Constant-mode speed preset picker. Tapping the row opens a selection dialog.
+     *
+     * @property selected The preset the joystick currently moves at.
+     * @property onSelected Callback invoked with the chosen preset.
+     */
+    data class JoystickPresetChoice(
+        val selected: JoystickPreset,
+        val onSelected: (JoystickPreset) -> Unit
+    ) : SettingEntry {
+        override val key: String get() = SettingKeys.JOYSTICK_PRESET
+        override val titleRes: Int get() = R.string.setting_joystick_preset_title
+        override val descriptionRes: Int get() = R.string.setting_joystick_preset_description
+    }
 }
+
+/** Short display name of a joystick speed preset. */
+@get:StringRes
+val JoystickPreset.labelRes: Int
+    get() = when (this) {
+        JoystickPreset.WALK -> R.string.setting_joystick_walk_label
+        JoystickPreset.RUN -> R.string.setting_joystick_run_label
+        JoystickPreset.BIKE -> R.string.setting_joystick_bike_label
+        JoystickPreset.DRIVE -> R.string.setting_joystick_drive_label
+    }
 
 /**
  * Immutable snapshot of all spoofing and app preferences consumed by the settings UI. Every

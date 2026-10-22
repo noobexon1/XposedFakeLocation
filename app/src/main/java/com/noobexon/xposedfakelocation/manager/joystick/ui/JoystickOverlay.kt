@@ -1,15 +1,11 @@
 package com.noobexon.xposedfakelocation.manager.joystick.ui
 
 import android.view.MotionEvent
-import androidx.annotation.StringRes
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.drag
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -24,12 +20,10 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.DragIndicator
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.SportsEsports
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -53,19 +47,14 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.noobexon.xposedfakelocation.R
-import com.noobexon.xposedfakelocation.data.model.JoystickMode
-import com.noobexon.xposedfakelocation.data.model.JoystickPreset
-import com.noobexon.xposedfakelocation.data.model.JoystickSettings
 import kotlin.math.hypot
 
 /** Root of the floating overlay: an expanded control panel or a collapsed bubble. */
 @Composable
 fun JoystickOverlay(
-    settings: JoystickSettings,
     collapsed: Boolean,
     onInput: (x: Float, y: Float) -> Unit,
     onRelease: () -> Unit,
-    onPresetChange: (JoystickPreset) -> Unit,
     onCollapsedChange: (Boolean) -> Unit,
     onClose: () -> Unit,
     onDrag: (dx: Float, dy: Float) -> Unit,
@@ -75,10 +64,8 @@ fun JoystickOverlay(
         CollapsedBubble(onExpand = { onCollapsedChange(false) }, onDrag = onDrag, onDragEnd = onDragEnd)
     } else {
         ExpandedPanel(
-            settings = settings,
             onInput = onInput,
             onRelease = onRelease,
-            onPresetChange = onPresetChange,
             onCollapse = {
                 onRelease()
                 onCollapsedChange(true)
@@ -90,13 +77,10 @@ fun JoystickOverlay(
     }
 }
 
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun ExpandedPanel(
-    settings: JoystickSettings,
     onInput: (x: Float, y: Float) -> Unit,
     onRelease: () -> Unit,
-    onPresetChange: (JoystickPreset) -> Unit,
     onCollapse: () -> Unit,
     onClose: () -> Unit,
     onDrag: (dx: Float, dy: Float) -> Unit,
@@ -124,17 +108,6 @@ private fun ExpandedPanel(
                 }
                 IconButton(onClick = onClose) {
                     Icon(Icons.Default.Close, contentDescription = stringResource(R.string.cd_joystick_close))
-                }
-            }
-            if (settings.mode == JoystickMode.CONSTANT) {
-                FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    JoystickPreset.entries.forEach { preset ->
-                        FilterChip(
-                            selected = settings.selectedPreset == preset,
-                            onClick = { onPresetChange(preset) },
-                            label = { Text(stringResource(preset.labelRes)) },
-                        )
-                    }
                 }
             }
             Spacer(Modifier.height(8.dp))
@@ -286,12 +259,3 @@ private fun rememberOverlayDragModifier(
         }
     }
 }
-
-@get:StringRes
-private val JoystickPreset.labelRes: Int
-    get() = when (this) {
-        JoystickPreset.WALK -> R.string.setting_joystick_walk_label
-        JoystickPreset.RUN -> R.string.setting_joystick_run_label
-        JoystickPreset.BIKE -> R.string.setting_joystick_bike_label
-        JoystickPreset.DRIVE -> R.string.setting_joystick_drive_label
-    }
