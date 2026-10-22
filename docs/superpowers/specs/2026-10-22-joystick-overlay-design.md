@@ -80,15 +80,19 @@ fun step(state: MovementState, input: MovementInput, config: MovementConfig, dtS
 
 - New model `JoystickState(active: Boolean, bearing: Float, speed: Float, updatedAt: Long)`
   stored as JSON under new key `KEY_JOYSTICK_STATE`.
-- `PreferencesRepository`: `saveJoystickState(state)`, `clearJoystickState()`.
+- `PreferencesRepository`: `saveJoystickState(state)` and `saveJoystickFrame(lat, lon, state)`
+  (marker + state in one edit). There is no `clearJoystickState()`: stopping writes an inactive
+  state, and clearing the marker writes only the state. Marker writes are serialized by a
+  process-wide lock, and a frame never re-creates a marker that was cleared.
 - `PreferencesUtil`: `getJoystickState(): JoystickState?`.
 - Position continues to use the existing `KEY_LAST_CLICKED_LOCATION`.
 
 ### 6. Hook-side override
 
 - New pure function in `xposed/hooks/JoystickHookPolicy.kt` (mirrors `WifiIdentityHookPolicy`):
-  `fun activeJoystick(state: JoystickState?, nowMillis: Long): JoystickState?` — returns the state
-  only if `active` and `nowMillis - updatedAt <= JOYSTICK_STALE_MS` (5000 ms).
+  `fun activeState(state: JoystickState?, nowMillis: Long): JoystickState?` — returns the state
+  only if `active` and `abs(nowMillis - updatedAt) <= JOYSTICK_STALE_MS` (5000 ms). Staleness is
+  symmetric, so a state timestamped in the future (clock skew) is also rejected.
 - `LocationUtil.updateLocation()`:
   - If an active joystick state exists: skip randomize (use exact marker coordinates), ignore
     custom speed / speed accuracy, set `speed = state.speed`, `bearing = state.bearing`,
@@ -160,9 +164,12 @@ fun step(state: MovementState, input: MovementInput, config: MovementConfig, dtS
    the joystick state.
 5. **Map screen:** marker follows automatically via the existing `getLastClickedLocationFlow()`.
 6. **Stop** (close button, notification action, spoofing off, marker cleared, `onDestroy`):
-   write `JoystickState(active = false, …)`, remove overlay, stop foreground. Last position stays
-   as the marker. If the process is killed without cleanup, the staleness guard makes hooks fall
-   back to normal settings within 5 s.
+   `JoystickSession.stop()` guarantees no publish runs after it returns, so the final write is
+   last. Then write `JoystickState(active = false, …)`, remove overlay, stop foreground. The final
+   position is written together with that state only if the marker still exists; when the marker
+   was cleared, only the inactive state is written. Last position stays as the marker. If the
+   process is killed without cleanup, the staleness guard makes hooks fall back to normal settings
+   within 5 s.
 
 **Threading:** remote-pref writes go through XposedService IPC, so they run on `Dispatchers.IO`
 through a conflated channel (single writer, only the latest value is written). UI thread never blocks.
@@ -185,6 +192,8 @@ through a conflated channel (single writer, only the latest value is written). U
   selected preset). Nullable keeps `SETTINGS_BACKUP_VERSION = 1` compatible: older files without
   the section import fine and leave joystick settings untouched. Overlay position is not exported.
 - All new strings added in `values/`, `values-de/`, `values-zh/`.
+- The overlay service follows the app's language (`LocaleController.attachBaseContext`) and theme
+  option (`ThemeOption.isDark()`, shared with `MainActivity`).
 
 ## Testing
 
@@ -193,7 +202,7 @@ through a conflated channel (single writer, only the latest value is written). U
   (up = 0°, right = 90°, down-left = 225°), zero `dt` → no movement.
 - `GeoMathTest`: 100 m north ≈ +0.000899° latitude; east movement scales with `cos(lat)`;
   pole clamp and antimeridian wrap.
-- `JoystickHookPolicyTest`: active+fresh → returned; inactive → null; stale (> 5 s) → null; null → null.
+- `JoystickHookPolicyTest`: active+fresh → returned; inactive → null; stale or future-dated (> 5 s either way) → null; null → null.
 - `SettingsBackupCodecTest`: round-trip with joystick section; import of a file without it.
 
 **Manual on-device:**
