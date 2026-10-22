@@ -20,6 +20,7 @@ import com.noobexon.xposedfakelocation.data.KEY_ALTITUDE
 import com.noobexon.xposedfakelocation.data.KEY_ENABLE_SYSTEM_HOOKS
 import com.noobexon.xposedfakelocation.data.KEY_HIDE_FAKE_LOCATION_TOAST
 import com.noobexon.xposedfakelocation.data.KEY_IS_PLAYING
+import com.noobexon.xposedfakelocation.data.KEY_JOYSTICK_STATE
 import com.noobexon.xposedfakelocation.data.KEY_LAST_CLICKED_LOCATION
 import com.noobexon.xposedfakelocation.data.KEY_MEAN_SEA_LEVEL
 import com.noobexon.xposedfakelocation.data.KEY_MEAN_SEA_LEVEL_ACCURACY
@@ -42,6 +43,7 @@ import com.noobexon.xposedfakelocation.data.KEY_WIFI_SSID
 import com.noobexon.xposedfakelocation.data.MAC_ADDRESS_REGEX
 import com.noobexon.xposedfakelocation.data.MAX_WIFI_RSSI
 import com.noobexon.xposedfakelocation.data.MIN_WIFI_RSSI
+import com.noobexon.xposedfakelocation.data.model.JoystickState
 import com.noobexon.xposedfakelocation.data.model.LastClickedLocation
 import com.noobexon.xposedfakelocation.data.normalizeWifiSsid
 import com.noobexon.xposedfakelocation.xposed.utils.PreferencesUtil.gson
@@ -110,6 +112,7 @@ object PreferencesUtil {
     fun getUseSpeedAccuracy(): Boolean? = getPreference(KEY_USE_SPEED_ACCURACY)
     fun getSpeedAccuracy(): Float? = getPreference(KEY_SPEED_ACCURACY)
     fun getHideFakeLocationToast(): Boolean? = getPreference(KEY_HIDE_FAKE_LOCATION_TOAST)
+    fun getJoystickState(): JoystickState? = getPreference(KEY_JOYSTICK_STATE)
     fun getEnableSystemHooks(): Boolean = preferences?.getBoolean(KEY_ENABLE_SYSTEM_HOOKS, false) ?: false
 
     fun getWifiSsid(): String =

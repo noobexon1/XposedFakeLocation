@@ -42,6 +42,7 @@ import com.noobexon.xposedfakelocation.data.KEY_ENABLE_WIFI_IDENTITY
 import com.noobexon.xposedfakelocation.data.KEY_FAVORITES
 import com.noobexon.xposedfakelocation.data.KEY_HIDE_FAKE_LOCATION_TOAST
 import com.noobexon.xposedfakelocation.data.KEY_IS_PLAYING
+import com.noobexon.xposedfakelocation.data.KEY_JOYSTICK_STATE
 import com.noobexon.xposedfakelocation.data.KEY_LANGUAGE_TAG
 import com.noobexon.xposedfakelocation.data.KEY_LAST_CLICKED_LOCATION
 import com.noobexon.xposedfakelocation.data.KEY_MAP_ZOOM
@@ -70,6 +71,7 @@ import com.noobexon.xposedfakelocation.data.MIN_WIFI_RSSI
 import com.noobexon.xposedfakelocation.data.REMOTE_PREFS_GROUP
 import com.noobexon.xposedfakelocation.data.SHARED_PREFS_FILE
 import com.noobexon.xposedfakelocation.data.model.FavoriteLocation
+import com.noobexon.xposedfakelocation.data.model.JoystickState
 import com.noobexon.xposedfakelocation.data.model.LastClickedLocation
 import com.noobexon.xposedfakelocation.data.normalizeWifiSsid
 import com.noobexon.xposedfakelocation.manager.App
@@ -195,6 +197,18 @@ class PreferencesRepository(context: Context) {
             Log.e(tag, "Error parsing LastClickedLocation: ${e.message}")
             null
         }
+    }
+    // endregion
+
+    // region Joystick State (remote)
+    /** Publishes the joystick motion override without touching the marker. */
+    fun saveJoystickState(state: JoystickState) =
+        editRemote { putString(KEY_JOYSTICK_STATE, gson.toJson(state)) }
+
+    /** Writes the marker position and joystick state in a single remote-prefs commit. */
+    fun saveJoystickFrame(latitude: Double, longitude: Double, state: JoystickState) = editRemote {
+        putString(KEY_LAST_CLICKED_LOCATION, gson.toJson(LastClickedLocation(latitude, longitude)))
+        putString(KEY_JOYSTICK_STATE, gson.toJson(state))
     }
     // endregion
 
