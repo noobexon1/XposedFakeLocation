@@ -26,9 +26,13 @@ import com.noobexon.xposedfakelocation.data.repository.PreferencesRepository
 import com.noobexon.xposedfakelocation.manager.App
 import com.noobexon.xposedfakelocation.manager.MainActivity
 import com.noobexon.xposedfakelocation.manager.joystick.ui.JoystickOverlay
+import com.noobexon.xposedfakelocation.manager.localization.LocaleController
+import com.noobexon.xposedfakelocation.manager.ui.theme.ThemeOption
 import com.noobexon.xposedfakelocation.manager.ui.theme.XposedFakeLocationTheme
+import com.noobexon.xposedfakelocation.manager.ui.theme.isDark
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
@@ -63,6 +67,10 @@ class JoystickOverlayService : LifecycleService(), SavedStateRegistryOwner {
     private var session: JoystickSession? = null
     private var window: JoystickOverlayWindow? = null
     private val collapsed = MutableStateFlow(false)
+
+    override fun attachBaseContext(newBase: Context) {
+        super.attachBaseContext(LocaleController.attachBaseContext(newBase))
+    }
 
     override fun onCreate() {
         savedStateRegistryController.performRestore(null)
@@ -101,6 +109,7 @@ class JoystickOverlayService : LifecycleService(), SavedStateRegistryOwner {
 
         val settings = repository.getJoystickSettingsFlow()
             .stateIn(lifecycleScope, SharingStarted.Eagerly, repository.getJoystickSettings())
+        val themeOptionFlow = repository.getThemeOptionFlow().map { ThemeOption.fromTag(it) }
         val newSession = JoystickSession(
             scope = lifecycleScope,
             startLatitude = start.latitude,
@@ -118,7 +127,8 @@ class JoystickOverlayService : LifecycleService(), SavedStateRegistryOwner {
             initialPosition = repository.getJoystickOverlayPosition(),
             onPositionCommitted = repository::saveJoystickOverlayPosition,
         ) {
-            XposedFakeLocationTheme {
+            val themeOption by themeOptionFlow.collectAsState(initial = ThemeOption.SYSTEM)
+            XposedFakeLocationTheme(darkTheme = themeOption.isDark()) {
                 val currentSettings by settings.collectAsState()
                 val isCollapsed by collapsed.collectAsState()
                 JoystickOverlay(
