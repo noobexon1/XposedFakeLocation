@@ -10,9 +10,14 @@ on:
 permissions:
   contents: write
 
+env:
+  APK_NAME: XposedFakeLocation.apk
+
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      TAG: ${{ github.event.release.tag_name }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -39,12 +44,24 @@ jobs:
         run: chmod +x ./gradlew
 
       - name: Build debug APK
-        run: ./gradlew --no-daemon assembleDebug -PappVersionName="${{ github.event.release.tag_name }}"
+        run: ./gradlew --no-daemon assembleDebug -PappVersionName="$TAG"
 
       - name: Rename APK
-        run: cp app/build/outputs/apk/debug/app-debug.apk XposedFakeLocation.apk
+        run: cp app/build/outputs/apk/debug/app-debug.apk "$APK_NAME"
+
+      - name: Check version in APK
+        run: |
+          aapt2="$(ls -d "$ANDROID_HOME"/build-tools/*/ | sort -V | tail -n 1)aapt2"
+          badging="$("$aapt2" dump badging "$APK_NAME" | head -n 1)"
+          version_code="$(echo "$badging" | sed -n "s/.*versionCode='\([^']*\)'.*/\1/p")"
+          version_name="$(echo "$badging" | sed -n "s/.*versionName='\([^']*\)'.*/\1/p")"
+          if [ -z "$version_code" ] || [ "$version_code" = "0" ] || [ -z "$version_name" ]; then
+            echo "::error::Could not read a valid version from the APK (got code='$version_code' name='$version_name'). Use tags like v1.2.3."
+            exit 1
+          fi
+          echo "APK version: $version_code-$version_name"
 
       - name: Upload APK to release
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release upload "${{ github.event.release.tag_name }}" XposedFakeLocation.apk --clobber
+        run: gh release upload "$TAG" "$APK_NAME" --clobber --repo "$GITHUB_REPOSITORY"
