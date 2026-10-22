@@ -251,4 +251,7 @@
     <string name="joystick_notification_title">Joystick active</string>
     <string name="joystick_notification_text">Tap to open the app. Use Stop to close the joystick.</string>
     <string name="joystick_notification_stop">Stop joystick</string>
+    <string name="cd_joystick_open">Open joystick</string>
+    <string name="joystick_overlay_permission_title">Allow display over other apps</string>
+    <string name="joystick_overlay_permission_message">The joystick floats over other apps so you can steer while a target app is open. Grant \"Display over other apps\" on the next screen.</string>
 </resources>

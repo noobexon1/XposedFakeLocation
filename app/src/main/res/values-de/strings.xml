@@ -239,4 +239,7 @@
     <string name="joystick_notification_title">Joystick aktiv</string>
     <string name="joystick_notification_text">Tippe, um die App zu öffnen. „Stopp“ schließt den Joystick.</string>
     <string name="joystick_notification_stop">Joystick stoppen</string>
+    <string name="cd_joystick_open">Joystick öffnen</string>
+    <string name="joystick_overlay_permission_title">Über anderen Apps anzeigen erlauben</string>
+    <string name="joystick_overlay_permission_message">Der Joystick wird über anderen Apps angezeigt, damit du steuern kannst, während eine Ziel-App geöffnet ist. Erlaube auf dem nächsten Bildschirm „Über anderen Apps einblenden“.</string>
 </resources>

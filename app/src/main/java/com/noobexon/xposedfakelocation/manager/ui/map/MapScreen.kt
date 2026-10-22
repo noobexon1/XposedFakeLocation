@@ -44,6 +44,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.noobexon.xposedfakelocation.R
+import com.noobexon.xposedfakelocation.manager.joystick.JoystickButton
 import com.noobexon.xposedfakelocation.manager.ui.navigation.Screen
 import kotlinx.coroutines.launch
 
@@ -134,6 +135,7 @@ fun MapScreen(
                         }
                     },
                     actions = {
+                        JoystickButton(enabled = isPlaying && uiState.lastClickedLocation != null)
                         IconButton(onClick = { mapViewModel.triggerCenterMapEvent() }) {
                             Icon(imageVector = Icons.Default.MyLocation, contentDescription = stringResource(R.string.cd_center))
                         }

@@ -248,4 +248,7 @@
     <string name="joystick_notification_title">摇杆已启用</string>
     <string name="joystick_notification_text">点击打开应用。点击“停止”关闭摇杆。</string>
     <string name="joystick_notification_stop">停止摇杆</string>
+    <string name="cd_joystick_open">打开摇杆</string>
+    <string name="joystick_overlay_permission_title">允许显示在其他应用上层</string>
+    <string name="joystick_overlay_permission_message">摇杆会悬浮在其他应用上方，方便你在目标应用打开时进行控制。请在下一个页面授予“显示在其他应用上层”权限。</string>
 </resources>
