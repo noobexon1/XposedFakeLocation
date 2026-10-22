@@ -228,4 +228,15 @@
     <string name="about_contributors_error">Mitwirkende konnten nicht geladen werden.</string>
     <string name="about_contributors_empty">Keine Mitwirkenden gefunden.</string>
     <string name="about_contributors_retry">Wiederholen</string>
+
+    <string name="joystick_mode_dynamic">Dynamisch</string>
+    <string name="joystick_mode_constant">Konstant</string>
+    <string name="cd_joystick_drag">Joystick verschieben</string>
+    <string name="cd_joystick_collapse">Joystick minimieren</string>
+    <string name="cd_joystick_expand">Joystick erweitern</string>
+    <string name="cd_joystick_close">Joystick schließen</string>
+    <string name="joystick_notification_channel">Joystick-Overlay</string>
+    <string name="joystick_notification_title">Joystick aktiv</string>
+    <string name="joystick_notification_text">Tippe, um die App zu öffnen. „Stopp“ schließt den Joystick.</string>
+    <string name="joystick_notification_stop">Joystick stoppen</string>
 </resources>

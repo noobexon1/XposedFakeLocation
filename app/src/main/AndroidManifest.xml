@@ -9,6 +9,10 @@
     <uses-permission
         android:name="android.permission.QUERY_ALL_PACKAGES"
         tools:ignore="PackageVisibilityPolicy,QueryAllPackagesPermission" />
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <application
         android:name=".manager.App"
@@ -44,5 +48,14 @@
                 <action android:name="com.noobexon.xposedfakelocation.action.SET_LOCATION" />
             </intent-filter>
         </receiver>
+
+        <service
+            android:name=".manager.joystick.JoystickOverlayService"
+            android:exported="false"
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="Floating joystick overlay for manual control of the spoofed location" />
+        </service>
     </application>
 </manifest>

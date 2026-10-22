@@ -237,4 +237,15 @@
     <string name="about_contributors_error">无法加载贡献者。</string>
     <string name="about_contributors_empty">未找到贡献者。</string>
     <string name="about_contributors_retry">重试</string>
+
+    <string name="joystick_mode_dynamic">动态</string>
+    <string name="joystick_mode_constant">恒定</string>
+    <string name="cd_joystick_drag">移动摇杆</string>
+    <string name="cd_joystick_collapse">最小化摇杆</string>
+    <string name="cd_joystick_expand">展开摇杆</string>
+    <string name="cd_joystick_close">关闭摇杆</string>
+    <string name="joystick_notification_channel">摇杆悬浮窗</string>
+    <string name="joystick_notification_title">摇杆已启用</string>
+    <string name="joystick_notification_text">点击打开应用。点击“停止”关闭摇杆。</string>
+    <string name="joystick_notification_stop">停止摇杆</string>
 </resources>
