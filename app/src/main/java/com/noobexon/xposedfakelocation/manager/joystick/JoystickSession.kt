@@ -1,7 +1,9 @@
 package com.noobexon.xposedfakelocation.manager.joystick
 
+import android.util.Log
 import com.noobexon.xposedfakelocation.data.model.JoystickSettings
 import com.noobexon.xposedfakelocation.data.model.JoystickState
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -63,6 +65,7 @@ class JoystickSession(
     private val monotonicClock: () -> Long,
     private val wallClock: () -> Long = System::currentTimeMillis,
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
+    private val onPublishError: (Throwable) -> Unit = { Log.w(TAG, "Failed to publish joystick frame", it) },
 ) {
     private var state = MovementState(startLatitude, startLongitude, bearingDegrees = 0f, speedMps = 0f)
     private var input = MovementInput.NONE
@@ -72,12 +75,14 @@ class JoystickSession(
     private val recent = RecentPositions()
     private val frames = Channel<JoystickFrame>(Channel.CONFLATED)
     private var jobs: List<Job> = emptyList()
+    private val lock = Any()
+    private var stopped = false
 
     val currentState: MovementState get() = state
 
     fun start() {
         jobs = listOf(
-            scope.launch(ioDispatcher) { for (frame in frames) publish(frame) },
+            scope.launch(ioDispatcher) { for (frame in frames) publishSafely(frame) },
             scope.launch {
                 while (true) {
                     tick(monotonicClock())?.let { frames.trySend(it) }
@@ -97,8 +102,12 @@ class JoystickSession(
         state = state.copy(latitude = latitude, longitude = longitude)
     }
 
-    /** Cancels the loop and returns the final inactive frame for the caller to publish. */
+    /**
+     * Cancels the loop and returns the final inactive frame for the caller to publish; once this
+     * returns no [publish] is running or can start, so that final write is guaranteed to be last.
+     */
     fun stop(): JoystickFrame {
+        synchronized(lock) { stopped = true }
         jobs.forEach { it.cancel() }
         frames.close()
         return frame(active = false)
@@ -131,7 +140,19 @@ class JoystickSession(
         ),
     )
 
+    /** Publishes [frame] unless stopped; a failing [publish] is reported but doesn't end the session. */
+    private fun publishSafely(frame: JoystickFrame) {
+        try {
+            synchronized(lock) { if (!stopped) publish(frame) }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            onPublishError(e)
+        }
+    }
+
     private companion object {
+        const val TAG = "JoystickSession"
         const val TICK_INTERVAL_MS = 50L
     }
 }
