@@ -237,9 +237,11 @@ private fun clampToRadius(offset: Offset, radius: Float): Offset {
 }
 
 private class DragTracker {
+    var startX = 0f
+    var startY = 0f
     var lastX = 0f
     var lastY = 0f
-    var travelled = 0f
+    var dragging = false
 }
 
 /**
@@ -262,23 +264,32 @@ private fun rememberOverlayDragModifier(
         Modifier.pointerInteropFilter { event ->
             when (event.actionMasked) {
                 MotionEvent.ACTION_DOWN -> {
+                    tracker.startX = event.rawX
+                    tracker.startY = event.rawY
                     tracker.lastX = event.rawX
                     tracker.lastY = event.rawY
-                    tracker.travelled = 0f
+                    tracker.dragging = false
                     true
                 }
                 MotionEvent.ACTION_MOVE -> {
-                    val dx = event.rawX - tracker.lastX
-                    val dy = event.rawY - tracker.lastY
-                    tracker.lastX = event.rawX
-                    tracker.lastY = event.rawY
-                    tracker.travelled += hypot(dx, dy)
-                    currentOnDrag(dx, dy)
+                    // Stay put until the finger leaves the touch slop, so a tap never nudges the window.
+                    if (!tracker.dragging &&
+                        hypot(event.rawX - tracker.startX, event.rawY - tracker.startY) >= touchSlop
+                    ) {
+                        tracker.dragging = true
+                    }
+                    if (tracker.dragging) {
+                        val dx = event.rawX - tracker.lastX
+                        val dy = event.rawY - tracker.lastY
+                        tracker.lastX = event.rawX
+                        tracker.lastY = event.rawY
+                        currentOnDrag(dx, dy)
+                    }
                     true
                 }
                 MotionEvent.ACTION_UP -> {
                     val tap = currentOnTap
-                    if (tap != null && tracker.travelled < touchSlop) tap() else currentOnDragEnd()
+                    if (tap != null && !tracker.dragging) tap() else currentOnDragEnd()
                     true
                 }
                 MotionEvent.ACTION_CANCEL -> {

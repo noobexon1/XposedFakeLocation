@@ -160,7 +160,7 @@ class JoystickOverlayService : LifecycleService(), SavedStateRegistryOwner {
 
     /**
      * @param keepPosition `false` when the marker was cleared: publishing the final position would
-     *   put the marker back.
+     *   put the marker back. [releaseSession] also drops it when the marker is already gone.
      */
     private fun endSession(keepPosition: Boolean) {
         releaseSession(keepPosition)
@@ -170,7 +170,8 @@ class JoystickOverlayService : LifecycleService(), SavedStateRegistryOwner {
     private fun releaseSession(keepPosition: Boolean) {
         session?.let { active ->
             val last = active.stop()
-            if (keepPosition) {
+            // Decide from the current marker, not from which stop event arrived first.
+            if (keepPosition && repository.getLastClickedLocation() != null) {
                 repository.saveJoystickFrame(last.latitude, last.longitude, last.state)
             } else {
                 repository.saveJoystickState(last.state)

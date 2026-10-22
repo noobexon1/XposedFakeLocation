@@ -46,6 +46,11 @@ class JoystickOverlayWindow(
         setViewTreeLifecycleOwner(lifecycleOwner)
         setViewTreeSavedStateRegistryOwner(savedStateRegistryOwner)
         setContent(content)
+        // Re-clamp when the content resizes (e.g. bubble expanding near an edge).
+        addOnLayoutChangeListener { _, left, top, right, bottom, oldLeft, oldTop, oldRight, oldBottom ->
+            val sizeChanged = right - left != oldRight - oldLeft || bottom - top != oldBottom - oldTop
+            if (sizeChanged && clampToScreen()) commitPosition()
+        }
     }
 
     private var attached = false
@@ -54,7 +59,6 @@ class JoystickOverlayWindow(
         if (attached) return
         windowManager.addView(view, params)
         attached = true
-        view.post { clampToScreen() }
     }
 
     fun moveBy(dx: Float, dy: Float) {
@@ -65,13 +69,20 @@ class JoystickOverlayWindow(
 
     fun commitPosition() = onPositionCommitted(params.x, params.y)
 
-    /** Keeps the overlay fully on screen; also call after rotation or a display size change. */
-    fun clampToScreen() {
-        if (!attached) return
+    /**
+     * Keeps the overlay fully on screen; also call after rotation or a display size change.
+     * Returns whether the position had to change.
+     */
+    fun clampToScreen(): Boolean {
+        if (!attached) return false
         val (width, height) = screenSize()
-        params.x = params.x.coerceIn(0, max(0, width - view.width))
-        params.y = params.y.coerceIn(0, max(0, height - view.height))
+        val clampedX = params.x.coerceIn(0, max(0, width - view.width))
+        val clampedY = params.y.coerceIn(0, max(0, height - view.height))
+        val moved = clampedX != params.x || clampedY != params.y
+        params.x = clampedX
+        params.y = clampedY
         windowManager.updateViewLayout(view, params)
+        return moved
     }
 
     fun remove() {
