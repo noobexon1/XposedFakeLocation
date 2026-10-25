@@ -128,8 +128,8 @@ private fun StatusLine(status: () -> RouteStatus, pointCount: Int) {
     val s = status()
     val text = when {
         s.phase == RoutePhase.FINISHED -> stringResource(R.string.route_status_finished)
-        s.waitRemainingS > 0 -> stringResource(R.string.route_status_waiting, RouteFormat.clock(s.waitRemainingS))
         s.phase == RoutePhase.PAUSED -> stringResource(R.string.route_status_paused)
+        s.waitRemainingS > 0 -> stringResource(R.string.route_status_waiting, RouteFormat.clock(s.waitRemainingS))
         else -> stringResource(R.string.route_status_point, s.pointNumber, pointCount)
     }
     Text(

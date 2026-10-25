@@ -67,9 +67,8 @@ import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay
  * @param onMapZoomChange Callback to persist the zoom level; called on dispose with the final zoom.
  * @param onLoadingFinished Callback to clear the loading state once the camera is positioned.
  * @param onInitialLocationResolved Callback to set [MapUiState.hasResolvedInitialLocation].
- * @param routeMode When `true`, taps edit the route and the location marker is hidden unless a
- *   route is playing (then it shows the moving position).
- * @param routePlaying Whether a route is currently playing.
+ * @param routeMode When `true`, taps edit the route and the location marker is hidden unless
+ *   spoofing is on (then it shows the spoofed, possibly moving, position).
  * @param route The route to draw in Route mode.
  * @param routeEditable Whether route markers can be tapped and dragged (false while playing).
  * @param fitRouteEvent One-shot request to frame the whole [route].
@@ -94,7 +93,6 @@ fun MapViewContainer(
     onLoadingFinished: () -> Unit,
     onInitialLocationResolved: () -> Unit,
     routeMode: Boolean = false,
-    routePlaying: Boolean = false,
     route: Route? = null,
     routeEditable: Boolean = false,
     fitRouteEvent: Flow<Unit> = emptyFlow(),
@@ -116,7 +114,7 @@ fun MapViewContainer(
     // Handle map events and updates
     HandleCenterMapEvent(mapView, locationOverlay, centerMapEvent)
     HandleGoToPointEvent(mapView, goToPointEvent, onClickedLocationChange)
-    val markerLocation = if (routeMode && !routePlaying) null else lastClickedLocation
+    val markerLocation = if (routeMode && !isPlaying) null else lastClickedLocation
     HandleMarkerUpdates(mapView, userMarker, markerLocation)
     SetupMapClickListener(mapView, isPlaying) { point ->
         point?.let { if (routeMode) onRouteTap(it) else onClickedLocationChange(it) }

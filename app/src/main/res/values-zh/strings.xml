@@ -263,6 +263,7 @@
     <string name="route_needs_two_points">请至少添加 2 个点</string>
     <string name="route_joystick_running">请先关闭摇杆</string>
     <string name="route_service_lost">模块已断开，路线已停止</string>
+    <string name="route_stop_first">请先停止路线</string>
     <string name="route_summary">%1$d 个点 · %2$s · %3$s</string>
     <string name="route_distance_km">%1$s 公里</string>
     <string name="route_distance_progress">%1$s / %2$s 公里</string>

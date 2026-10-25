@@ -112,9 +112,10 @@ fun BoxScope.RouteModeUi(
     }
 
     if (ui.showSaveDialog) {
+        val sourceRoute = draft.sourceRouteId?.let { id -> savedRoutes.firstOrNull { it.id == id } }
         SaveRouteDialog(
-            initialName = route.name,
-            canUpdate = draft.sourceRouteId?.let { id -> savedRoutes.any { it.id == id } } == true,
+            initialName = sourceRoute?.name ?: route.name,
+            canUpdate = sourceRoute != null,
             onSave = viewModel::saveRoute,
             onDismiss = { viewModel.showSaveDialog(false) },
         )

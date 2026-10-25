@@ -254,6 +254,7 @@
     <string name="route_needs_two_points">Mindestens 2 Punkte hinzufügen</string>
     <string name="route_joystick_running">Schließe zuerst den Joystick</string>
     <string name="route_service_lost">Modul getrennt; Route gestoppt</string>
+    <string name="route_stop_first">Stoppe zuerst die Route</string>
     <string name="route_summary">%1$d Punkte · %2$s · %3$s</string>
     <string name="route_distance_km">%1$s km</string>
     <string name="route_distance_progress">%1$s / %2$s km</string>

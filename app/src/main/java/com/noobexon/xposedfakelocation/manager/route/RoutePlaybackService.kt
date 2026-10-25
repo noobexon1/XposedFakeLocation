@@ -81,7 +81,8 @@ class RoutePlaybackService : LifecycleService(), SavedStateRegistryOwner {
     private var session: RouteSession? = null
     private var window: OverlayWindowHost? = null
     private val collapsed = MutableStateFlow(false)
-    private var lastNotified: Pair<RoutePhase, Int>? = null
+    private data class NotificationKey(val phase: RoutePhase, val percent: Int, val waitRemainingS: Int, val pointNumber: Int)
+    private var lastNotified: NotificationKey? = null
 
     override fun attachBaseContext(newBase: Context) {
         super.attachBaseContext(LocaleController.attachBaseContext(newBase))
@@ -156,7 +157,7 @@ class RoutePlaybackService : LifecycleService(), SavedStateRegistryOwner {
         lifecycleScope.launch {
             active.status.collect { status ->
                 RoutePlaybackState.publish(RoutePlaybackStatus(route.id, displayName(route), route.points.size, status))
-                val key = status.phase to (status.progress * 100).toInt()
+                val key = NotificationKey(status.phase, (status.progress * 100).toInt(), status.waitRemainingS, status.pointNumber)
                 if (key != lastNotified) {
                     lastNotified = key
                     getSystemService(NotificationManager::class.java).notify(NOTIFICATION_ID, buildNotification())
@@ -207,10 +208,7 @@ class RoutePlaybackService : LifecycleService(), SavedStateRegistryOwner {
         // Emits false as soon as the Xposed service disconnects, too.
         lifecycleScope.launch {
             repository.getIsPlayingFlow().collect { isPlaying ->
-                if (!isPlaying) {
-                    if (App.service == null && session != null) toast(R.string.route_service_lost)
-                    endSession(userStop = false)
-                }
+                if (!isPlaying) endSession(userStop = false)
             }
         }
         lifecycleScope.launch {
@@ -226,6 +224,7 @@ class RoutePlaybackService : LifecycleService(), SavedStateRegistryOwner {
     private fun endSession(userStop: Boolean) {
         val wasActive = session != null
         releaseSession()
+        if (!userStop && wasActive && App.service == null) toast(R.string.route_service_lost)
         if (userStop && wasActive) {
             lifecycleScope.launch(start = CoroutineStart.UNDISPATCHED) { repository.saveIsPlaying(false) }
         }
@@ -293,8 +292,8 @@ class RoutePlaybackService : LifecycleService(), SavedStateRegistryOwner {
 
     private fun statusText(status: RouteStatus, pointCount: Int): String = when {
         status.phase == RoutePhase.FINISHED -> getString(R.string.route_status_finished)
-        status.waitRemainingS > 0 -> getString(R.string.route_status_waiting, RouteFormat.clock(status.waitRemainingS))
         status.phase == RoutePhase.PAUSED -> getString(R.string.route_status_paused)
+        status.waitRemainingS > 0 -> getString(R.string.route_status_waiting, RouteFormat.clock(status.waitRemainingS))
         else -> getString(R.string.route_status_point, status.pointNumber, pointCount)
     }
 }

@@ -59,7 +59,7 @@ fun SpeedChoicePicker(choice: SpeedChoice?, allowDefault: Boolean, onChange: (Sp
             )
         }
         if (choice is SpeedChoice.Custom) {
-            var text by remember(choice) { mutableStateOf(displayKmh(choice.speedMps).toString()) }
+            var text by remember { mutableStateOf(displayKmh(choice.speedMps).toString()) }
             val range = JOYSTICK_MIN_SPEED_MPS * MPS_TO_KMH..JOYSTICK_MAX_SPEED_MPS * MPS_TO_KMH
             val parsed = text.toFloatOrNull()
             val valid = parsed != null && parsed in range

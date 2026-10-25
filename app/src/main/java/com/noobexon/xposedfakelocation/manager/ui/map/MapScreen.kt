@@ -95,7 +95,7 @@ fun MapScreen(
     val fakeLocationUnset = stringResource(R.string.toast_unset_fake_location)
     val mapMode by routeEditorViewModel.mapMode.collectAsStateWithLifecycle()
     val draft by routeEditorViewModel.draft.collectAsStateWithLifecycle()
-    val playback by routeEditorViewModel.playback.collectAsStateWithLifecycle()
+    val routePlaying by routeEditorViewModel.isRoutePlaying.collectAsStateWithLifecycle()
     val joystickRunning by routeEditorViewModel.joystickRunning.collectAsStateWithLifecycle()
     val routeMode = mapMode == MapMode.ROUTE
 
@@ -156,7 +156,7 @@ fun MapScreen(
                         }
                     },
                     actions = {
-                        JoystickButton(enabled = isPlaying && uiState.lastClickedLocation != null && playback == null)
+                        JoystickButton(enabled = isPlaying && uiState.lastClickedLocation != null && !routePlaying)
                         IconButton(onClick = { mapViewModel.triggerCenterMapEvent() }) {
                             Icon(imageVector = Icons.Default.MyLocation, contentDescription = stringResource(R.string.cd_center))
                         }
@@ -276,9 +276,8 @@ fun MapScreen(
                     onLoadingFinished = mapViewModel::setLoadingFinished,
                     onInitialLocationResolved = mapViewModel::markInitialLocationResolved,
                     routeMode = routeMode,
-                    routePlaying = playback != null,
                     route = draft.route,
-                    routeEditable = !isPlaying && playback == null,
+                    routeEditable = !isPlaying && !routePlaying,
                     fitRouteEvent = routeEditorViewModel.fitRouteEvent,
                     onRouteTap = routeEditorViewModel::addPoint,
                     onRoutePointTap = routeEditorViewModel::showPointActions,
@@ -287,7 +286,7 @@ fun MapScreen(
                 )
                 MapModeSwitch(
                     mode = mapMode,
-                    enabled = !isPlaying && playback == null && !joystickRunning,
+                    enabled = !isPlaying && !routePlaying && !joystickRunning,
                     onModeChange = routeEditorViewModel::setMapMode,
                     modifier = Modifier.align(Alignment.TopCenter).padding(top = 8.dp),
                 )

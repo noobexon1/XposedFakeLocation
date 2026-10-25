@@ -7,7 +7,6 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import com.noobexon.xposedfakelocation.data.model.MapMode
-import com.noobexon.xposedfakelocation.manager.route.RoutePlaybackState
 import com.noobexon.xposedfakelocation.manager.ui.about.AboutScreen
 import com.noobexon.xposedfakelocation.manager.ui.favorites.FavoritesScreen
 import com.noobexon.xposedfakelocation.manager.ui.favorites.FavoritesTab
@@ -41,7 +40,7 @@ fun AppNavGraph(
                 navController = navController,
                 onFavoriteSelected = { favorite ->
                     mapViewModel.updateClickedLocation(GeoPoint(favorite.latitude, favorite.longitude))
-                    if (RoutePlaybackState.current.value == null) routeEditorViewModel.setMapMode(MapMode.LOCATION)
+                    routeEditorViewModel.setMapMode(MapMode.LOCATION)
                 },
                 onRouteSelected = routeEditorViewModel::requestLoadRoute,
                 initialTab = initialTab,

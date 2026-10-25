@@ -54,7 +54,7 @@ fun SegmentSheet(
         ) {
             Text(stringResource(R.string.route_segment_title, fromNumber, toNumber), style = MaterialTheme.typography.titleMedium)
             SpeedChoicePicker(choice = settings.speed, allowDefault = true, onChange = { onChange(settings.copy(speed = it)) })
-            var waitText by remember(settings.dwellSeconds) { mutableStateOf(settings.dwellSeconds.toString()) }
+            var waitText by remember { mutableStateOf(settings.dwellSeconds.toString()) }
             val wait = waitText.toIntOrNull()
             OutlinedTextField(
                 value = waitText,

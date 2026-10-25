@@ -1,9 +1,11 @@
 package com.noobexon.xposedfakelocation.manager.ui.map.route
 
 import android.app.Application
+import android.widget.Toast
 import androidx.compose.runtime.Immutable
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.noobexon.xposedfakelocation.R
 import com.noobexon.xposedfakelocation.data.model.MapMode
 import com.noobexon.xposedfakelocation.data.model.Route
 import com.noobexon.xposedfakelocation.data.model.RouteDraft
@@ -22,6 +24,8 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
@@ -65,6 +69,10 @@ class RouteEditorViewModel(application: Application) : AndroidViewModel(applicat
         .stateIn(viewModelScope, SharingStarted.Eagerly, RouteSummary.of(_draft.value.route, joystickSettings.value))
 
     val playback: StateFlow<RoutePlaybackStatus?> = RoutePlaybackState.current
+
+    /** Whether a route is playing; unlike [playback] it doesn't change on every progress tick. */
+    val isRoutePlaying: StateFlow<Boolean> = playback.map { it != null }.distinctUntilChanged()
+        .stateIn(viewModelScope, SharingStarted.Eagerly, playback.value != null)
     val joystickRunning: StateFlow<Boolean> = JoystickRunningState.running
 
     private val _ui = MutableStateFlow(RouteEditorUiState())
@@ -128,8 +136,12 @@ class RouteEditorViewModel(application: Application) : AndroidViewModel(applicat
         showSaveDialog(false)
     }
 
-    /** Loads a favorite, asking first when that would discard unsaved edits. */
+    /** Loads a favorite, asking first when that would discard unsaved edits. Refused while a route plays. */
     fun requestLoadRoute(route: Route) {
+        if (playback.value != null) {
+            Toast.makeText(getApplication<Application>(), R.string.route_stop_first, Toast.LENGTH_SHORT).show()
+            return
+        }
         val current = _draft.value
         val wouldLoseEdits = current.dirty && current.route.points.isNotEmpty()
         if (wouldLoseEdits) _ui.update { it.copy(pendingLoad = route) } else loadRoute(route)
