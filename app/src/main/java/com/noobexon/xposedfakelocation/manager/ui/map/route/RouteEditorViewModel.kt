@@ -13,6 +13,7 @@ import com.noobexon.xposedfakelocation.data.model.SegmentSettings
 import com.noobexon.xposedfakelocation.data.model.SpeedChoice
 import com.noobexon.xposedfakelocation.data.repository.PreferencesRepository
 import com.noobexon.xposedfakelocation.manager.joystick.JoystickRunningState
+import com.noobexon.xposedfakelocation.manager.localization.LocaleController
 import com.noobexon.xposedfakelocation.manager.route.RouteEditor
 import com.noobexon.xposedfakelocation.manager.route.RoutePlaybackState
 import com.noobexon.xposedfakelocation.manager.route.RoutePlaybackStatus
@@ -139,7 +140,8 @@ class RouteEditorViewModel(application: Application) : AndroidViewModel(applicat
     /** Loads a favorite, asking first when that would discard unsaved edits. Refused while a route plays. */
     fun requestLoadRoute(route: Route) {
         if (playback.value != null) {
-            Toast.makeText(getApplication<Application>(), R.string.route_stop_first, Toast.LENGTH_SHORT).show()
+            val context = LocaleController.attachBaseContext(getApplication<Application>())
+            Toast.makeText(context, R.string.route_stop_first, Toast.LENGTH_SHORT).show()
             return
         }
         val current = _draft.value
