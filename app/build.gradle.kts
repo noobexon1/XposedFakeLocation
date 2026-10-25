@@ -87,6 +87,7 @@ dependencies {
     implementation(libs.osmdroid.android)
     implementation(libs.androidx.material.icons.extended)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
+    implementation(libs.androidx.lifecycle.service)
     implementation(libs.line.awesome.android)
     implementation(libs.font.awesome)
     implementation(libs.androidx.navigation.compose)

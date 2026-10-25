@@ -75,7 +75,10 @@ object LocaleController {
         if (languageTag.isBlank()) return context
 
         val locale = Locale.forLanguageTag(languageTag)
-        val configuration = Configuration(context.resources.configuration)
+        // Override only locale fields: a full copy would freeze orientation, screen size and
+        // night mode for contexts that outlive configuration changes (e.g. the overlay service).
+        // fontScale 0 means "undefined", so the user's font scale still applies.
+        val configuration = Configuration().apply { fontScale = 0f }
         configuration.setLocale(locale)
         configuration.setLayoutDirection(locale)
         return context.createConfigurationContext(configuration)

@@ -40,10 +40,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.noobexon.xposedfakelocation.R
+import com.noobexon.xposedfakelocation.manager.joystick.JoystickButton
 import com.noobexon.xposedfakelocation.manager.ui.navigation.Screen
 import kotlinx.coroutines.launch
 
@@ -121,7 +123,14 @@ fun MapScreen(
             modifier = Modifier.fillMaxSize(),
             topBar = {
                 TopAppBar(
-                    title = { Text(stringResource(R.string.app_name)) },
+                    title = {
+                        Text(
+                            text = stringResource(R.string.app_name),
+                            style = MaterialTheme.typography.titleMedium,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    },
                     colors = TopAppBarDefaults.topAppBarColors(
                         containerColor = MaterialTheme.colorScheme.primary,
                         titleContentColor = MaterialTheme.colorScheme.onPrimary,
@@ -134,6 +143,7 @@ fun MapScreen(
                         }
                     },
                     actions = {
+                        JoystickButton(enabled = isPlaying && uiState.lastClickedLocation != null)
                         IconButton(onClick = { mapViewModel.triggerCenterMapEvent() }) {
                             Icon(imageVector = Icons.Default.MyLocation, contentDescription = stringResource(R.string.cd_center))
                         }

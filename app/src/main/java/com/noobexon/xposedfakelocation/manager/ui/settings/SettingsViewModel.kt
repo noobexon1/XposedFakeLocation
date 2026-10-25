@@ -8,6 +8,10 @@ import android.util.Log
 import com.noobexon.xposedfakelocation.BuildConfig
 import com.noobexon.xposedfakelocation.data.backup.SettingsBackupManager
 import com.noobexon.xposedfakelocation.data.model.AppearanceBackup
+import com.noobexon.xposedfakelocation.data.model.JoystickBackup
+import com.noobexon.xposedfakelocation.data.model.JoystickMode
+import com.noobexon.xposedfakelocation.data.model.JoystickPreset
+import com.noobexon.xposedfakelocation.data.model.JoystickSettings
 import com.noobexon.xposedfakelocation.data.model.SETTINGS_BACKUP_VERSION
 import com.noobexon.xposedfakelocation.data.model.SettingsBackup
 import com.noobexon.xposedfakelocation.data.model.SpoofingBackup
@@ -19,6 +23,11 @@ import com.noobexon.xposedfakelocation.data.DEFAULT_ENABLE_BROADCAST_CONTROL
 import com.noobexon.xposedfakelocation.data.DEFAULT_ENABLE_SYSTEM_HOOKS
 import com.noobexon.xposedfakelocation.data.DEFAULT_ENABLE_WIFI_IDENTITY
 import com.noobexon.xposedfakelocation.data.DEFAULT_HIDE_FAKE_LOCATION_TOAST
+import com.noobexon.xposedfakelocation.data.DEFAULT_JOYSTICK_MAX_SPEED
+import com.noobexon.xposedfakelocation.data.DEFAULT_JOYSTICK_PRESET_BIKE
+import com.noobexon.xposedfakelocation.data.DEFAULT_JOYSTICK_PRESET_DRIVE
+import com.noobexon.xposedfakelocation.data.DEFAULT_JOYSTICK_PRESET_RUN
+import com.noobexon.xposedfakelocation.data.DEFAULT_JOYSTICK_PRESET_WALK
 import com.noobexon.xposedfakelocation.data.DEFAULT_LANGUAGE_TAG
 import com.noobexon.xposedfakelocation.data.DEFAULT_MEAN_SEA_LEVEL
 import com.noobexon.xposedfakelocation.data.DEFAULT_MEAN_SEA_LEVEL_ACCURACY
@@ -307,6 +316,24 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         preferencesRepository::saveEnableBroadcastControl
     )
 
+    // ---- Joystick (local) --------------------------------------------------------------------
+
+    /** Joystick configuration; speeds in m/s. */
+    val joystickSettings: StateFlow<JoystickSettings> = preferencesRepository.getJoystickSettingsFlow()
+        .stateIn(viewModelScope, SharingStarted.Eagerly, preferencesRepository.getJoystickSettings())
+
+    fun setJoystickMode(mode: JoystickMode) = preferencesRepository.saveJoystickMode(mode)
+
+    /** @param preset Speed preset used in Constant mode. */
+    fun setJoystickSelectedPreset(preset: JoystickPreset) = preferencesRepository.saveJoystickSelectedPreset(preset)
+
+    /** @param speedMps Dynamic-mode top speed in m/s. */
+    fun setJoystickMaxSpeed(speedMps: Float) = preferencesRepository.saveJoystickMaxSpeed(speedMps)
+
+    /** @param speedMps Constant-mode speed for [preset] in m/s. */
+    fun setJoystickPresetSpeed(preset: JoystickPreset, speedMps: Float) =
+        preferencesRepository.saveJoystickPresetSpeed(preset, speedMps)
+
     // ---- System hooks ------------------------------------------------------------------------
 
     /**
@@ -574,6 +601,11 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             NumericSetting.MEAN_SEA_LEVEL_ACCURACY -> setMeanSeaLevelAccuracy(DEFAULT_MEAN_SEA_LEVEL_ACCURACY)
             NumericSetting.SPEED -> setSpeed(DEFAULT_SPEED)
             NumericSetting.SPEED_ACCURACY -> setSpeedAccuracy(DEFAULT_SPEED_ACCURACY)
+            NumericSetting.JOYSTICK_MAX_SPEED -> setJoystickMaxSpeed(DEFAULT_JOYSTICK_MAX_SPEED)
+            NumericSetting.JOYSTICK_PRESET_WALK -> setJoystickPresetSpeed(JoystickPreset.WALK, DEFAULT_JOYSTICK_PRESET_WALK)
+            NumericSetting.JOYSTICK_PRESET_RUN -> setJoystickPresetSpeed(JoystickPreset.RUN, DEFAULT_JOYSTICK_PRESET_RUN)
+            NumericSetting.JOYSTICK_PRESET_BIKE -> setJoystickPresetSpeed(JoystickPreset.BIKE, DEFAULT_JOYSTICK_PRESET_BIKE)
+            NumericSetting.JOYSTICK_PRESET_DRIVE -> setJoystickPresetSpeed(JoystickPreset.DRIVE, DEFAULT_JOYSTICK_PRESET_DRIVE)
         }
     }
 
@@ -621,6 +653,10 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         resetWifiBssid()
         resetWifiRssi()
         setEnableBroadcastControl(DEFAULT_ENABLE_BROADCAST_CONTROL)
+        JoystickSettings().let { defaults ->
+            setJoystickMode(defaults.mode)
+            setJoystickSelectedPreset(defaults.selectedPreset)
+        }
     }
 
     /**
@@ -720,6 +756,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                 themeOption = ui.themeOption.tag,
                 languageTag = ui.languageTag,
             ),
+            joystick = JoystickBackup.from(preferencesRepository.getJoystickSettings()),
         )
     }
 

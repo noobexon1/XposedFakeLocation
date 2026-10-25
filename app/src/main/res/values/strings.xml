@@ -27,6 +27,7 @@
     <string name="cd_more_options">More options</string>
     <string name="unit_meters" translatable="false">m</string>
     <string name="unit_meters_per_second" translatable="false">m/s</string>
+    <string name="unit_kilometers_per_hour" translatable="false">km/h</string>
     <string name="cd_menu">Menu</string>
     <string name="cd_center">Center</string>
     <string name="cd_options">Options</string>
@@ -65,6 +66,7 @@
     <string name="category_location">Location</string>
     <string name="category_altitude">Altitude</string>
     <string name="category_movement">Movement</string>
+    <string name="category_joystick">Joystick</string>
 
     <string name="setting_theme_title">App theme</string>
     <string name="setting_theme_description">Sets the colour scheme used throughout the manager app.</string>
@@ -147,6 +149,26 @@
     <string name="setting_speed_accuracy_description">Sets the accuracy of your speed value</string>
     <string name="setting_speed_accuracy_label">Speed Accuracy</string>
 
+    <string name="setting_joystick_constant_mode_title">Constant speed</string>
+    <string name="setting_joystick_constant_mode_description">On: the joystick moves at the selected speed preset (Walk, Run, Bike or Drive) and only steers the direction. Off (Dynamic): speed follows how far the stick is pushed, up to the max speed</string>
+    <string name="setting_joystick_preset_title">Speed preset</string>
+    <string name="setting_joystick_preset_description">Which preset speed the joystick moves at in Constant speed mode</string>
+    <string name="setting_joystick_max_speed_title">Joystick max speed</string>
+    <string name="setting_joystick_max_speed_description">Top speed in Dynamic mode, reached when the stick is pushed all the way</string>
+    <string name="setting_joystick_max_speed_label">Max speed</string>
+    <string name="setting_joystick_walk_title">Walk preset speed</string>
+    <string name="setting_joystick_walk_description">Speed used by the Walk preset in Constant mode</string>
+    <string name="setting_joystick_walk_label">Walk</string>
+    <string name="setting_joystick_run_title">Run preset speed</string>
+    <string name="setting_joystick_run_description">Speed used by the Run preset in Constant mode</string>
+    <string name="setting_joystick_run_label">Run</string>
+    <string name="setting_joystick_bike_title">Bike preset speed</string>
+    <string name="setting_joystick_bike_description">Speed used by the Bike preset in Constant mode</string>
+    <string name="setting_joystick_bike_label">Bike</string>
+    <string name="setting_joystick_drive_title">Drive preset speed</string>
+    <string name="setting_joystick_drive_description">Speed used by the Drive preset in Constant mode</string>
+    <string name="setting_joystick_drive_label">Drive</string>
+
     <string name="gps_noise_low">Low</string>
     <string name="gps_noise_normal">Normal</string>
     <string name="gps_noise_high">High</string>
@@ -222,4 +244,17 @@
     <string name="about_contributors_error">Couldn\'t load contributors.</string>
     <string name="about_contributors_empty">No contributors found.</string>
     <string name="about_contributors_retry">Retry</string>
+
+    <string name="cd_joystick_drag">Move joystick</string>
+    <string name="cd_joystick_collapse">Minimize joystick</string>
+    <string name="cd_joystick_expand">Expand joystick</string>
+    <string name="cd_joystick_close">Close joystick</string>
+    <string name="cd_joystick_speed">Current speed: %1$d km/h</string>
+    <string name="joystick_notification_channel">Joystick overlay</string>
+    <string name="joystick_notification_title">Joystick active</string>
+    <string name="joystick_notification_text">Tap to open the app. Use Stop to close the joystick.</string>
+    <string name="joystick_notification_stop">Stop joystick</string>
+    <string name="cd_joystick_open">Open joystick</string>
+    <string name="joystick_overlay_permission_title">Allow display over other apps</string>
+    <string name="joystick_overlay_permission_message">The joystick floats over other apps so you can steer while a target app is open. Grant \"Display over other apps\" on the next screen.</string>
 </resources>

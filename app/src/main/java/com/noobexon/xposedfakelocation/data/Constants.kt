@@ -121,3 +121,29 @@ const val DEFAULT_MAP_ZOOM = 18.0
 const val WORLD_MAP_ZOOM = 2.0
 const val LOCATION_DETECTION_MAX_ATTEMPTS = 80
 const val LOCATION_DETECTION_DELAY_MS = 100L
+
+// JOYSTICK
+const val KEY_JOYSTICK_STATE = "joystick_state"
+const val KEY_JOYSTICK_MODE = "joystick_mode"
+const val KEY_JOYSTICK_MAX_SPEED = "joystick_max_speed"
+const val KEY_JOYSTICK_PRESET_WALK = "joystick_preset_walk"
+const val KEY_JOYSTICK_PRESET_RUN = "joystick_preset_run"
+const val KEY_JOYSTICK_PRESET_BIKE = "joystick_preset_bike"
+const val KEY_JOYSTICK_PRESET_DRIVE = "joystick_preset_drive"
+const val KEY_JOYSTICK_SELECTED_PRESET = "joystick_selected_preset"
+const val KEY_JOYSTICK_OVERLAY_X = "joystick_overlay_x"
+const val KEY_JOYSTICK_OVERLAY_Y = "joystick_overlay_y"
+
+const val MPS_TO_KMH = 3.6f
+const val DEFAULT_JOYSTICK_MAX_SPEED = 50f / MPS_TO_KMH
+const val DEFAULT_JOYSTICK_PRESET_WALK = 1.4f
+const val DEFAULT_JOYSTICK_PRESET_RUN = 3.0f
+const val DEFAULT_JOYSTICK_PRESET_BIKE = 5.5f
+const val DEFAULT_JOYSTICK_PRESET_DRIVE = 14.0f
+
+/** Hooks ignore a joystick state older than this, so a killed overlay can't freeze the motion override. */
+const val JOYSTICK_STALE_MS = 5_000L
+const val JOYSTICK_SPEED_ACCURACY = 0.5f
+/** Accepted joystick speed range (m/s), matching the 1..200 km/h Settings sliders. */
+const val JOYSTICK_MIN_SPEED_MPS = 1f / MPS_TO_KMH
+const val JOYSTICK_MAX_SPEED_MPS = 200f / MPS_TO_KMH

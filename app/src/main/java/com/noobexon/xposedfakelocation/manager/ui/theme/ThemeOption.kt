@@ -1,6 +1,8 @@
 package com.noobexon.xposedfakelocation.manager.ui.theme
 
 import androidx.annotation.StringRes
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.runtime.Composable
 import com.noobexon.xposedfakelocation.R
 import com.noobexon.xposedfakelocation.data.DEFAULT_THEME_OPTION
 import com.noobexon.xposedfakelocation.manager.ui.theme.ThemeOption.Companion.fromTag
@@ -39,4 +41,12 @@ enum class ThemeOption(
         fun fromTag(tag: String): ThemeOption =
             entries.firstOrNull { it.tag == tag } ?: SYSTEM
     }
+}
+
+/** Whether this option resolves to the dark colour scheme; [ThemeOption.SYSTEM] follows the device setting. */
+@Composable
+fun ThemeOption.isDark(): Boolean = when (this) {
+    ThemeOption.SYSTEM -> isSystemInDarkTheme()
+    ThemeOption.LIGHT -> false
+    ThemeOption.DARK -> true
 }

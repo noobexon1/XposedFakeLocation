@@ -39,6 +39,7 @@ androidx-material3 = { group = "androidx.compose.material3", name = "material3" 
 osmdroid-android = { group = "org.osmdroid", name = "osmdroid-android", version.ref = "osmdroidAndroid" }
 androidx-material-icons-extended = { group = "androidx.compose.material", name = "material-icons-extended", version.ref = "materialIconsExtended" }
 androidx-lifecycle-viewmodel-compose = { group = "androidx.lifecycle", name = "lifecycle-viewmodel-compose", version.ref = "lifecycleViewmodelCompose" }
+androidx-lifecycle-service = { group = "androidx.lifecycle", name = "lifecycle-service", version.ref = "lifecycleViewmodelCompose" }
 line-awesome-android = { group = "br.com.devsrsouza.compose.icons", name = "line-awesome-android", version.ref = "lineAwesomeAndroid" }
 font-awesome = { group = "br.com.devsrsouza.compose.icons.android", name = "font-awesome", version.ref = "fontAwesome" }
 androidx-navigation-compose = { group = "androidx.navigation", name = "navigation-compose", version.ref = "navigationCompose" }

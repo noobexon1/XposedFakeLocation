@@ -7,6 +7,7 @@ import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.compose.BackHandler
+import androidx.annotation.StringRes
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -92,6 +93,9 @@ import androidx.lifecycle.repeatOnLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.noobexon.xposedfakelocation.R
+import com.noobexon.xposedfakelocation.data.MPS_TO_KMH
+import com.noobexon.xposedfakelocation.data.model.JoystickMode
+import com.noobexon.xposedfakelocation.data.model.JoystickPreset
 import com.noobexon.xposedfakelocation.manager.localization.LanguageOption
 import com.noobexon.xposedfakelocation.manager.localization.LocaleController
 import com.noobexon.xposedfakelocation.manager.ui.theme.ThemeOption
@@ -171,6 +175,17 @@ fun SettingsScreen(
     }
 
     val uiState by settingsViewModel.uiState.collectAsStateWithLifecycle()
+    val joystick by settingsViewModel.joystickSettings.collectAsStateWithLifecycle()
+
+    fun joystickSpeedEntry(setting: NumericSetting, speedMps: Float, save: (Float) -> Unit) = SettingEntry.Numeric(
+        setting = setting,
+        enabled = true,
+        onEnabledChange = {},
+        value = speedMps * MPS_TO_KMH,
+        onValueChange = { kmh -> save(kmh / MPS_TO_KMH) },
+        onReset = { settingsViewModel.resetNumeric(setting) },
+        showToggle = false,
+    )
 
     var pendingImportUri by remember { mutableStateOf<Uri?>(null) }
 
@@ -204,6 +219,19 @@ fun SettingsScreen(
             SettingEntry.Numeric(NumericSetting.SPEED, uiState.useSpeed, settingsViewModel::setUseSpeed, uiState.speed, settingsViewModel::setSpeed, onReset = { settingsViewModel.resetNumeric(NumericSetting.SPEED) }),
             SettingEntry.Numeric(NumericSetting.SPEED_ACCURACY, uiState.useSpeedAccuracy, settingsViewModel::setUseSpeedAccuracy, uiState.speedAccuracy, settingsViewModel::setSpeedAccuracy, onReset = { settingsViewModel.resetNumeric(NumericSetting.SPEED_ACCURACY) })
         ),
+        SettingsCategory.JOYSTICK to buildList {
+            add(SettingEntry.Switch(SettingKeys.JOYSTICK_CONSTANT_MODE, R.string.setting_joystick_constant_mode_title, R.string.setting_joystick_constant_mode_description, joystick.mode == JoystickMode.CONSTANT) { constant ->
+                settingsViewModel.setJoystickMode(if (constant) JoystickMode.CONSTANT else JoystickMode.DYNAMIC)
+            })
+            if (joystick.mode == JoystickMode.CONSTANT) {
+                add(SettingEntry.JoystickPresetChoice(joystick.selectedPreset, settingsViewModel::setJoystickSelectedPreset))
+            }
+            add(joystickSpeedEntry(NumericSetting.JOYSTICK_MAX_SPEED, joystick.maxSpeedMps, settingsViewModel::setJoystickMaxSpeed))
+            add(joystickSpeedEntry(NumericSetting.JOYSTICK_PRESET_WALK, joystick.walkSpeedMps) { settingsViewModel.setJoystickPresetSpeed(JoystickPreset.WALK, it) })
+            add(joystickSpeedEntry(NumericSetting.JOYSTICK_PRESET_RUN, joystick.runSpeedMps) { settingsViewModel.setJoystickPresetSpeed(JoystickPreset.RUN, it) })
+            add(joystickSpeedEntry(NumericSetting.JOYSTICK_PRESET_BIKE, joystick.bikeSpeedMps) { settingsViewModel.setJoystickPresetSpeed(JoystickPreset.BIKE, it) })
+            add(joystickSpeedEntry(NumericSetting.JOYSTICK_PRESET_DRIVE, joystick.driveSpeedMps) { settingsViewModel.setJoystickPresetSpeed(JoystickPreset.DRIVE, it) })
+        },
         SettingsCategory.NOTIFICATIONS to listOf(
             SettingEntry.Switch(SettingKeys.HIDE_TOAST, R.string.setting_hide_toast_title, R.string.setting_hide_toast_description, uiState.hideFakeLocationToast, settingsViewModel::setHideFakeLocationToast)
         ),
@@ -614,7 +642,8 @@ private fun SettingEntryRow(entry: SettingEntry) {
             onUseValueChange = entry.onEnabledChange,
             value = entry.value,
             onValueChange = entry.onValueChange,
-            onReset = entry.onReset
+            onReset = entry.onReset,
+            showToggle = entry.showToggle
         )
         is SettingEntry.Text -> TextSettingItem(
             title = stringResource(entry.titleRes),
@@ -632,6 +661,14 @@ private fun SettingEntryRow(entry: SettingEntry) {
         is SettingEntry.Theme -> ThemeSettingItem(
             selectedTheme = entry.selected,
             onThemeSelected = entry.onSelected
+        )
+        is SettingEntry.JoystickPresetChoice -> SingleChoiceSettingItem(
+            titleRes = entry.titleRes,
+            descriptionRes = entry.descriptionRes,
+            options = JoystickPreset.entries,
+            selected = entry.selected,
+            labelRes = { it.labelRes },
+            onSelected = entry.onSelected
         )
     }
 }
@@ -931,18 +968,44 @@ private fun LanguageSelectionDialog(
 }
 
 /**
- * Theme picker row. Displays the setting title with an info tooltip button and the currently
- * active theme name on the right. Tapping anywhere on the row opens [ThemeSelectionDialog];
- * selecting an option there applies it immediately — no Activity recreation is required.
+ * Theme picker row. Selecting an option applies it immediately — no Activity recreation is
+ * required.
  *
  * @param selectedTheme Currently active [ThemeOption], shown in the collapsed row.
- * @param onThemeSelected Invoked with the chosen [ThemeOption] after the user taps an item in
- *   the dialog.
+ * @param onThemeSelected Invoked with the chosen [ThemeOption].
  */
 @Composable
 private fun ThemeSettingItem(
     selectedTheme: ThemeOption,
     onThemeSelected: (ThemeOption) -> Unit
+) {
+    SingleChoiceSettingItem(
+        titleRes = R.string.setting_theme_title,
+        descriptionRes = R.string.setting_theme_description,
+        options = ThemeOption.entries,
+        selected = selectedTheme,
+        labelRes = { it.labelRes },
+        onSelected = onThemeSelected
+    )
+}
+
+/**
+ * Generic single-choice row. Displays the setting title with an info tooltip button and the
+ * selected option's label on the right. Tapping anywhere on the row opens [SingleChoiceDialog].
+ *
+ * @param options Choices listed in the dialog, in display order.
+ * @param selected Currently active option, shown in the collapsed row.
+ * @param labelRes Maps an option to its display-name string resource.
+ * @param onSelected Invoked with the option the user taps in the dialog.
+ */
+@Composable
+private fun <T> SingleChoiceSettingItem(
+    @StringRes titleRes: Int,
+    @StringRes descriptionRes: Int,
+    options: List<T>,
+    selected: T,
+    labelRes: (T) -> Int,
+    onSelected: (T) -> Unit
 ) {
     var showDialog by remember { mutableStateOf(false) }
     var showTooltip by remember { mutableStateOf(false) }
@@ -953,14 +1016,14 @@ private fun ThemeSettingItem(
             .padding(Dimensions.SPACING_SMALL)
     ) {
         SettingHeader(
-            title = stringResource(R.string.setting_theme_title),
-            description = stringResource(R.string.setting_theme_description),
+            title = stringResource(titleRes),
+            description = stringResource(descriptionRes),
             showTooltip = showTooltip,
             onToggleTooltip = { showTooltip = !showTooltip },
             onClick = { showDialog = true },
             trailing = {
                 Text(
-                    text = stringResource(selectedTheme.labelRes),
+                    text = stringResource(labelRes(selected)),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(start = Dimensions.SPACING_SMALL)
@@ -970,10 +1033,13 @@ private fun ThemeSettingItem(
     }
 
     if (showDialog) {
-        ThemeSelectionDialog(
-            selectedTheme = selectedTheme,
-            onThemeSelected = {
-                onThemeSelected(it)
+        SingleChoiceDialog(
+            titleRes = titleRes,
+            options = options,
+            selected = selected,
+            labelRes = labelRes,
+            onSelected = {
+                onSelected(it)
                 showDialog = false
             },
             onDismiss = { showDialog = false }
@@ -982,43 +1048,44 @@ private fun ThemeSettingItem(
 }
 
 /**
- * Single-choice theme picker dialog. Each [ThemeOption] is displayed as a radio row with its
- * localised label. Selecting a row immediately applies the theme — no restart needed.
+ * Single-choice picker dialog. Each option is displayed as a radio row with its localised label.
  *
- * @param selectedTheme Currently active option, pre-selected in the list.
- * @param onThemeSelected Invoked with the tapped [ThemeOption]; the dialog is then dismissed by
- *   the caller ([ThemeSettingItem]).
+ * @param selected Currently active option, pre-selected in the list.
+ * @param onSelected Invoked with the tapped option; the caller dismisses the dialog.
  * @param onDismiss Invoked when the dialog is dismissed without selecting an option (Cancel button
  *   or outside tap).
  */
 @Composable
-private fun ThemeSelectionDialog(
-    selectedTheme: ThemeOption,
-    onThemeSelected: (ThemeOption) -> Unit,
+private fun <T> SingleChoiceDialog(
+    @StringRes titleRes: Int,
+    options: List<T>,
+    selected: T,
+    labelRes: (T) -> Int,
+    onSelected: (T) -> Unit,
     onDismiss: () -> Unit
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.setting_theme_title)) },
+        title = { Text(stringResource(titleRes)) },
         text = {
             Column(modifier = Modifier.selectableGroup()) {
-                ThemeOption.entries.forEach { option ->
-                    val selected = option == selectedTheme
+                options.forEach { option ->
+                    val isSelected = option == selected
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(Dimensions.SPACING_MEDIUM),
                         modifier = Modifier
                             .fillMaxWidth()
                             .selectable(
-                                selected = selected,
+                                selected = isSelected,
                                 role = Role.RadioButton,
-                                onClick = { onThemeSelected(option) }
+                                onClick = { onSelected(option) }
                             )
                             .padding(vertical = Dimensions.SPACING_SMALL)
                     ) {
-                        RadioButton(selected = selected, onClick = null)
+                        RadioButton(selected = isSelected, onClick = null)
                         Text(
-                            text = stringResource(option.labelRes),
+                            text = stringResource(labelRes(option)),
                             style = MaterialTheme.typography.bodyLarge
                         )
                     }
@@ -1175,6 +1242,8 @@ private fun TextSettingItem(
  * @param value Current committed value in the unit described by [NumericSetting.unitRes].
  * @param onValueChange Invoked with the final [Float] once the user finishes editing. Never called
  *   mid-keystroke or mid-drag.
+ * @param onReset Optional per-row "reset to default" handler, shown while the value is visible.
+ * @param showToggle When `false`, no enable switch is shown and the value controls are always visible.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -1184,7 +1253,8 @@ private fun NumericSettingItem(
     onUseValueChange: (Boolean) -> Unit,
     value: Float,
     onValueChange: (Float) -> Unit,
-    onReset: (() -> Unit)? = null
+    onReset: (() -> Unit)? = null,
+    showToggle: Boolean = true
 ) {
     val title = stringResource(setting.titleRes)
     val description = stringResource(setting.descriptionRes)
@@ -1196,6 +1266,7 @@ private fun NumericSettingItem(
     val focusManager = LocalFocusManager.current
     var showTooltip by remember { mutableStateOf(false) }
     val adjustDescription = stringResource(R.string.setting_adjust_value, title)
+    val showValue = useValue || !showToggle
 
     Column(
         modifier = Modifier
@@ -1208,13 +1279,15 @@ private fun NumericSettingItem(
             showTooltip = showTooltip,
             onToggleTooltip = { showTooltip = !showTooltip },
             // Only offer a value reset when the setting is enabled (i.e. a value is in play).
-            onReset = onReset?.takeIf { useValue },
+            onReset = onReset?.takeIf { showValue },
             trailing = {
-                SettingSwitch(title = title, checked = useValue, onCheckedChange = onUseValueChange)
+                if (showToggle) {
+                    SettingSwitch(title = title, checked = useValue, onCheckedChange = onUseValueChange)
+                }
             }
         )
 
-        if (useValue) {
+        if (showValue) {
             Spacer(modifier = Modifier.height(Dimensions.SPACING_MEDIUM))
 
             var sliderValue by remember { mutableFloatStateOf(value) }

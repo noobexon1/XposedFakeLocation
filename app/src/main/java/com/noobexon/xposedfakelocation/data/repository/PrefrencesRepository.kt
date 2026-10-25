@@ -34,6 +34,8 @@ import com.noobexon.xposedfakelocation.data.DEFAULT_VERTICAL_ACCURACY
 import com.noobexon.xposedfakelocation.data.DEFAULT_WIFI_BSSID
 import com.noobexon.xposedfakelocation.data.DEFAULT_WIFI_RSSI
 import com.noobexon.xposedfakelocation.data.DEFAULT_WIFI_SSID
+import com.noobexon.xposedfakelocation.data.JOYSTICK_MAX_SPEED_MPS
+import com.noobexon.xposedfakelocation.data.JOYSTICK_MIN_SPEED_MPS
 import com.noobexon.xposedfakelocation.data.KEY_ACCURACY
 import com.noobexon.xposedfakelocation.data.KEY_ALTITUDE
 import com.noobexon.xposedfakelocation.data.KEY_ENABLE_BROADCAST_CONTROL
@@ -42,6 +44,16 @@ import com.noobexon.xposedfakelocation.data.KEY_ENABLE_WIFI_IDENTITY
 import com.noobexon.xposedfakelocation.data.KEY_FAVORITES
 import com.noobexon.xposedfakelocation.data.KEY_HIDE_FAKE_LOCATION_TOAST
 import com.noobexon.xposedfakelocation.data.KEY_IS_PLAYING
+import com.noobexon.xposedfakelocation.data.KEY_JOYSTICK_MAX_SPEED
+import com.noobexon.xposedfakelocation.data.KEY_JOYSTICK_MODE
+import com.noobexon.xposedfakelocation.data.KEY_JOYSTICK_OVERLAY_X
+import com.noobexon.xposedfakelocation.data.KEY_JOYSTICK_OVERLAY_Y
+import com.noobexon.xposedfakelocation.data.KEY_JOYSTICK_PRESET_BIKE
+import com.noobexon.xposedfakelocation.data.KEY_JOYSTICK_PRESET_DRIVE
+import com.noobexon.xposedfakelocation.data.KEY_JOYSTICK_PRESET_RUN
+import com.noobexon.xposedfakelocation.data.KEY_JOYSTICK_PRESET_WALK
+import com.noobexon.xposedfakelocation.data.KEY_JOYSTICK_SELECTED_PRESET
+import com.noobexon.xposedfakelocation.data.KEY_JOYSTICK_STATE
 import com.noobexon.xposedfakelocation.data.KEY_LANGUAGE_TAG
 import com.noobexon.xposedfakelocation.data.KEY_LAST_CLICKED_LOCATION
 import com.noobexon.xposedfakelocation.data.KEY_MAP_ZOOM
@@ -70,6 +82,10 @@ import com.noobexon.xposedfakelocation.data.MIN_WIFI_RSSI
 import com.noobexon.xposedfakelocation.data.REMOTE_PREFS_GROUP
 import com.noobexon.xposedfakelocation.data.SHARED_PREFS_FILE
 import com.noobexon.xposedfakelocation.data.model.FavoriteLocation
+import com.noobexon.xposedfakelocation.data.model.JoystickMode
+import com.noobexon.xposedfakelocation.data.model.JoystickPreset
+import com.noobexon.xposedfakelocation.data.model.JoystickSettings
+import com.noobexon.xposedfakelocation.data.model.JoystickState
 import com.noobexon.xposedfakelocation.data.model.LastClickedLocation
 import com.noobexon.xposedfakelocation.data.normalizeWifiSsid
 import com.noobexon.xposedfakelocation.manager.App
@@ -97,6 +113,11 @@ import java.util.Locale
  * keeping read/write symmetry with the hook-side PreferencesUtil.
  */
 class PreferencesRepository(context: Context) {
+    private companion object {
+        /** Process-wide: serializes marker writes across the per-caller repository instances. */
+        val markerLock = Any()
+    }
+
     private val tag = "PreferencesRepository"
 
     private val gson = Gson()
@@ -116,20 +137,23 @@ class PreferencesRepository(context: Context) {
             if (prefs == null) {
                 flowOf(default)
             } else {
-                prefsChangeFlow(prefs, key) { read(prefs) }
+                prefsChangeFlow(prefs, setOf(key)) { read(prefs) }
             }
         }
 
     private fun <T> localFlow(key: String, read: (SharedPreferences) -> T): Flow<T> =
-        prefsChangeFlow(localPrefs, key) { read(localPrefs) }
+        localFlow(setOf(key), read)
+
+    private fun <T> localFlow(keys: Set<String>, read: (SharedPreferences) -> T): Flow<T> =
+        prefsChangeFlow(localPrefs, keys) { read(localPrefs) }
 
     private fun <T> prefsChangeFlow(
         prefs: SharedPreferences,
-        key: String,
+        keys: Set<String>,
         read: () -> T
     ): Flow<T> = callbackFlow {
         val listener = SharedPreferences.OnSharedPreferenceChangeListener { _, changedKey ->
-            if (changedKey == null || changedKey == key) trySend(read())
+            if (changedKey == null || changedKey in keys) trySend(read())
         }
         trySend(read())
         prefs.registerOnSharedPreferenceChangeListener(listener)
@@ -175,14 +199,14 @@ class PreferencesRepository(context: Context) {
 
     suspend fun saveLastClickedLocation(latitude: Double, longitude: Double) {
         val json = gson.toJson(LastClickedLocation(latitude, longitude))
-        editRemote { putString(KEY_LAST_CLICKED_LOCATION, json) }
+        synchronized(markerLock) { editRemote { putString(KEY_LAST_CLICKED_LOCATION, json) } }
     }
 
     fun getLastClickedLocation(): LastClickedLocation? =
         parseLastClickedLocation(remotePrefs()?.getString(KEY_LAST_CLICKED_LOCATION, null))
 
     suspend fun clearLastClickedLocation() {
-        editRemote { remove(KEY_LAST_CLICKED_LOCATION) }
+        synchronized(markerLock) { editRemote { remove(KEY_LAST_CLICKED_LOCATION) } }
         saveIsPlaying(false)
         Log.d(tag, "Cleared 'LastClickedLocation' and set 'IsPlaying' to false")
     }
@@ -196,6 +220,27 @@ class PreferencesRepository(context: Context) {
             null
         }
     }
+    // endregion
+
+    // region Joystick State (remote)
+    /** Publishes the joystick motion override without touching the marker. */
+    fun saveJoystickState(state: JoystickState) =
+        editRemote { putString(KEY_JOYSTICK_STATE, gson.toJson(state)) }
+
+    /**
+     * Writes the joystick state and, if the marker still exists, its new position in a single
+     * remote-prefs edit; serialized with [clearLastClickedLocation] so a cleared marker is never revived.
+     */
+    fun saveJoystickFrame(latitude: Double, longitude: Double, state: JoystickState) =
+        synchronized(markerLock) {
+            val markerExists = getLastClickedLocation() != null
+            editRemote {
+                if (markerExists) {
+                    putString(KEY_LAST_CLICKED_LOCATION, gson.toJson(LastClickedLocation(latitude, longitude)))
+                }
+                putString(KEY_JOYSTICK_STATE, gson.toJson(state))
+            }
+        }
     // endregion
 
     // region Use Accuracy / Accuracy (remote)
@@ -412,6 +457,80 @@ class PreferencesRepository(context: Context) {
     }
     // endregion
 
+    // region Joystick (local)
+    private val joystickSettingsKeys = setOf(
+        KEY_JOYSTICK_MODE,
+        KEY_JOYSTICK_MAX_SPEED,
+        KEY_JOYSTICK_PRESET_WALK,
+        KEY_JOYSTICK_PRESET_RUN,
+        KEY_JOYSTICK_PRESET_BIKE,
+        KEY_JOYSTICK_PRESET_DRIVE,
+        KEY_JOYSTICK_SELECTED_PRESET,
+    )
+
+    fun getJoystickSettingsFlow(): Flow<JoystickSettings> =
+        localFlow(joystickSettingsKeys, ::readJoystickSettings)
+
+    fun getJoystickSettings(): JoystickSettings = readJoystickSettings(localPrefs)
+
+    fun saveJoystickMode(mode: JoystickMode) =
+        editLocal { putString(KEY_JOYSTICK_MODE, mode.name) }
+
+    fun saveJoystickSelectedPreset(preset: JoystickPreset) =
+        editLocal { putString(KEY_JOYSTICK_SELECTED_PRESET, preset.name) }
+
+    fun saveJoystickMaxSpeed(speedMps: Float) =
+        editLocal { putFloat(KEY_JOYSTICK_MAX_SPEED, speedMps) }
+
+    fun saveJoystickPresetSpeed(preset: JoystickPreset, speedMps: Float) =
+        editLocal { putFloat(presetSpeedKey(preset), speedMps) }
+
+    /** Replaces every joystick setting at once (used by settings import). */
+    fun saveJoystickSettings(settings: JoystickSettings) = editLocal {
+        putString(KEY_JOYSTICK_MODE, settings.mode.name)
+        putFloat(KEY_JOYSTICK_MAX_SPEED, settings.maxSpeedMps)
+        JoystickPreset.entries.forEach { putFloat(presetSpeedKey(it), settings.presetSpeedMps(it)) }
+        putString(KEY_JOYSTICK_SELECTED_PRESET, settings.selectedPreset.name)
+    }
+
+    fun getJoystickOverlayPosition(): Pair<Int, Int>? =
+        if (localPrefs.contains(KEY_JOYSTICK_OVERLAY_X) && localPrefs.contains(KEY_JOYSTICK_OVERLAY_Y)) {
+            localPrefs.getInt(KEY_JOYSTICK_OVERLAY_X, 0) to localPrefs.getInt(KEY_JOYSTICK_OVERLAY_Y, 0)
+        } else {
+            null
+        }
+
+    fun saveJoystickOverlayPosition(x: Int, y: Int) = editLocal {
+        putInt(KEY_JOYSTICK_OVERLAY_X, x)
+        putInt(KEY_JOYSTICK_OVERLAY_Y, y)
+    }
+
+    private fun readJoystickSettings(prefs: SharedPreferences): JoystickSettings {
+        val defaults = JoystickSettings()
+        val modeName = prefs.getString(KEY_JOYSTICK_MODE, null)
+        val presetName = prefs.getString(KEY_JOYSTICK_SELECTED_PRESET, null)
+        return JoystickSettings(
+            mode = JoystickMode.entries.firstOrNull { it.name == modeName } ?: defaults.mode,
+            maxSpeedMps = readJoystickSpeed(prefs, KEY_JOYSTICK_MAX_SPEED, defaults.maxSpeedMps),
+            walkSpeedMps = readJoystickSpeed(prefs, KEY_JOYSTICK_PRESET_WALK, defaults.walkSpeedMps),
+            runSpeedMps = readJoystickSpeed(prefs, KEY_JOYSTICK_PRESET_RUN, defaults.runSpeedMps),
+            bikeSpeedMps = readJoystickSpeed(prefs, KEY_JOYSTICK_PRESET_BIKE, defaults.bikeSpeedMps),
+            driveSpeedMps = readJoystickSpeed(prefs, KEY_JOYSTICK_PRESET_DRIVE, defaults.driveSpeedMps),
+            selectedPreset = JoystickPreset.entries.firstOrNull { it.name == presetName } ?: defaults.selectedPreset,
+        )
+    }
+
+    /** A stored speed outside the supported range (e.g. hand-edited prefs) falls back to [default]. */
+    private fun readJoystickSpeed(prefs: SharedPreferences, key: String, default: Float): Float =
+        prefs.getFloat(key, default).takeIf { it in JOYSTICK_MIN_SPEED_MPS..JOYSTICK_MAX_SPEED_MPS } ?: default
+
+    private fun presetSpeedKey(preset: JoystickPreset): String = when (preset) {
+        JoystickPreset.WALK -> KEY_JOYSTICK_PRESET_WALK
+        JoystickPreset.RUN -> KEY_JOYSTICK_PRESET_RUN
+        JoystickPreset.BIKE -> KEY_JOYSTICK_PRESET_BIKE
+        JoystickPreset.DRIVE -> KEY_JOYSTICK_PRESET_DRIVE
+    }
+    // endregion
     // region Map Zoom (local)
     fun getMapZoom(): Double {
         val bits = localPrefs.getLong(KEY_MAP_ZOOM, java.lang.Double.doubleToRawLongBits(DEFAULT_MAP_ZOOM))
