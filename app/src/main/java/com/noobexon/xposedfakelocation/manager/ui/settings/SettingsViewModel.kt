@@ -757,6 +757,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                 languageTag = ui.languageTag,
             ),
             joystick = JoystickBackup.from(preferencesRepository.getJoystickSettings()),
+            routes = preferencesRepository.getRoutes(),
         )
     }
 

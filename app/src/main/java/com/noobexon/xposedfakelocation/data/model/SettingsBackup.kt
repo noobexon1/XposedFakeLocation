@@ -16,6 +16,8 @@ data class SettingsBackup(
     val appearance: AppearanceBackup,
     /** Absent in files exported before the joystick feature; import then leaves joystick settings untouched. */
     val joystick: JoystickBackup? = null,
+    /** Absent in files exported before the route feature; import then leaves saved routes untouched. */
+    val routes: List<Route>? = null,
 )
 
 /** All spoofing-related values (LSPosed remote prefs). */
