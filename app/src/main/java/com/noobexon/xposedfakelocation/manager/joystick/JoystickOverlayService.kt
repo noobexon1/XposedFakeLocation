@@ -28,6 +28,7 @@ import com.noobexon.xposedfakelocation.manager.MainActivity
 import com.noobexon.xposedfakelocation.manager.joystick.ui.JoystickOverlay
 import com.noobexon.xposedfakelocation.manager.localization.LocaleController
 import com.noobexon.xposedfakelocation.manager.overlay.OverlayWindowHost
+import com.noobexon.xposedfakelocation.manager.route.RoutePlaybackState
 import com.noobexon.xposedfakelocation.manager.ui.theme.ThemeOption
 import com.noobexon.xposedfakelocation.manager.ui.theme.XposedFakeLocationTheme
 import com.noobexon.xposedfakelocation.manager.ui.theme.isDark
@@ -102,7 +103,9 @@ class JoystickOverlayService : LifecycleService(), SavedStateRegistryOwner {
 
     private fun beginSession() {
         val start = repository.getLastClickedLocation()
-        if (App.service == null || start == null || !repository.getIsPlaying() || !Settings.canDrawOverlays(this)) {
+        if (App.service == null || start == null || !repository.getIsPlaying() ||
+            !Settings.canDrawOverlays(this) || RoutePlaybackState.current.value != null
+        ) {
             Log.w(TAG, "Joystick preconditions not met; stopping")
             stopSelfCompletely()
             return
@@ -153,6 +156,7 @@ class JoystickOverlayService : LifecycleService(), SavedStateRegistryOwner {
         }
 
         newSession.start()
+        JoystickRunningState.set(true)
         observeStopConditions()
     }
 
@@ -194,6 +198,7 @@ class JoystickOverlayService : LifecycleService(), SavedStateRegistryOwner {
             }
         }
         session = null
+        JoystickRunningState.set(false)
         window?.remove()
         window = null
     }
