@@ -120,6 +120,7 @@ plus the latitude, longitude, bearing and speed to publish.
     speed 0 and bearing kept from the leg.
   - After the last leg: a one-time route becomes `FINISHED` at the last point with speed 0. A loop
     wraps to leg 0.
+  - The playback multiplier also shortens waits.
 - **Variation:** every 3–6 s a new target factor is drawn uniformly in `[1 − v, 1 + v]`. The factor
   eases toward the target at most 10 % per second. The random source is injected so tests are
   deterministic.
@@ -141,8 +142,9 @@ plus the latitude, longitude, bearing and speed to publish.
 - **Controls:** `play()`, `pause()`, `seek(fraction)`, `setMultiplier(0.5 | 1 | 2)`, `replay()`.
 - **Stop:** `stop()` cancels the tick and returns a final inactive frame, so the hooks resume normal
   behavior at once.
-- **Exposed StateFlows:** `progress`, `speedMps`, `phase`, `currentPointNumber` (1-based, in
-  displayed numbering), `waitRemainingS`, and `distanceCoveredM` / `totalDistanceM`.
+- **Exposed state:** a single `status: StateFlow<RouteStatus>` (phase, progress, speed, current point
+  number, wait remaining, distance covered and total, multiplier). The multiplier cycles
+  0.5x → 1x → 2x via `cycleMultiplier()`.
 - **Publish failures** are caught and logged; the session keeps running.
 
 ## Service (`manager/route/RoutePlaybackService.kt`)
@@ -219,13 +221,13 @@ A compact draggable card, styled like a music-player mini controller:
 - **Editing gestures** (only in Route mode and while not playing):
   - Tap empty map: append a point.
   - Long-press-drag a marker: move the point (osmdroid draggable marker).
-  - Tap a marker: menu with Delete, Move earlier, Move later, Set number… (a dialog that moves the
+  - Tap a marker: bottom sheet with Delete, Move earlier, Move later, Set number… (a dialog that moves the
     point to a given position).
   - Tap a segment: segment sheet (`ModalBottomSheet`):
     - speed chips: Default / Walk / Run / Bike / Drive / Custom (km/h field)
     - wait at end point, in seconds
-    - variation slider, 0–50 %
-- **Route panel** (`BottomSheetScaffold`):
+    - variation slider, 0–50 % (5 % steps)
+- **Route panel** (a collapsible card at the bottom of the map):
   - **Collapsed:** "6 points · 2.4 km · ~28 min", the default speed chip (opens a picker with the same
     choices), and Loop and Reverse toggles.
   - **Expanded:**
@@ -233,8 +235,9 @@ A compact draggable card, styled like a music-player mini controller:
       button
     - menu items: Save to favorites, Load from favorites, Clear route
   - **While playing:** read-only, with a progress bar.
-- **Play button:** in Route mode, enabled when the route has at least 2 points and the joystick is not
-  running. One tap starts `RoutePlaybackService` (overlay permission and notification permission are
+- **Play button:** In Route mode the floating Play button is hidden so it can't cover the panel;
+  Play/Stop sits in the panel header and is enabled when the route has at least 2 points and the
+  joystick is not running. One tap starts `RoutePlaybackService` (overlay permission and notification permission are
   requested the same way `JoystickButton` does). While a route plays, the button is Stop.
   If spoofing was turned on some other way (for example by a broadcast) while the map is in Route
   mode, the button is Stop and turns spoofing off. It does not start the route until spoofing is off.
