@@ -32,6 +32,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -155,6 +156,8 @@ private fun summaryText(summary: RouteSummary): String = when {
 @Composable
 private fun PointList(route: Route, editable: Boolean, onOrderChange: (List<String>) -> Unit, onDeletePoint: (String) -> Unit) {
     var order by remember(route.points) { mutableStateOf(route.points) }
+    // The library keeps the first onDragStopped lambda, so it must read the latest order through this.
+    val commitOrder by rememberUpdatedState(newValue = { onOrderChange(order.map { p -> p.id }) })
     val listState = rememberLazyListState()
     val reorderState = rememberReorderableLazyListState(listState) { from, to ->
         order = order.toMutableList().apply { add(to.index, removeAt(from.index)) }
@@ -169,7 +172,7 @@ private fun PointList(route: Route, editable: Boolean, onOrderChange: (List<Stri
                         onClick = {},
                         modifier = Modifier.draggableHandle(
                             enabled = editable,
-                            onDragStopped = { onOrderChange(order.map { it.id }) },
+                            onDragStopped = { commitOrder() },
                         ),
                     ) {
                         Icon(Icons.Default.DragHandle, contentDescription = stringResource(R.string.cd_route_drag_handle, number))

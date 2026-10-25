@@ -62,7 +62,7 @@ fun BoxScope.RouteModeUi(
         modifier = Modifier.align(Alignment.BottomCenter).navigationBarsPadding().padding(12.dp),
     )
 
-    ui.pointActionsId?.let { id ->
+    ui.pointActionsId?.takeIf { editable }?.let { id ->
         val index = route.points.indexOfFirst { it.id == id }
         if (index >= 0) {
             val close = { viewModel.showPointActions(null) }
@@ -90,7 +90,7 @@ fun BoxScope.RouteModeUi(
         }
     }
 
-    ui.segment?.let { (a, b) ->
+    ui.segment?.takeIf { editable }?.let { (a, b) ->
         val segment = route.travelSegments().firstOrNull { segmentKey(it.from.id, it.to.id) == segmentKey(a, b) }
         if (segment != null) {
             SegmentSheet(
