@@ -3,6 +3,7 @@ name: Build & attach release APK
 # Triggered when you publish a GitHub Release (with your own notes).
 # CI builds the debug APK, versions it from the release tag, signs it with
 # your debug keystore, and attaches XposedFakeLocation.apk to the release.
+# Non-prerelease releases are also published to the LSPosed module repo.
 on:
   release:
     types: [published]
@@ -60,8 +61,37 @@ jobs:
             exit 1
           fi
           echo "APK version: $version_code-$version_name"
+          echo "MODULE_TAG=$version_code-$version_name" >> "$GITHUB_ENV"
 
       - name: Upload APK to release
         env:
           GH_TOKEN: ${{ github.token }}
         run: gh release upload "$TAG" "$APK_NAME" --clobber --repo "$GITHUB_REPOSITORY"
+
+      # The LSPosed index orders releases by their tag commit's date, so each module release
+      # gets its own fresh empty commit instead of pointing at the module repo's stale main.
+      - name: Publish to LSPosed module repo
+        if: ${{ !github.event.release.prerelease }}
+        env:
+          GH_TOKEN: ${{ secrets.MODULE_REPO_TOKEN }}
+          MODULE_REPO: Xposed-Modules-Repo/com.noobexon.xposedfakelocation
+          RELEASE_TITLE: ${{ github.event.release.name || github.event.release.tag_name }}
+          RELEASE_NOTES: ${{ github.event.release.body }}
+        run: |
+          if [ -z "$GH_TOKEN" ]; then
+            echo "::error::MODULE_REPO_TOKEN secret is not set. Add a token with Contents read/write on $MODULE_REPO."
+            exit 1
+          fi
+          if gh release view "$MODULE_TAG" --repo "$MODULE_REPO" > /dev/null 2>&1; then
+            echo "$MODULE_TAG already exists in $MODULE_REPO; replacing its APK."
+            gh release upload "$MODULE_TAG" "$APK_NAME" --clobber --repo "$MODULE_REPO"
+            exit 0
+          fi
+          empty_tree=4b825dc642cb6eb9a060e54bf8d69288fbee4904
+          commit=$(gh api "repos/$MODULE_REPO/git/commits" -f message="$MODULE_TAG" -f tree="$empty_tree" --jq .sha)
+          tag_obj=$(gh api "repos/$MODULE_REPO/git/tags" -f tag="$MODULE_TAG" -f message="$MODULE_TAG" \
+            -f object="$commit" -f type=commit --jq .sha)
+          gh api "repos/$MODULE_REPO/git/refs" -f ref="refs/tags/$MODULE_TAG" -f sha="$tag_obj" > /dev/null
+          printf '%s\n' "$RELEASE_NOTES" > module-notes.md
+          gh release create "$MODULE_TAG" "$APK_NAME" --repo "$MODULE_REPO" --verify-tag \
+            --title "$RELEASE_TITLE" --notes-file module-notes.md --latest
