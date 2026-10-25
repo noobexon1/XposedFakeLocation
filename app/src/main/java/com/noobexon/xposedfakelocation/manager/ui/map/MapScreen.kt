@@ -37,6 +37,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -45,7 +46,12 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.noobexon.xposedfakelocation.R
+import com.noobexon.xposedfakelocation.data.model.MapMode
 import com.noobexon.xposedfakelocation.manager.joystick.JoystickButton
+import com.noobexon.xposedfakelocation.manager.ui.map.route.MapModeSwitch
+import com.noobexon.xposedfakelocation.manager.ui.map.route.RouteEditorViewModel
+import com.noobexon.xposedfakelocation.manager.ui.map.route.RouteLoadConfirmation
+import com.noobexon.xposedfakelocation.manager.ui.map.route.RouteModeUi
 import com.noobexon.xposedfakelocation.manager.ui.navigation.Screen
 import kotlinx.coroutines.launch
 
@@ -67,12 +73,14 @@ import kotlinx.coroutines.launch
  *
  * @param navController Used by [DrawerContent] for in-app navigation.
  * @param mapViewModel The screen's ViewModel; injected at the [NavHost] level.
+ * @param routeEditorViewModel Route mode state; shared with Favorites at the [NavHost] level.
  */
 @OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 @Composable
 fun MapScreen(
     navController: NavController,
-    mapViewModel: MapViewModel
+    mapViewModel: MapViewModel,
+    routeEditorViewModel: RouteEditorViewModel,
 ) {
     val context = LocalContext.current
     val uiState by mapViewModel.uiState.collectAsStateWithLifecycle()
@@ -85,6 +93,11 @@ fun MapScreen(
     var showOptionsMenu by remember { mutableStateOf(false) }
     val fakeLocationSet = stringResource(R.string.toast_fake_location_set)
     val fakeLocationUnset = stringResource(R.string.toast_unset_fake_location)
+    val mapMode by routeEditorViewModel.mapMode.collectAsStateWithLifecycle()
+    val draft by routeEditorViewModel.draft.collectAsStateWithLifecycle()
+    val playback by routeEditorViewModel.playback.collectAsStateWithLifecycle()
+    val joystickRunning by routeEditorViewModel.joystickRunning.collectAsStateWithLifecycle()
+    val routeMode = mapMode == MapMode.ROUTE
 
     BackHandler(enabled = drawerState.isOpen) {
         scope.launch { drawerState.close() }
@@ -143,7 +156,7 @@ fun MapScreen(
                         }
                     },
                     actions = {
-                        JoystickButton(enabled = isPlaying && uiState.lastClickedLocation != null)
+                        JoystickButton(enabled = isPlaying && uiState.lastClickedLocation != null && playback == null)
                         IconButton(onClick = { mapViewModel.triggerCenterMapEvent() }) {
                             Icon(imageVector = Icons.Default.MyLocation, contentDescription = stringResource(R.string.cd_center))
                         }
@@ -199,44 +212,47 @@ fun MapScreen(
                 )
             },
             floatingActionButton = {
-                FloatingActionButton(
-                    onClick = {
-                        if (isFabClickable) {
-                            val wasPlaying = uiState.isPlaying
-                            mapViewModel.togglePlaying()
-                            Toast.makeText(
-                                context,
-                                if (!wasPlaying) fakeLocationSet else fakeLocationUnset,
-                                Toast.LENGTH_SHORT
-                            ).show()
-                        }
-                    },
-                    modifier = Modifier
-                        .navigationBarsPadding()
-                        .padding(16.dp),
-                    containerColor = if (isFabClickable) {
-                        MaterialTheme.colorScheme.primary
-                    } else {
-                        MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f)
-                    },
-                    contentColor = if (isFabClickable) {
-                        contentColorFor(MaterialTheme.colorScheme.primary)
-                    } else {
-                        MaterialTheme.colorScheme.onSurfaceVariant
-                    },
-                    elevation = FloatingActionButtonDefaults.elevation(
-                        defaultElevation = if (isFabClickable) 6.dp else 0.dp,
-                        pressedElevation = if (isFabClickable) 12.dp else 0.dp
-                    )
-                ) {
-                    Icon(
-                        imageVector = if (isPlaying) Icons.Default.Stop else Icons.Default.PlayArrow,
-                        contentDescription = if (isPlaying) {
-                            stringResource(R.string.cd_stop)
+                // In Route mode the play button lives in the route panel so it can't cover the panel.
+                if (!routeMode) {
+                    FloatingActionButton(
+                        onClick = {
+                            if (isFabClickable) {
+                                val wasPlaying = uiState.isPlaying
+                                mapViewModel.togglePlaying()
+                                Toast.makeText(
+                                    context,
+                                    if (!wasPlaying) fakeLocationSet else fakeLocationUnset,
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            }
+                        },
+                        modifier = Modifier
+                            .navigationBarsPadding()
+                            .padding(16.dp),
+                        containerColor = if (isFabClickable) {
+                            MaterialTheme.colorScheme.primary
                         } else {
-                            stringResource(R.string.cd_play)
-                        }
-                    )
+                            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f)
+                        },
+                        contentColor = if (isFabClickable) {
+                            contentColorFor(MaterialTheme.colorScheme.primary)
+                        } else {
+                            MaterialTheme.colorScheme.onSurfaceVariant
+                        },
+                        elevation = FloatingActionButtonDefaults.elevation(
+                            defaultElevation = if (isFabClickable) 6.dp else 0.dp,
+                            pressedElevation = if (isFabClickable) 12.dp else 0.dp
+                        )
+                    ) {
+                        Icon(
+                            imageVector = if (isPlaying) Icons.Default.Stop else Icons.Default.PlayArrow,
+                            contentDescription = if (isPlaying) {
+                                stringResource(R.string.cd_stop)
+                            } else {
+                                stringResource(R.string.cd_play)
+                            }
+                        )
+                    }
                 }
             }
         ) { innerPadding ->
@@ -259,7 +275,33 @@ fun MapScreen(
                     onMapZoomChange = mapViewModel::updateMapZoom,
                     onLoadingFinished = mapViewModel::setLoadingFinished,
                     onInitialLocationResolved = mapViewModel::markInitialLocationResolved,
+                    routeMode = routeMode,
+                    routePlaying = playback != null,
+                    route = draft.route,
+                    routeEditable = !isPlaying && playback == null,
+                    fitRouteEvent = routeEditorViewModel.fitRouteEvent,
+                    onRouteTap = routeEditorViewModel::addPoint,
+                    onRoutePointTap = routeEditorViewModel::showPointActions,
+                    onRoutePointMoved = routeEditorViewModel::movePoint,
+                    onRouteSegmentTap = { a, b -> routeEditorViewModel.showSegment(a to b) },
                 )
+                MapModeSwitch(
+                    mode = mapMode,
+                    enabled = !isPlaying && playback == null && !joystickRunning,
+                    onModeChange = routeEditorViewModel::setMapMode,
+                    modifier = Modifier.align(Alignment.TopCenter).padding(top = 8.dp),
+                )
+                if (routeMode) {
+                    RouteModeUi(
+                        viewModel = routeEditorViewModel,
+                        isPlaying = isPlaying,
+                        onStopSpoofing = mapViewModel::togglePlaying,
+                        onLoadFromFavorites = {
+                            routeEditorViewModel.requestOpenRoutesTab()
+                            navController.navigate(Screen.Favorites.route) { launchSingleTop = true }
+                        },
+                    )
+                }
             }
         }
 
@@ -295,5 +337,7 @@ fun MapScreen(
                 onDismissRequest = mapViewModel::hideAddToFavoritesDialog,
             )
         }
+
+        RouteLoadConfirmation(routeEditorViewModel)
     }
 }

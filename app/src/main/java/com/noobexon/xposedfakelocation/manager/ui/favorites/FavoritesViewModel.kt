@@ -4,6 +4,7 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.noobexon.xposedfakelocation.data.model.FavoriteLocation
+import com.noobexon.xposedfakelocation.data.model.Route
 import com.noobexon.xposedfakelocation.data.repository.PreferencesRepository
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -55,4 +56,13 @@ class FavoritesViewModel(application: Application) : AndroidViewModel(applicatio
             preferencesRepository.updateFavorite(old, new)
         }
     }
+
+    /** Saved routes, kept in sync with [PreferencesRepository]. */
+    val routes: StateFlow<List<Route>> =
+        preferencesRepository.getRoutesFlow()
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    fun deleteRoute(route: Route) = preferencesRepository.deleteRoute(route.id)
+
+    fun renameRoute(route: Route, name: String) = preferencesRepository.saveRoute(route.copy(name = name.trim()))
 }
