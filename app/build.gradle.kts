@@ -94,6 +94,7 @@ dependencies {
     implementation(libs.gson)
     implementation(libs.hiddenapibypass)
     implementation(libs.coil.compose)
+    implementation(libs.reorderable)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
