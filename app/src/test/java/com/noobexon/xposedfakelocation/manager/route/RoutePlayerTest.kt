@@ -92,7 +92,7 @@ class RoutePlayerTest {
         val plan = RoutePlan(listOf(leg(10.0)), loop = false)
         val sought = RoutePlayer.seek(plan, PlayerState(phase = RoutePhase.FINISHED, distanceIntoLegM = 10.0), 0.2f)
         assertEquals(RoutePhase.PAUSED, sought.phase)
-        assertEquals(2.0, sought.distanceIntoLegM, 1e-9)
+        assertEquals(2.0, sought.distanceIntoLegM, 1e-6)
     }
 
     @Test

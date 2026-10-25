@@ -79,8 +79,7 @@ object RoutePlayer {
     /** Jumps to [fraction] of the total distance, cancelling any wait. A finished route sought back becomes paused. */
     fun seek(plan: RoutePlan, state: PlayerState, fraction: Float): PlayerState {
         val clamped = fraction.coerceIn(0f, 1f)
-        // Widen via the decimal form so e.g. 0.2f becomes 0.2, not 0.20000000298.
-        val target = clamped.toString().toDouble() * plan.totalDistanceM
+        val target = clamped * plan.totalDistanceM
         val index = plan.legs.indices.firstOrNull { target < plan.legStartM(it) + plan.legs[it].distanceM }
             ?: plan.legs.lastIndex
         val into = (target - plan.legStartM(index)).coerceIn(0.0, plan.legs[index].distanceM)
