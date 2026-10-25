@@ -1,6 +1,5 @@
 package com.noobexon.xposedfakelocation.manager.joystick.ui
 
-import android.view.MotionEvent
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.drag
@@ -33,14 +32,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.input.pointer.pointerInteropFilter
-import androidx.compose.ui.platform.LocalViewConfiguration
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
@@ -52,7 +48,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.noobexon.xposedfakelocation.R
 import com.noobexon.xposedfakelocation.manager.joystick.displayKmh
-import kotlin.math.hypot
+import com.noobexon.xposedfakelocation.manager.overlay.rememberOverlayDragModifier
 
 /**
  * Root of the floating overlay: an expanded control panel or a collapsed bubble.
@@ -229,70 +225,4 @@ private const val THUMB_RATIO = 0.35f
 private fun clampToRadius(offset: Offset, radius: Float): Offset {
     val distance = offset.getDistance()
     return if (distance <= radius) offset else offset * (radius / distance)
-}
-
-private class DragTracker {
-    var startX = 0f
-    var startY = 0f
-    var lastX = 0f
-    var lastY = 0f
-    var dragging = false
-}
-
-/**
- * Moves the overlay window using raw screen coordinates. Local pointer coordinates can't be used
- * because the window itself moves under the finger.
- */
-@OptIn(ExperimentalComposeUiApi::class)
-@Composable
-private fun rememberOverlayDragModifier(
-    onDrag: (dx: Float, dy: Float) -> Unit,
-    onDragEnd: () -> Unit,
-    onTap: (() -> Unit)? = null,
-): Modifier {
-    val touchSlop = LocalViewConfiguration.current.touchSlop
-    val currentOnDrag by rememberUpdatedState(onDrag)
-    val currentOnDragEnd by rememberUpdatedState(onDragEnd)
-    val currentOnTap by rememberUpdatedState(onTap)
-    return remember(touchSlop) {
-        val tracker = DragTracker()
-        Modifier.pointerInteropFilter { event ->
-            when (event.actionMasked) {
-                MotionEvent.ACTION_DOWN -> {
-                    tracker.startX = event.rawX
-                    tracker.startY = event.rawY
-                    tracker.lastX = event.rawX
-                    tracker.lastY = event.rawY
-                    tracker.dragging = false
-                    true
-                }
-                MotionEvent.ACTION_MOVE -> {
-                    // Stay put until the finger leaves the touch slop, so a tap never nudges the window.
-                    if (!tracker.dragging &&
-                        hypot(event.rawX - tracker.startX, event.rawY - tracker.startY) >= touchSlop
-                    ) {
-                        tracker.dragging = true
-                    }
-                    if (tracker.dragging) {
-                        val dx = event.rawX - tracker.lastX
-                        val dy = event.rawY - tracker.lastY
-                        tracker.lastX = event.rawX
-                        tracker.lastY = event.rawY
-                        currentOnDrag(dx, dy)
-                    }
-                    true
-                }
-                MotionEvent.ACTION_UP -> {
-                    val tap = currentOnTap
-                    if (tap != null && !tracker.dragging) tap() else currentOnDragEnd()
-                    true
-                }
-                MotionEvent.ACTION_CANCEL -> {
-                    currentOnDragEnd()
-                    true
-                }
-                else -> false
-            }
-        }
-    }
 }

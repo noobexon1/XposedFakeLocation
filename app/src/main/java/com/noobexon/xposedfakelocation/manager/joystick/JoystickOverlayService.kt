@@ -27,6 +27,7 @@ import com.noobexon.xposedfakelocation.manager.App
 import com.noobexon.xposedfakelocation.manager.MainActivity
 import com.noobexon.xposedfakelocation.manager.joystick.ui.JoystickOverlay
 import com.noobexon.xposedfakelocation.manager.localization.LocaleController
+import com.noobexon.xposedfakelocation.manager.overlay.OverlayWindowHost
 import com.noobexon.xposedfakelocation.manager.ui.theme.ThemeOption
 import com.noobexon.xposedfakelocation.manager.ui.theme.XposedFakeLocationTheme
 import com.noobexon.xposedfakelocation.manager.ui.theme.isDark
@@ -65,7 +66,7 @@ class JoystickOverlayService : LifecycleService(), SavedStateRegistryOwner {
 
     private lateinit var repository: PreferencesRepository
     private var session: JoystickSession? = null
-    private var window: JoystickOverlayWindow? = null
+    private var window: OverlayWindowHost? = null
     private val collapsed = MutableStateFlow(false)
 
     override fun attachBaseContext(newBase: Context) {
@@ -120,7 +121,7 @@ class JoystickOverlayService : LifecycleService(), SavedStateRegistryOwner {
         )
         session = newSession
 
-        window = JoystickOverlayWindow(
+        window = OverlayWindowHost(
             context = this,
             lifecycleOwner = this,
             savedStateRegistryOwner = this,
