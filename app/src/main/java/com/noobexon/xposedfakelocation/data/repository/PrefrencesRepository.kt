@@ -56,10 +56,15 @@ import com.noobexon.xposedfakelocation.data.KEY_JOYSTICK_SELECTED_PRESET
 import com.noobexon.xposedfakelocation.data.KEY_JOYSTICK_STATE
 import com.noobexon.xposedfakelocation.data.KEY_LANGUAGE_TAG
 import com.noobexon.xposedfakelocation.data.KEY_LAST_CLICKED_LOCATION
+import com.noobexon.xposedfakelocation.data.KEY_MAP_MODE
 import com.noobexon.xposedfakelocation.data.KEY_MAP_ZOOM
 import com.noobexon.xposedfakelocation.data.KEY_MEAN_SEA_LEVEL
 import com.noobexon.xposedfakelocation.data.KEY_MEAN_SEA_LEVEL_ACCURACY
 import com.noobexon.xposedfakelocation.data.KEY_RANDOMIZE_RADIUS
+import com.noobexon.xposedfakelocation.data.KEY_ROUTES
+import com.noobexon.xposedfakelocation.data.KEY_ROUTE_DRAFT
+import com.noobexon.xposedfakelocation.data.KEY_ROUTE_OVERLAY_X
+import com.noobexon.xposedfakelocation.data.KEY_ROUTE_OVERLAY_Y
 import com.noobexon.xposedfakelocation.data.KEY_SPEED
 import com.noobexon.xposedfakelocation.data.KEY_SPEED_ACCURACY
 import com.noobexon.xposedfakelocation.data.KEY_TARGET_APPS
@@ -87,6 +92,10 @@ import com.noobexon.xposedfakelocation.data.model.JoystickPreset
 import com.noobexon.xposedfakelocation.data.model.JoystickSettings
 import com.noobexon.xposedfakelocation.data.model.JoystickState
 import com.noobexon.xposedfakelocation.data.model.LastClickedLocation
+import com.noobexon.xposedfakelocation.data.model.MapMode
+import com.noobexon.xposedfakelocation.data.model.Route
+import com.noobexon.xposedfakelocation.data.model.RouteDraft
+import com.noobexon.xposedfakelocation.data.model.RouteJson
 import com.noobexon.xposedfakelocation.data.normalizeWifiSsid
 import com.noobexon.xposedfakelocation.manager.App
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -96,6 +105,7 @@ import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import java.util.Locale
+import java.util.UUID
 
 /**
  * Single-source-of-truth preferences store.
@@ -529,6 +539,57 @@ class PreferencesRepository(context: Context) {
         JoystickPreset.RUN -> KEY_JOYSTICK_PRESET_RUN
         JoystickPreset.BIKE -> KEY_JOYSTICK_PRESET_BIKE
         JoystickPreset.DRIVE -> KEY_JOYSTICK_PRESET_DRIVE
+    }
+    // endregion
+    // region Routes (local)
+    fun getRoutesFlow(): Flow<List<Route>> =
+        localFlow(KEY_ROUTES) { RouteJson.parseRoutes(it.getString(KEY_ROUTES, null)) }
+
+    fun getRoutes(): List<Route> = RouteJson.parseRoutes(localPrefs.getString(KEY_ROUTES, null))
+
+    fun getRoute(id: String): Route? = getRoutes().firstOrNull { it.id == id }
+
+    /** Inserts [route], or replaces the saved route with the same id. */
+    fun saveRoute(route: Route) {
+        val routes = getRoutes().toMutableList()
+        val index = routes.indexOfFirst { it.id == route.id }
+        if (index >= 0) routes[index] = route else routes.add(route)
+        writeRoutes(routes)
+    }
+
+    fun deleteRoute(id: String) = writeRoutes(getRoutes().filterNot { it.id == id })
+
+    /** Replaces every saved route (used by settings import). */
+    fun replaceRoutes(routes: List<Route>) = writeRoutes(routes)
+
+    private fun writeRoutes(routes: List<Route>) =
+        editLocal { putString(KEY_ROUTES, RouteJson.gson.toJson(routes)) }
+
+    /** The route being edited; an empty draft when none is stored or it can't be read. */
+    fun getRouteDraft(): RouteDraft =
+        RouteJson.parseDraft(localPrefs.getString(KEY_ROUTE_DRAFT, null))
+            ?: RouteDraft(Route(id = UUID.randomUUID().toString()))
+
+    fun saveRouteDraft(draft: RouteDraft) =
+        editLocal { putString(KEY_ROUTE_DRAFT, RouteJson.gson.toJson(draft)) }
+
+    fun getMapMode(): MapMode {
+        val name = localPrefs.getString(KEY_MAP_MODE, null)
+        return MapMode.entries.firstOrNull { it.name == name } ?: MapMode.LOCATION
+    }
+
+    fun saveMapMode(mode: MapMode) = editLocal { putString(KEY_MAP_MODE, mode.name) }
+
+    fun getRouteOverlayPosition(): Pair<Int, Int>? =
+        if (localPrefs.contains(KEY_ROUTE_OVERLAY_X) && localPrefs.contains(KEY_ROUTE_OVERLAY_Y)) {
+            localPrefs.getInt(KEY_ROUTE_OVERLAY_X, 0) to localPrefs.getInt(KEY_ROUTE_OVERLAY_Y, 0)
+        } else {
+            null
+        }
+
+    fun saveRouteOverlayPosition(x: Int, y: Int) = editLocal {
+        putInt(KEY_ROUTE_OVERLAY_X, x)
+        putInt(KEY_ROUTE_OVERLAY_Y, y)
     }
     // endregion
     // region Map Zoom (local)

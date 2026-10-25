@@ -133,6 +133,11 @@ const val KEY_JOYSTICK_PRESET_DRIVE = "joystick_preset_drive"
 const val KEY_JOYSTICK_SELECTED_PRESET = "joystick_selected_preset"
 const val KEY_JOYSTICK_OVERLAY_X = "joystick_overlay_x"
 const val KEY_JOYSTICK_OVERLAY_Y = "joystick_overlay_y"
+const val KEY_ROUTES = "routes"
+const val KEY_ROUTE_DRAFT = "route_draft"
+const val KEY_MAP_MODE = "map_mode"
+const val KEY_ROUTE_OVERLAY_X = "route_overlay_x"
+const val KEY_ROUTE_OVERLAY_Y = "route_overlay_y"
 
 const val MPS_TO_KMH = 3.6f
 const val DEFAULT_JOYSTICK_MAX_SPEED = 50f / MPS_TO_KMH
