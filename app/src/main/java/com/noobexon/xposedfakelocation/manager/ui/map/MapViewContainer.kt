@@ -20,7 +20,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import com.noobexon.xposedfakelocation.R
 import com.noobexon.xposedfakelocation.data.DEFAULT_MAP_ZOOM
+import com.noobexon.xposedfakelocation.data.model.Route
+import com.noobexon.xposedfakelocation.manager.ui.map.route.HandleFitRouteEvent
+import com.noobexon.xposedfakelocation.manager.ui.map.route.RouteOverlaysEffect
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.emptyFlow
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory
 import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.MapView
@@ -63,6 +67,11 @@ import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay
  * @param onMapZoomChange Callback to persist the zoom level; called on dispose with the final zoom.
  * @param onLoadingFinished Callback to clear the loading state once the camera is positioned.
  * @param onInitialLocationResolved Callback to set [MapUiState.hasResolvedInitialLocation].
+ * @param routeMode When `true`, taps edit the route and the location marker is hidden unless a
+ *   route is playing (then it shows the moving position).
+ * @param route The route to draw in Route mode.
+ * @param routeEditable Whether route markers can be tapped and dragged (false while playing).
+ * @param fitRouteEvent One-shot request to frame the whole [route].
  */
 @Composable
 fun MapViewContainer(
@@ -79,6 +88,15 @@ fun MapViewContainer(
     onMapZoomChange: (Double) -> Unit,
     onLoadingFinished: () -> Unit,
     onInitialLocationResolved: () -> Unit,
+    routeMode: Boolean = false,
+    routePlaying: Boolean = false,
+    route: Route? = null,
+    routeEditable: Boolean = false,
+    fitRouteEvent: Flow<Unit> = emptyFlow(),
+    onRouteTap: (GeoPoint) -> Unit = {},
+    onRoutePointTap: (String) -> Unit = {},
+    onRoutePointMoved: (String, GeoPoint) -> Unit = {},
+    onRouteSegmentTap: (String, String) -> Unit = {},
 ) {
     val context = LocalContext.current
 
@@ -93,8 +111,20 @@ fun MapViewContainer(
     // Handle map events and updates
     HandleCenterMapEvent(mapView, locationOverlay, centerMapEvent)
     HandleGoToPointEvent(mapView, goToPointEvent, onClickedLocationChange)
-    HandleMarkerUpdates(mapView, userMarker, lastClickedLocation)
-    SetupMapClickListener(mapView, isPlaying, onClickedLocationChange)
+    val markerLocation = if (routeMode && !routePlaying) null else lastClickedLocation
+    HandleMarkerUpdates(mapView, userMarker, markerLocation)
+    SetupMapClickListener(mapView, isPlaying) { point ->
+        point?.let { if (routeMode) onRouteTap(it) else onClickedLocationChange(it) }
+    }
+    RouteOverlaysEffect(
+        mapView = mapView,
+        route = route.takeIf { routeMode },
+        editable = routeEditable,
+        onPointTap = onRoutePointTap,
+        onPointMoved = onRoutePointMoved,
+        onSegmentTap = onRouteSegmentTap,
+    )
+    HandleFitRouteEvent(mapView, route, fitRouteEvent)
     CenterMapOnUserLocation(
         mapView = mapView,
         locationOverlay = locationOverlay,
