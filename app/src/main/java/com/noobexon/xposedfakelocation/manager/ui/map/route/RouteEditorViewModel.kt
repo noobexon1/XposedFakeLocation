@@ -83,7 +83,9 @@ class RouteEditorViewModel(application: Application) : AndroidViewModel(applicat
 
     private fun edit(transform: (Route) -> Route) {
         val current = _draft.value
-        val updated = current.copy(route = transform(current.route), dirty = true)
+        val route = transform(current.route)
+        if (route == current.route) return
+        val updated = current.copy(route = route, dirty = true)
         _draft.value = updated
         repository.saveRouteDraft(updated)
     }
@@ -129,7 +131,7 @@ class RouteEditorViewModel(application: Application) : AndroidViewModel(applicat
     /** Loads a favorite, asking first when that would discard unsaved edits. */
     fun requestLoadRoute(route: Route) {
         val current = _draft.value
-        val wouldLoseEdits = current.dirty && current.route.points.isNotEmpty() && current.sourceRouteId != route.id
+        val wouldLoseEdits = current.dirty && current.route.points.isNotEmpty()
         if (wouldLoseEdits) _ui.update { it.copy(pendingLoad = route) } else loadRoute(route)
     }
 
