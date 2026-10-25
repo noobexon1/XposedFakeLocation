@@ -100,8 +100,8 @@ fun MapViewContainer(
     fitRouteEvent: Flow<Unit> = emptyFlow(),
     onRouteTap: (GeoPoint) -> Unit = {},
     onRoutePointTap: (String) -> Unit = {},
-    onRoutePointMoved: (String, GeoPoint) -> Unit = {},
-    onRouteSegmentTap: (String, String) -> Unit = {},
+    onRoutePointMoved: (String, GeoPoint) -> Unit = { _, _ -> },
+    onRouteSegmentTap: (String, String) -> Unit = { _, _ -> },
 ) {
     val context = LocalContext.current
 
