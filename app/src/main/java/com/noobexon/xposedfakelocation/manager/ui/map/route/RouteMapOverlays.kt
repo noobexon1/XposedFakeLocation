@@ -19,6 +19,7 @@ import kotlinx.coroutines.suspendCancellableCoroutine
 import org.osmdroid.util.BoundingBox
 import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.MapView
+import org.osmdroid.views.overlay.MapEventsOverlay
 import org.osmdroid.views.overlay.Marker
 import org.osmdroid.views.overlay.Overlay
 import org.osmdroid.views.overlay.Polyline
@@ -55,7 +56,7 @@ internal fun RouteOverlaysEffect(
         }
     }
 
-    LaunchedEffect(mapView, route, editable, lineColor, startColor, endColor) {
+    LaunchedEffect(mapView, route, editable, lineColor, pointColor, startColor, endColor, textColor) {
         mapView.overlays.removeAll(overlays)
         overlays.clear()
         if (route != null && route.points.isNotEmpty()) {
@@ -116,7 +117,10 @@ internal fun RouteOverlaysEffect(
                     })
                 }
             }
-            mapView.overlays.addAll(overlays)
+            // Directly above the tap overlay: taps reach the route first, while the position and
+            // location markers (added later) still draw on top.
+            val tapOverlayIndex = mapView.overlays.indexOfFirst { it is MapEventsOverlay }
+            mapView.overlays.addAll(if (tapOverlayIndex >= 0) tapOverlayIndex + 1 else mapView.overlays.size, overlays)
         }
         mapView.invalidate()
     }
@@ -143,8 +147,13 @@ internal fun HandleFitRouteEvent(mapView: MapView, route: Route?, fitRouteEvent:
 private const val FIT_DELAY_MS = 400L
 
 private suspend fun MapView.awaitFirstLayout() {
-    if (isLaidOut) return
+    // osmdroid ignores new first-layout listeners once its own layout flag is set.
+    if (isLayoutOccurred) return
     suspendCancellableCoroutine<Unit> { continuation ->
-        addOnFirstLayoutListener { _, _, _, _, _ -> if (continuation.isActive) continuation.resume(Unit) }
+        val listener = MapView.OnFirstLayoutListener { _, _, _, _, _ ->
+            if (continuation.isActive) continuation.resume(Unit)
+        }
+        addOnFirstLayoutListener(listener)
+        continuation.invokeOnCancellation { removeOnFirstLayoutListener(listener) }
     }
 }

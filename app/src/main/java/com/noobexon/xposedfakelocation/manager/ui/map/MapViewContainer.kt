@@ -69,9 +69,14 @@ import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay
  * @param onInitialLocationResolved Callback to set [MapUiState.hasResolvedInitialLocation].
  * @param routeMode When `true`, taps edit the route and the location marker is hidden unless a
  *   route is playing (then it shows the moving position).
+ * @param routePlaying Whether a route is currently playing.
  * @param route The route to draw in Route mode.
  * @param routeEditable Whether route markers can be tapped and dragged (false while playing).
  * @param fitRouteEvent One-shot request to frame the whole [route].
+ * @param onRouteTap Called with the tapped map location in Route mode (adds a point).
+ * @param onRoutePointTap Called with the id of a tapped route point.
+ * @param onRoutePointMoved Called with a point's id and new location when a drag ends.
+ * @param onRouteSegmentTap Called with the from/to point ids of a tapped segment.
  */
 @Composable
 fun MapViewContainer(
