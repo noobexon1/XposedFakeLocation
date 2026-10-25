@@ -147,3 +147,6 @@ const val JOYSTICK_SPEED_ACCURACY = 0.5f
 /** Accepted joystick speed range (m/s), matching the 1..200 km/h Settings sliders. */
 const val JOYSTICK_MIN_SPEED_MPS = 1f / MPS_TO_KMH
 const val JOYSTICK_MAX_SPEED_MPS = 200f / MPS_TO_KMH
+const val ROUTE_MIN_POINTS = 2
+const val ROUTE_MAX_DWELL_SECONDS = 3_600
+const val ROUTE_MAX_VARIATION_PERCENT = 50
