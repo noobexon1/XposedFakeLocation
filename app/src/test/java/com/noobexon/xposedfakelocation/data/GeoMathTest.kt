@@ -48,4 +48,30 @@ class GeoMathTest {
         assertEquals(-180.0, GeoMath.normalizeLongitude(540.0), 0.0)
         assertEquals(10.0, GeoMath.normalizeLongitude(10.0), 1e-12)
     }
+
+    @Test
+    fun distanceOfOneDegreeLatitudeMatchesEarthRadius() {
+        val expected = Math.toRadians(1.0) * RADIUS_EARTH
+        assertEquals(expected, GeoMath.distanceMeters(0.0, 0.0, 1.0, 0.0), 1e-6)
+    }
+
+    @Test
+    fun distanceToSelfIsZero() {
+        assertEquals(0.0, GeoMath.distanceMeters(10.0, 20.0, 10.0, 20.0), 0.0)
+    }
+
+    @Test
+    fun initialBearingPointsAlongCardinalDirections() {
+        assertEquals(0.0, GeoMath.initialBearing(0.0, 0.0, 1.0, 0.0), 1e-9)
+        assertEquals(90.0, GeoMath.initialBearing(0.0, 0.0, 0.0, 1.0), 1e-9)
+        assertEquals(180.0, GeoMath.initialBearing(1.0, 0.0, 0.0, 0.0), 1e-9)
+        assertEquals(270.0, GeoMath.initialBearing(0.0, 1.0, 0.0, 0.0), 1e-9)
+    }
+
+    @Test
+    fun destinationRoundTripsThroughDistanceAndBearing() {
+        val (lat, lon) = GeoMath.destination(48.0, 11.0, 37.0, 1_500.0)
+        assertEquals(1_500.0, GeoMath.distanceMeters(48.0, 11.0, lat, lon), 1e-3)
+        assertEquals(37.0, GeoMath.initialBearing(48.0, 11.0, lat, lon), 1e-6)
+    }
 }
