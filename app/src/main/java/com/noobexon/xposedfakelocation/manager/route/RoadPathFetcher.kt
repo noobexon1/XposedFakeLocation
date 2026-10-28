@@ -52,6 +52,9 @@ class RoadPathFetcher(
     /** Forgets the failure for [key] so it is fetched again. */
     fun retry(key: String) = _failures.update { it - key }
 
+    /** Forgets every failure so all missing paths are fetched again. */
+    fun retryAll() = _failures.update { emptyMap() }
+
     private suspend fun fetchMissing() {
         delay(debounceMs)
         while (true) {
@@ -65,11 +68,17 @@ class RoadPathFetcher(
             try {
                 val geometry = client.route(next)
                 currentCoroutineContext().ensureActive()
-                if (next in currentRoute().missingRoadPaths()) onResult(next, next.toRoadPath(geometry))
+                if (next in currentRoute().missingRoadPaths()) {
+                    onResult(next, next.toRoadPath(geometry))
+                    // The stored path changes the route, which restarts this loop. Starting the next
+                    // request here would get it cancelled and sent again.
+                    return
+                }
             } catch (e: RoutingException) {
                 // A blocking request can fail after cancellation; its error must not be recorded then.
                 currentCoroutineContext().ensureActive()
                 _failures.update { it + (next.key to RoadFailure(next, e.kind)) }
+                return
             }
         }
     }

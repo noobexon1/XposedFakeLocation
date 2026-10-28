@@ -35,10 +35,12 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 import org.osmdroid.util.GeoPoint
 import java.util.UUID
 
@@ -100,6 +102,9 @@ class RouteEditorViewModel(application: Application) : AndroidViewModel(applicat
 
     init {
         roadFetcher.start()
+        viewModelScope.launch {
+            repository.getRoutingServerUrlFlow().distinctUntilChanged().drop(1).collect { roadFetcher.retryAll() }
+        }
     }
 
     private val _ui = MutableStateFlow(RouteEditorUiState())

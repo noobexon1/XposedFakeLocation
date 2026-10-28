@@ -11,6 +11,7 @@ import com.noobexon.xposedfakelocation.manager.geo.RoutingException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceTimeBy
@@ -127,5 +128,33 @@ class RoadPathFetcherTest {
         assertEquals(listOf("a>b", "b>a"), results)
         assertEquals(0.002, routes.value.roadPaths.getValue("a>b").toLatitude, 0.0)
         assertTrue(routes.value.missingRoadPaths().isEmpty())
+    }
+
+    @Test
+    fun slowResponsesAreNotRequestedTwice() = runTest {
+        val client = FakeClient(this)
+        val first = client.answer
+        client.answer = { request ->
+            delay(2_000)
+            first(request)
+        }
+        val results = mutableListOf<String>()
+        fetcher(client, results)
+        settle()
+        assertEquals(listOf("a>b", "b>a"), client.calls.map { it.first })
+        assertEquals(listOf("a>b", "b>a"), results)
+    }
+
+    @Test
+    fun retryAllForgetsEveryFailure() = runTest {
+        val client = FakeClient(this)
+        client.answer = { throw RoutingException(RoutingException.Kind.NETWORK) }
+        val fetcher = fetcher(client)
+        settle()
+        assertEquals(2, client.calls.size)
+        fetcher.retryAll()
+        settle()
+        assertEquals(4, client.calls.size)
+        assertEquals(setOf("a>b", "b>a"), fetcher.failures.value.keys)
     }
 }
