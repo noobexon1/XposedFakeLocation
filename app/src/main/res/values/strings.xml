@@ -61,6 +61,11 @@
     <string name="category_appearance">Appearance</string>
     <string name="category_notifications">Notifications</string>
     <string name="category_external_control">External Control</string>
+    <string name="category_search">Search</string>
+    <string name="setting_search_server_title">Search server</string>
+    <string name="setting_search_server_description">Photon-compatible server used for address search on the map. Default: https://photon.komoot.io</string>
+    <string name="setting_search_server_label">Server URL</string>
+    <string name="setting_search_server_invalid">Enter a valid http or https URL</string>
     <string name="category_system_hooks">System Hooks</string>
     <string name="category_wifi_identity">Wi-Fi Identity</string>
     <string name="category_location">Location</string>
