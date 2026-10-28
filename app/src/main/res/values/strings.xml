@@ -346,4 +346,21 @@
     <string name="favorites_routes_empty_description">Build a route in Route mode on the map and save it here.</string>
     <string name="favorites_route_points">%1$d points</string>
     <string name="favorites_route_rename_title">Rename route</string>
+    <string name="route_follow_roads">Follow roads</string>
+    <string name="route_path_label">Path</string>
+    <string name="route_path_straight">Straight</string>
+    <string name="route_profile_label">Travel by</string>
+    <string name="route_profile_car">Car</string>
+    <string name="route_profile_bike">Bike</string>
+    <string name="route_profile_foot">Foot</string>
+    <string name="route_road_ready">Road path · %1$s</string>
+    <string name="route_road_loading">Getting road path…</string>
+    <string name="route_road_no_route">No road between these points</string>
+    <string name="route_road_server">Routing server unavailable</string>
+    <string name="route_road_network">Couldn\'t reach the routing server</string>
+    <string name="route_road_parse">Unexpected response from the routing server</string>
+    <string name="route_road_attribution">Routes © OpenStreetMap contributors, OSRM</string>
+    <string name="route_missing_roads_title">Missing road paths</string>
+    <string name="route_missing_roads_message">%1$d segments have no road path. Play them straight?</string>
+    <string name="route_play_anyway">Play anyway</string>
 </resources>

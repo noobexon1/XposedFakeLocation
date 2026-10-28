@@ -334,4 +334,21 @@
     <string name="favorites_routes_empty_description">Erstelle im Routenmodus auf der Karte eine Route und speichere sie hier.</string>
     <string name="favorites_route_points">%1$d Punkte</string>
     <string name="favorites_route_rename_title">Route umbenennen</string>
+    <string name="route_follow_roads">Straßen folgen</string>
+    <string name="route_path_label">Weg</string>
+    <string name="route_path_straight">Gerade</string>
+    <string name="route_profile_label">Unterwegs mit</string>
+    <string name="route_profile_car">Auto</string>
+    <string name="route_profile_bike">Fahrrad</string>
+    <string name="route_profile_foot">Zu Fuß</string>
+    <string name="route_road_ready">Straßenweg · %1$s</string>
+    <string name="route_road_loading">Straßenweg wird geladen…</string>
+    <string name="route_road_no_route">Keine Straße zwischen diesen Punkten</string>
+    <string name="route_road_server">Routing-Server nicht verfügbar</string>
+    <string name="route_road_network">Routing-Server nicht erreichbar</string>
+    <string name="route_road_parse">Unerwartete Antwort vom Routing-Server</string>
+    <string name="route_road_attribution">Routen © OpenStreetMap-Mitwirkende, OSRM</string>
+    <string name="route_missing_roads_title">Fehlende Straßenwege</string>
+    <string name="route_missing_roads_message">%1$d Abschnitte haben keinen Straßenweg. Gerade abspielen?</string>
+    <string name="route_play_anyway">Trotzdem abspielen</string>
 </resources>

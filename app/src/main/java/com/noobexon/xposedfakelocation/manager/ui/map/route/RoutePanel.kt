@@ -4,6 +4,8 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
@@ -49,9 +51,10 @@ import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
 
 /**
- * Bottom card for Route mode: summary, default speed, Loop/Reverse, play button and an expandable
- * reorderable point list. Read-only (with progress) while [editable] is false.
+ * Bottom card for Route mode: summary, default speed, Loop/Reverse/Follow roads, play button and an
+ * expandable reorderable point list. Read-only (with progress) while [editable] is false.
  */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun RoutePanel(
     route: Route,
@@ -62,6 +65,7 @@ fun RoutePanel(
     onDefaultSpeedClick: () -> Unit,
     onLoopChange: (Boolean) -> Unit,
     onReversedChange: (Boolean) -> Unit,
+    onFollowRoadsChange: (Boolean) -> Unit,
     onOrderChange: (List<String>) -> Unit,
     onDeletePoint: (String) -> Unit,
     onSave: () -> Unit,
@@ -114,7 +118,7 @@ fun RoutePanel(
                 }
                 playButton()
             }
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 AssistChip(
                     onClick = onDefaultSpeedClick,
                     enabled = editable,
@@ -131,6 +135,12 @@ fun RoutePanel(
                     onClick = { onReversedChange(!route.reversed) },
                     enabled = editable,
                     label = { Text(stringResource(R.string.route_reverse)) },
+                )
+                FilterChip(
+                    selected = route.followRoads,
+                    onClick = { onFollowRoadsChange(!route.followRoads) },
+                    enabled = editable,
+                    label = { Text(stringResource(R.string.route_follow_roads)) },
                 )
             }
             playback?.let { status ->
