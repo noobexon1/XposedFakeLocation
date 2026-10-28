@@ -3,6 +3,7 @@ package com.noobexon.xposedfakelocation.manager.route
 import com.noobexon.xposedfakelocation.data.model.Route
 import com.noobexon.xposedfakelocation.data.model.RoutePoint
 import com.noobexon.xposedfakelocation.data.model.SegmentSettings
+import com.noobexon.xposedfakelocation.data.model.sanitizeRouteLabel
 import com.noobexon.xposedfakelocation.data.model.segmentKey
 import com.noobexon.xposedfakelocation.data.model.travelSegments
 
@@ -11,14 +12,17 @@ import com.noobexon.xposedfakelocation.data.model.travelSegments
  * pairs that are still neighbours; [pruneSegments] drops the rest when a route is saved.
  */
 object RouteEditor {
-    fun append(route: Route, latitude: Double, longitude: Double, id: String): Route =
-        route.copy(points = route.points + RoutePoint(id, latitude, longitude))
+    fun append(route: Route, latitude: Double, longitude: Double, id: String, label: String? = null): Route =
+        route.copy(points = route.points + RoutePoint(id, latitude, longitude, sanitizeRouteLabel(label)))
 
     fun delete(route: Route, id: String): Route =
         route.copy(points = route.points.filterNot { it.id == id })
 
+    /** Moves the point; its label no longer describes the new place, so it is cleared. */
     fun move(route: Route, id: String, latitude: Double, longitude: Double): Route =
-        route.copy(points = route.points.map { if (it.id == id) it.copy(latitude = latitude, longitude = longitude) else it })
+        route.copy(points = route.points.map {
+            if (it.id == id) it.copy(latitude = latitude, longitude = longitude, label = null) else it
+        })
 
     /** Reorders to [ids]; returns [route] unchanged unless [ids] lists exactly its points. */
     fun setOrder(route: Route, ids: List<String>): Route {

@@ -5,9 +5,20 @@ import com.noobexon.xposedfakelocation.data.JOYSTICK_MIN_SPEED_MPS
 import com.noobexon.xposedfakelocation.data.ROUTE_MAX_DWELL_SECONDS
 import com.noobexon.xposedfakelocation.data.ROUTE_MAX_VARIATION_PERCENT
 import com.noobexon.xposedfakelocation.data.ROUTE_MIN_POINTS
+import com.noobexon.xposedfakelocation.data.ROUTE_POINT_LABEL_MAX_LENGTH
 
-/** One route point. [id] stays the same across reorders and moves, so segment settings follow it. */
-data class RoutePoint(val id: String, val latitude: Double, val longitude: Double)
+/**
+ * One route point. [id] stays the same across reorders and moves, so segment settings follow it.
+ * [label] is the search result name the point was added from; moving the point clears it.
+ */
+data class RoutePoint(val id: String, val latitude: Double, val longitude: Double, val label: String? = null)
+
+/** Trimmed and capped at [ROUTE_POINT_LABEL_MAX_LENGTH]; blank becomes `null`. */
+fun sanitizeRouteLabel(label: String?): String? =
+    label?.trim()?.take(ROUTE_POINT_LABEL_MAX_LENGTH)?.ifEmpty { null }
+
+fun Route.withSanitizedLabels(): Route =
+    copy(points = points.map { it.copy(label = sanitizeRouteLabel(it.label)) })
 
 /** How fast a route, or one of its segments, moves. */
 sealed interface SpeedChoice {

@@ -279,7 +279,7 @@ fun MapScreen(
                     route = draft.route,
                     routeEditable = !isPlaying && !routePlaying,
                     fitRouteEvent = routeEditorViewModel.fitRouteEvent,
-                    onRouteTap = routeEditorViewModel::addPoint,
+                    onRouteTap = { routeEditorViewModel.addPoint(it) },
                     onRoutePointTap = routeEditorViewModel::showPointActions,
                     onRoutePointMoved = routeEditorViewModel::movePoint,
                     onRouteSegmentTap = { a, b -> routeEditorViewModel.showSegment(a to b) },
