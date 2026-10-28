@@ -358,6 +358,8 @@
     <string name="route_road_parse">路线服务器返回了意外的响应</string>
     <string name="route_road_attribution">路线 © OpenStreetMap 贡献者，OSRM</string>
     <string name="route_missing_roads_title">缺少道路路径</string>
-    <string name="route_missing_roads_message">%1$d 个路段没有道路路径。按直线播放？</string>
+    <plurals name="route_missing_roads_message">
+        <item quantity="other">%1$d 个路段没有道路路径。按直线播放？</item>
+    </plurals>
     <string name="route_play_anyway">仍然播放</string>
 </resources>

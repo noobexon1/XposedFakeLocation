@@ -349,6 +349,9 @@
     <string name="route_road_parse">Unerwartete Antwort vom Routing-Server</string>
     <string name="route_road_attribution">Routen © OpenStreetMap-Mitwirkende, OSRM</string>
     <string name="route_missing_roads_title">Fehlende Straßenwege</string>
-    <string name="route_missing_roads_message">%1$d Abschnitte haben keinen Straßenweg. Gerade abspielen?</string>
+    <plurals name="route_missing_roads_message">
+        <item quantity="one">%1$d Abschnitt hat keinen Straßenweg. Gerade abspielen?</item>
+        <item quantity="other">%1$d Abschnitte haben keinen Straßenweg. Gerade abspielen?</item>
+    </plurals>
     <string name="route_play_anyway">Trotzdem abspielen</string>
 </resources>

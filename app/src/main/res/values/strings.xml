@@ -361,6 +361,9 @@
     <string name="route_road_parse">Unexpected response from the routing server</string>
     <string name="route_road_attribution">Routes © OpenStreetMap contributors, OSRM</string>
     <string name="route_missing_roads_title">Missing road paths</string>
-    <string name="route_missing_roads_message">%1$d segments have no road path. Play them straight?</string>
+    <plurals name="route_missing_roads_message">
+        <item quantity="one">%1$d segment has no road path. Play it straight?</item>
+        <item quantity="other">%1$d segments have no road path. Play them straight?</item>
+    </plurals>
     <string name="route_play_anyway">Play anyway</string>
 </resources>

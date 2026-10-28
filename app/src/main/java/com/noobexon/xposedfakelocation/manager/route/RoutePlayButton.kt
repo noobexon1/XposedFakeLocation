@@ -27,6 +27,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
@@ -103,7 +104,7 @@ fun RoutePlayButton(
         AlertDialog(
             onDismissRequest = { showMissingRoads = false },
             title = { Text(stringResource(R.string.route_missing_roads_title)) },
-            text = { Text(stringResource(R.string.route_missing_roads_message, missingRoadSegments)) },
+            text = { Text(pluralStringResource(R.plurals.route_missing_roads_message, missingRoadSegments, missingRoadSegments)) },
             confirmButton = {
                 TextButton(onClick = {
                     showMissingRoads = false
