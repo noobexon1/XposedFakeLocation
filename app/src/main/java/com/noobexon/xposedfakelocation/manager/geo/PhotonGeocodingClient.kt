@@ -38,26 +38,27 @@ class PhotonGeocodingClient(
 ) : GeocodingClient {
     override suspend fun search(query: String, near: LatLon?): List<Place> = withContext(Dispatchers.IO) {
         val url = buildSearchUrl(serverUrl, query, near, language)
-        val connection = try {
-            URL(url).openConnection() as? HttpURLConnection
-        } catch (e: IOException) {
-            throw GeocodingException(GeocodingException.Kind.NETWORK, e)
-        } ?: throw GeocodingException(GeocodingException.Kind.NETWORK)
-        connection.apply {
-            requestMethod = "GET"
-            connectTimeout = SEARCH_TIMEOUT_MS
-            readTimeout = SEARCH_TIMEOUT_MS
-            setRequestProperty("User-Agent", userAgent)
-            setRequestProperty("Accept", "application/json")
-        }
+        var connection: HttpURLConnection? = null
         try {
+            connection = URL(url).openConnection() as? HttpURLConnection
+                ?: throw GeocodingException(GeocodingException.Kind.NETWORK)
+            connection.requestMethod = "GET"
+            connection.connectTimeout = SEARCH_TIMEOUT_MS
+            connection.readTimeout = SEARCH_TIMEOUT_MS
+            connection.setRequestProperty("User-Agent", userAgent)
+            connection.setRequestProperty("Accept", "application/json")
             if (connection.responseCode !in 200..299) throw GeocodingException(GeocodingException.Kind.SERVER)
             val body = connection.inputStream.bufferedReader().use { it.readText() }
             PhotonResponseParser.parse(body)
         } catch (e: IOException) {
             throw GeocodingException(GeocodingException.Kind.NETWORK, e)
+        } catch (e: IllegalArgumentException) {
+            // HttpURLConnection reports some bad URLs (e.g. port out of range) this way.
+            throw GeocodingException(GeocodingException.Kind.NETWORK, e)
+        } catch (e: SecurityException) {
+            throw GeocodingException(GeocodingException.Kind.NETWORK, e)
         } finally {
-            connection.disconnect()
+            connection?.disconnect()
         }
     }
 }

@@ -32,5 +32,7 @@ class ServerUrlTest {
         assertNull(normalizeServerUrl("https://example.org?x=1"))
         assertNull(normalizeServerUrl("https://example.org#top"))
         assertNull(normalizeServerUrl("https://exa mple.org"))
+        assertNull(normalizeServerUrl("https://example.org:99999"))
+        assertNull(normalizeServerUrl("https://example.org:0"))
     }
 }
