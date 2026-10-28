@@ -1,19 +1,28 @@
 package com.noobexon.xposedfakelocation.manager.ui.map.route
 
 import android.app.Application
+import android.os.SystemClock
 import android.widget.Toast
 import androidx.compose.runtime.Immutable
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.noobexon.xposedfakelocation.BuildConfig
 import com.noobexon.xposedfakelocation.R
 import com.noobexon.xposedfakelocation.data.model.MapMode
+import com.noobexon.xposedfakelocation.data.model.RoadPath
+import com.noobexon.xposedfakelocation.data.model.RoadProfile
 import com.noobexon.xposedfakelocation.data.model.Route
 import com.noobexon.xposedfakelocation.data.model.RouteDraft
 import com.noobexon.xposedfakelocation.data.model.SegmentSettings
 import com.noobexon.xposedfakelocation.data.model.SpeedChoice
+import com.noobexon.xposedfakelocation.data.model.directedKey
 import com.noobexon.xposedfakelocation.data.repository.PreferencesRepository
+import com.noobexon.xposedfakelocation.manager.geo.ConfiguredRoutingClient
+import com.noobexon.xposedfakelocation.manager.geo.RoadRequest
 import com.noobexon.xposedfakelocation.manager.joystick.JoystickRunningState
 import com.noobexon.xposedfakelocation.manager.localization.LocaleController
+import com.noobexon.xposedfakelocation.manager.route.RoadFailure
+import com.noobexon.xposedfakelocation.manager.route.RoadPathFetcher
 import com.noobexon.xposedfakelocation.manager.route.RouteEditor
 import com.noobexon.xposedfakelocation.manager.route.RoutePlaybackState
 import com.noobexon.xposedfakelocation.manager.route.RoutePlaybackStatus
@@ -76,6 +85,23 @@ class RouteEditorViewModel(application: Application) : AndroidViewModel(applicat
         .stateIn(viewModelScope, SharingStarted.Eagerly, playback.value != null)
     val joystickRunning: StateFlow<Boolean> = JoystickRunningState.running
 
+    private val roadFetcher = RoadPathFetcher(
+        scope = viewModelScope,
+        client = ConfiguredRoutingClient(repository::getRoutingServerUrl, "XposedFakeLocation/${BuildConfig.VERSION_NAME}"),
+        routes = _draft.map { it.route }.distinctUntilChanged(),
+        currentRoute = { _draft.value.route },
+        paused = isRoutePlaying,
+        now = SystemClock::elapsedRealtime,
+        onResult = ::storeRoadPath,
+    )
+
+    /** Road paths that failed to fetch, by directed key. */
+    val roadFailures: StateFlow<Map<String, RoadFailure>> = roadFetcher.failures
+
+    init {
+        roadFetcher.start()
+    }
+
     private val _ui = MutableStateFlow(RouteEditorUiState())
     val ui: StateFlow<RouteEditorUiState> = _ui.asStateFlow()
 
@@ -110,6 +136,14 @@ class RouteEditorViewModel(application: Application) : AndroidViewModel(applicat
     fun setDefaultSpeed(choice: SpeedChoice) = edit { it.copy(defaultSpeed = choice) }
     fun setLoop(loop: Boolean) = edit { it.copy(loop = loop) }
     fun setReversed(reversed: Boolean) = edit { it.copy(reversed = reversed) }
+    fun setFollowRoads(followRoads: Boolean) = edit { it.copy(followRoads = followRoads) }
+    fun setSegmentProfile(aId: String, bId: String, profile: RoadProfile) = edit { RouteEditor.setProfile(it, aId, bId, profile) }
+
+    /** Fetches the segment's road path again, in both directions. */
+    fun retryRoad(aId: String, bId: String) {
+        roadFetcher.retry(directedKey(aId, bId))
+        roadFetcher.retry(directedKey(bId, aId))
+    }
 
     fun setPointNumber(id: String, number: Int) {
         edit { RouteEditor.moveTo(it, id, number) }
@@ -178,5 +212,22 @@ class RouteEditorViewModel(application: Application) : AndroidViewModel(applicat
     private fun replaceDraft(draft: RouteDraft) {
         _draft.value = draft
         repository.saveRouteDraft(draft)
+    }
+
+    /**
+     * A fetched path isn't a user edit, so `dirty` is kept. An unedited draft loaded from a favorite
+     * also updates that favorite, so it keeps the path and doesn't nag about unsaved changes.
+     */
+    private fun storeRoadPath(request: RoadRequest, path: RoadPath) {
+        val current = _draft.value
+        val updated = current.copy(route = current.route.copy(roadPaths = current.route.roadPaths + (request.key to path)))
+        _draft.value = updated
+        repository.saveRouteDraft(updated)
+        val sourceId = current.sourceRouteId
+        if (!current.dirty && sourceId != null) {
+            repository.getRoute(sourceId)?.let { saved ->
+                repository.saveRoute(saved.copy(roadPaths = saved.roadPaths + (request.key to path)))
+            }
+        }
     }
 }
