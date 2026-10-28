@@ -1,4 +1,4 @@
-package com.noobexon.xposedfakelocation.manager.joystick
+package com.noobexon.xposedfakelocation.manager.overlay
 
 import android.content.Context
 import android.graphics.PixelFormat
@@ -19,12 +19,13 @@ import kotlin.math.roundToInt
  * Hosts Compose [content] in a draggable `TYPE_APPLICATION_OVERLAY` window. The window is
  * not focusable, so the app underneath keeps keyboard focus and touches outside the overlay.
  */
-class JoystickOverlayWindow(
+class OverlayWindowHost(
     private val context: Context,
     lifecycleOwner: LifecycleOwner,
     savedStateRegistryOwner: SavedStateRegistryOwner,
     initialPosition: Pair<Int, Int>?,
     private val onPositionCommitted: (x: Int, y: Int) -> Unit,
+    private val defaultYFraction: Float = 0.55f,
     content: @Composable () -> Unit,
 ) {
     private val windowManager = context.getSystemService(WindowManager::class.java)
@@ -106,11 +107,10 @@ class JoystickOverlayWindow(
     private fun defaultPosition(): Pair<Int, Int> {
         val (_, height) = screenSize()
         val margin = (DEFAULT_MARGIN_DP * context.resources.displayMetrics.density).roundToInt()
-        return margin to (height * DEFAULT_Y_FRACTION).roundToInt()
+        return margin to (height * defaultYFraction).roundToInt()
     }
 
     private companion object {
         const val DEFAULT_MARGIN_DP = 24
-        const val DEFAULT_Y_FRACTION = 0.55f
     }
 }

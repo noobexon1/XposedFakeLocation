@@ -133,6 +133,11 @@ const val KEY_JOYSTICK_PRESET_DRIVE = "joystick_preset_drive"
 const val KEY_JOYSTICK_SELECTED_PRESET = "joystick_selected_preset"
 const val KEY_JOYSTICK_OVERLAY_X = "joystick_overlay_x"
 const val KEY_JOYSTICK_OVERLAY_Y = "joystick_overlay_y"
+const val KEY_ROUTES = "routes"
+const val KEY_ROUTE_DRAFT = "route_draft"
+const val KEY_MAP_MODE = "map_mode"
+const val KEY_ROUTE_OVERLAY_X = "route_overlay_x"
+const val KEY_ROUTE_OVERLAY_Y = "route_overlay_y"
 
 const val MPS_TO_KMH = 3.6f
 const val DEFAULT_JOYSTICK_MAX_SPEED = 50f / MPS_TO_KMH
@@ -147,3 +152,6 @@ const val JOYSTICK_SPEED_ACCURACY = 0.5f
 /** Accepted joystick speed range (m/s), matching the 1..200 km/h Settings sliders. */
 const val JOYSTICK_MIN_SPEED_MPS = 1f / MPS_TO_KMH
 const val JOYSTICK_MAX_SPEED_MPS = 200f / MPS_TO_KMH
+const val ROUTE_MIN_POINTS = 2
+const val ROUTE_MAX_DWELL_SECONDS = 3_600
+const val ROUTE_MAX_VARIATION_PERCENT = 50

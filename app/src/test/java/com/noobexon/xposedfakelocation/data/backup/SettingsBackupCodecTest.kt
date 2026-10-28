@@ -5,6 +5,9 @@ import com.noobexon.xposedfakelocation.data.model.FavoriteLocation
 import com.noobexon.xposedfakelocation.data.model.JoystickBackup
 import com.noobexon.xposedfakelocation.data.model.JoystickMode
 import com.noobexon.xposedfakelocation.data.model.JoystickPreset
+import com.noobexon.xposedfakelocation.data.model.Route
+import com.noobexon.xposedfakelocation.data.model.RoutePoint
+import com.noobexon.xposedfakelocation.data.model.SpeedChoice
 import com.noobexon.xposedfakelocation.data.model.SETTINGS_BACKUP_VERSION
 import com.noobexon.xposedfakelocation.data.model.SettingsBackup
 import com.noobexon.xposedfakelocation.data.model.SpoofingBackup
@@ -44,6 +47,13 @@ class SettingsBackupCodecTest {
             mode = "CONSTANT", maxSpeed = 4f, walkSpeed = 1.5f, runSpeed = 3.2f,
             bikeSpeed = 6f, driveSpeed = 15f, selectedPreset = "BIKE",
         ),
+        routes = listOf(
+            Route(
+                id = "r1", name = "Loop",
+                points = listOf(RoutePoint("a", 1.0, 2.0), RoutePoint("b", 1.1, 2.1)),
+                defaultSpeed = SpeedChoice.Custom(4f), loop = true,
+            ),
+        ),
     )
 
     @Test
@@ -51,6 +61,20 @@ class SettingsBackupCodecTest {
         val original = sampleBackup()
         val restored = codec.fromJson(codec.toJson(original)).getOrThrow()
         assertEquals(original, restored)
+    }
+
+    @Test
+    fun invalidRoutesAreDroppedOnImport() {
+        val single = sampleBackup().routes!!.first().copy(id = "r2", points = listOf(RoutePoint("a", 1.0, 2.0)))
+        val backup = sampleBackup().copy(routes = sampleBackup().routes!! + single)
+        val restored = codec.fromJson(codec.toJson(backup)).getOrThrow()
+        assertEquals(sampleBackup().routes, restored.routes)
+    }
+
+    @Test
+    fun backupWithoutRoutesImportsWithNullRoutes() {
+        val json = codec.toJson(sampleBackup().copy(routes = null))
+        assertNull(codec.fromJson(json).getOrThrow().routes)
     }
 
     @Test

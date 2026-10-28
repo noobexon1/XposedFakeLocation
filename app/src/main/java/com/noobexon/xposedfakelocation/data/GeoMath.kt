@@ -3,7 +3,9 @@ package com.noobexon.xposedfakelocation.data
 import kotlin.math.asin
 import kotlin.math.atan2
 import kotlin.math.cos
+import kotlin.math.pow
 import kotlin.math.sin
+import kotlin.math.sqrt
 
 /** Spherical-earth geometry helpers shared by the manager app and the hook side. */
 object GeoMath {
@@ -39,6 +41,26 @@ object GeoMath {
 
         val newLat = Math.toDegrees(newLatRad).coerceIn(-90.0, 90.0)
         return newLat to normalizeLongitude(Math.toDegrees(newLonRad))
+    }
+
+    /** Great-circle (haversine) distance in meters between two points. */
+    fun distanceMeters(lat1: Double, lon1: Double, lat2: Double, lon2: Double): Double {
+        val phi1 = Math.toRadians(lat1)
+        val phi2 = Math.toRadians(lat2)
+        val dPhi = phi2 - phi1
+        val dLambda = Math.toRadians(lon2 - lon1)
+        val a = sin(dPhi / 2).pow(2) + cos(phi1) * cos(phi2) * sin(dLambda / 2).pow(2)
+        return 2 * RADIUS_EARTH * asin(sqrt(a.coerceIn(0.0, 1.0)))
+    }
+
+    /** Initial great-circle bearing from the first point to the second, in `[0, 360)` (0 = north). */
+    fun initialBearing(lat1: Double, lon1: Double, lat2: Double, lon2: Double): Double {
+        val phi1 = Math.toRadians(lat1)
+        val phi2 = Math.toRadians(lat2)
+        val dLambda = Math.toRadians(lon2 - lon1)
+        val y = sin(dLambda) * cos(phi2)
+        val x = cos(phi1) * sin(phi2) - sin(phi1) * cos(phi2) * cos(dLambda)
+        return (Math.toDegrees(atan2(y, x)) + 360.0) % 360.0
     }
 
     /** Wraps [longitude] (degrees) into `[-180, 180)`. */

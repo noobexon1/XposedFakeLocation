@@ -31,6 +31,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Tab
+import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -39,6 +41,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -53,7 +56,11 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.noobexon.xposedfakelocation.R
 import com.noobexon.xposedfakelocation.data.model.FavoriteLocation
+import com.noobexon.xposedfakelocation.data.model.Route
 
+
+/** Which list the Favorites screen shows. */
+enum class FavoritesTab { LOCATIONS, ROUTES }
 
 /**
  * Stateful Favorites screen composable.
@@ -66,24 +73,37 @@ import com.noobexon.xposedfakelocation.data.model.FavoriteLocation
  * @param navController Used to navigate back after a selection or the back-arrow tap.
  * @param onFavoriteSelected Called with the chosen [FavoriteLocation] when the user taps a card;
  *   the caller is expected to apply it as the active spoof target.
+ * @param onRouteSelected Called with a tapped saved route; the caller loads it into the map.
+ * @param initialTab Tab shown first (Routes when opened from the route panel).
  * @param favoritesViewModel Injected by [viewModel]; can be overridden in tests.
  */
 @Composable
 fun FavoritesScreen(
     navController: NavController,
     onFavoriteSelected: (FavoriteLocation) -> Unit,
+    onRouteSelected: (Route) -> Unit,
+    initialTab: FavoritesTab = FavoritesTab.LOCATIONS,
     favoritesViewModel: FavoritesViewModel = viewModel()
 ) {
     val favorites by favoritesViewModel.favorites.collectAsStateWithLifecycle()
+    val routes by favoritesViewModel.routes.collectAsStateWithLifecycle()
 
     FavoritesContent(
         favorites = favorites,
+        routes = routes,
+        initialTab = initialTab,
         onFavoriteClick = { favorite ->
             onFavoriteSelected(favorite)
             navController.navigateUp()
         },
+        onRouteClick = { route ->
+            onRouteSelected(route)
+            navController.navigateUp()
+        },
         onDelete = { favorite -> favoritesViewModel.removeFavorite(favorite) },
         onEdit = { old, new -> favoritesViewModel.updateFavorite(old, new) },
+        onDeleteRoute = favoritesViewModel::deleteRoute,
+        onRenameRoute = favoritesViewModel::renameRoute,
         onNavigateUp = { navController.navigateUp() },
     )
 }
@@ -96,26 +116,39 @@ fun FavoritesScreen(
  * local [remember] state because they are transient UI interactions that don't need to survive
  * configuration changes or process death.
  *
- * Renders either [FavoritesEmptyState] or a [LazyColumn] of [FavoriteItem] cards depending on
- * whether [favorites] is empty.
+ * Shows a [TabRow] with a Locations tab and a Routes tab; the selected tab survives configuration
+ * changes. The Locations tab renders either [FavoritesEmptyState] or a [LazyColumn] of
+ * [FavoriteItem] cards depending on whether [favorites] is empty. The Routes tab delegates to
+ * [RoutesList].
  *
  * @param favorites The current list of saved favorites, observed from [FavoritesViewModel].
+ * @param routes The current list of saved routes, observed from [FavoritesViewModel].
+ * @param initialTab Tab selected on first composition.
  * @param onFavoriteClick Called when the user taps a card to select it as the spoof target.
+ * @param onRouteClick Called when the user taps a route card to load it into the map.
  * @param onDelete Called with the entry to remove after the user confirms the delete dialog.
  * @param onEdit Called with the original and updated entry after the user saves the edit dialog.
+ * @param onDeleteRoute Called with the route to remove after the user confirms the delete dialog.
+ * @param onRenameRoute Called with the route and its new name after the user saves the rename dialog.
  * @param onNavigateUp Called when the back-arrow in the [TopAppBar] is tapped.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun FavoritesContent(
     favorites: List<FavoriteLocation>,
+    routes: List<Route>,
+    initialTab: FavoritesTab,
     onFavoriteClick: (FavoriteLocation) -> Unit,
+    onRouteClick: (Route) -> Unit,
     onDelete: (FavoriteLocation) -> Unit,
     onEdit: (old: FavoriteLocation, new: FavoriteLocation) -> Unit,
+    onDeleteRoute: (Route) -> Unit,
+    onRenameRoute: (Route, String) -> Unit,
     onNavigateUp: () -> Unit,
 ) {
     var deletePending by remember { mutableStateOf<FavoriteLocation?>(null) }
     var editPending by remember { mutableStateOf<FavoriteLocation?>(null) }
+    var tab by rememberSaveable { mutableStateOf(initialTab) }
 
     deletePending?.let { favorite ->
         DeleteConfirmationDialog(
@@ -142,32 +175,51 @@ private fun FavoritesContent(
     Scaffold(
         topBar = { FavoritesTopAppBar(onNavigateUp) }
     ) { innerPadding ->
-        if (favorites.isEmpty()) {
-            FavoritesEmptyState(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding)
-                    .padding(horizontal = 32.dp)
-            )
-        } else {
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding),
-                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                items(
-                    items = favorites,
-                    key = { "${it.name}_${it.latitude}_${it.longitude}" }
-                ) { favorite ->
-                    FavoriteItem(
-                        favorite = favorite,
-                        onClick = { onFavoriteClick(favorite) },
-                        onEditClick = { editPending = favorite },
-                        onDeleteClick = { deletePending = favorite },
+        Column(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
+            TabRow(selectedTabIndex = tab.ordinal) {
+                Tab(
+                    selected = tab == FavoritesTab.LOCATIONS,
+                    onClick = { tab = FavoritesTab.LOCATIONS },
+                    text = { Text(stringResource(R.string.favorites_tab_locations)) },
+                )
+                Tab(
+                    selected = tab == FavoritesTab.ROUTES,
+                    onClick = { tab = FavoritesTab.ROUTES },
+                    text = { Text(stringResource(R.string.favorites_tab_routes)) },
+                )
+            }
+            when (tab) {
+                FavoritesTab.LOCATIONS -> if (favorites.isEmpty()) {
+                    FavoritesEmptyState(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(horizontal = 32.dp)
                     )
+                } else {
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        items(
+                            items = favorites,
+                            key = { "${it.name}_${it.latitude}_${it.longitude}" }
+                        ) { favorite ->
+                            FavoriteItem(
+                                favorite = favorite,
+                                onClick = { onFavoriteClick(favorite) },
+                                onEditClick = { editPending = favorite },
+                                onDeleteClick = { deletePending = favorite },
+                            )
+                        }
+                    }
                 }
+                FavoritesTab.ROUTES -> RoutesList(
+                    routes = routes,
+                    onRouteClick = onRouteClick,
+                    onRename = onRenameRoute,
+                    onDelete = onDeleteRoute,
+                )
             }
         }
     }
@@ -467,7 +519,7 @@ private fun EditFavoriteDialog(
  * @param onDismiss Called when the user cancels or dismisses the dialog.
  */
 @Composable
-private fun DeleteConfirmationDialog(
+internal fun DeleteConfirmationDialog(
     favoriteName: String,
     onConfirm: () -> Unit,
     onDismiss: () -> Unit,

@@ -1,9 +1,10 @@
 package com.noobexon.xposedfakelocation.data.backup
 
 import com.google.gson.Gson
-import com.google.gson.GsonBuilder
+import com.noobexon.xposedfakelocation.data.model.RouteJson
 import com.noobexon.xposedfakelocation.data.model.SETTINGS_BACKUP_VERSION
 import com.noobexon.xposedfakelocation.data.model.SettingsBackup
+import com.noobexon.xposedfakelocation.data.model.isValid
 
 /** Thrown (wrapped in [Result]) when a settings file cannot be parsed or is unsupported. */
 class SettingsBackupException(message: String) : Exception(message)
@@ -13,7 +14,7 @@ class SettingsBackupException(message: String) : Exception(message)
  * dependencies so it can be unit-tested directly.
  */
 class SettingsBackupCodec(
-    private val gson: Gson = GsonBuilder().create()
+    private val gson: Gson = RouteJson.gson
 ) {
 
     fun toJson(backup: SettingsBackup): String = gson.toJson(backup)
@@ -44,6 +45,8 @@ class SettingsBackupCodec(
                 fav.latitude.isFinite() &&
                 fav.longitude.isFinite()
         }
-        parsed.copy(favorites = favorites, joystick = parsed.joystick?.takeIf { it.isValid() })
+        @Suppress("SENSELESS_COMPARISON")
+        val routes = parsed.routes?.filter { it != null && it.isValid() }
+        parsed.copy(favorites = favorites, joystick = parsed.joystick?.takeIf { it.isValid() }, routes = routes)
     }
 }

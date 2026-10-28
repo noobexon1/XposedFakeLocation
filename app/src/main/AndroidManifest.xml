@@ -57,5 +57,14 @@
                 android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
                 android:value="Floating joystick overlay for manual control of the spoofed location" />
         </service>
+
+        <service
+            android:name=".manager.route.RoutePlaybackService"
+            android:exported="false"
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="Plays a user-built route by moving the spoofed location along it" />
+        </service>
     </application>
 </manifest>
