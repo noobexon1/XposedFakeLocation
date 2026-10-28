@@ -18,6 +18,8 @@ data class SettingsBackup(
     val joystick: JoystickBackup? = null,
     /** Absent in files exported before the route feature; import then leaves saved routes untouched. */
     val routes: List<Route>? = null,
+    /** Absent in files exported before address search; import then leaves the search server untouched. */
+    val geocodingServerUrl: String? = null,
 )
 
 /** All spoofing-related values (LSPosed remote prefs). */

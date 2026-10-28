@@ -50,10 +50,11 @@ class SettingsBackupCodecTest {
         routes = listOf(
             Route(
                 id = "r1", name = "Loop",
-                points = listOf(RoutePoint("a", 1.0, 2.0), RoutePoint("b", 1.1, 2.1)),
+                points = listOf(RoutePoint("a", 1.0, 2.0, label = "Dizengoff Center"), RoutePoint("b", 1.1, 2.1)),
                 defaultSpeed = SpeedChoice.Custom(4f), loop = true,
             ),
         ),
+        geocodingServerUrl = "https://photon.example.org",
     )
 
     @Test
@@ -75,6 +76,38 @@ class SettingsBackupCodecTest {
     fun backupWithoutRoutesImportsWithNullRoutes() {
         val json = codec.toJson(sampleBackup().copy(routes = null))
         assertNull(codec.fromJson(json).getOrThrow().routes)
+    }
+
+    @Test
+    fun routePointLabelsAreSanitizedOnImport() {
+        val route = sampleBackup().routes!!.first().copy(
+            points = listOf(
+                RoutePoint("a", 1.0, 2.0, label = "  Home  "),
+                RoutePoint("b", 1.1, 2.1, label = "   "),
+                RoutePoint("c", 1.2, 2.2, label = "x".repeat(250)),
+            )
+        )
+        val json = codec.toJson(sampleBackup().copy(routes = listOf(route)))
+        val labels = codec.fromJson(json).getOrThrow().routes!!.single().points.map { it.label }
+        assertEquals(listOf("Home", null, "x".repeat(200)), labels)
+    }
+
+    @Test
+    fun invalidGeocodingServerUrlIsDropped() {
+        val json = codec.toJson(sampleBackup().copy(geocodingServerUrl = "ftp://nope"))
+        assertNull(codec.fromJson(json).getOrThrow().geocodingServerUrl)
+    }
+
+    @Test
+    fun geocodingServerUrlIsNormalizedOnImport() {
+        val json = codec.toJson(sampleBackup().copy(geocodingServerUrl = " https://photon.example.org/ "))
+        assertEquals("https://photon.example.org", codec.fromJson(json).getOrThrow().geocodingServerUrl)
+    }
+
+    @Test
+    fun backupWithoutGeocodingServerUrlImportsWithNull() {
+        val json = codec.toJson(sampleBackup().copy(geocodingServerUrl = null))
+        assertNull(codec.fromJson(json).getOrThrow().geocodingServerUrl)
     }
 
     @Test
