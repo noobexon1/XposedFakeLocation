@@ -27,7 +27,7 @@ object RouteJson {
         } catch (e: RuntimeException) {
             null
         } ?: return emptyList()
-        return parsed.filterNotNull().filter { it.isValid() }
+        return parsed.filterNotNull().filter { it.isValid() }.map { it.sanitizeRoadPaths() }
     }
 
     /** The editing draft from [json], or `null` when it is missing or broken. */
@@ -40,11 +40,11 @@ object RouteJson {
         } ?: return null
         @Suppress("SENSELESS_COMPARISON")
         val routeOk = draft.route != null && draft.route.isValid(requireName = false, minPoints = 0)
-        return draft.takeIf { routeOk }
+        return draft.takeIf { routeOk }?.let { it.copy(route = it.route.sanitizeRoadPaths()) }
     }
 }
 
-/** Writes `{"type":"preset","preset":"WALK"}` or `{"type":"custom","speedMps":4.2}`; unknown shapes read as `null`. */
+/** Writes `{"type":"preset","preset":"WALK"}` or `{"type":"custom","speedMps":4.2,"profile":"BIKE"}` (profile optional); unknown shapes read as `null`. */
 private object SpeedChoiceAdapter : JsonSerializer<SpeedChoice>, JsonDeserializer<SpeedChoice> {
     override fun serialize(src: SpeedChoice, typeOfSrc: Type, context: JsonSerializationContext): JsonElement =
         JsonObject().apply {
@@ -56,6 +56,7 @@ private object SpeedChoiceAdapter : JsonSerializer<SpeedChoice>, JsonDeserialize
                 is SpeedChoice.Custom -> {
                     addProperty("type", "custom")
                     addProperty("speedMps", src.speedMps)
+                    src.profile?.let { addProperty("profile", it.name) }
                 }
             }
         }
@@ -67,7 +68,7 @@ private object SpeedChoiceAdapter : JsonSerializer<SpeedChoice>, JsonDeserialize
             "custom" -> obj.get("speedMps")
                 ?.takeIf { it.isJsonPrimitive && it.asJsonPrimitive.isNumber }
                 ?.asFloat
-                ?.let(SpeedChoice::Custom)
+                ?.let { speed -> SpeedChoice.Custom(speed, RoadProfile.entries.firstOrNull { it.name == obj.string("profile") }) }
             else -> null
         }
     }

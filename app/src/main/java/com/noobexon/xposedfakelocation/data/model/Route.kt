@@ -1,5 +1,6 @@
 package com.noobexon.xposedfakelocation.data.model
 
+import com.noobexon.xposedfakelocation.data.EncodedPolyline
 import com.noobexon.xposedfakelocation.data.JOYSTICK_MAX_SPEED_MPS
 import com.noobexon.xposedfakelocation.data.JOYSTICK_MIN_SPEED_MPS
 import com.noobexon.xposedfakelocation.data.ROUTE_MAX_DWELL_SECONDS
@@ -20,11 +21,15 @@ fun sanitizeRouteLabel(label: String?): String? =
 fun Route.withSanitizedLabels(): Route =
     copy(points = points.map { it.copy(label = sanitizeRouteLabel(it.label)) })
 
+/** OSRM routing profile; [urlName] fills the routing server's `{profile}` placeholder. */
+enum class RoadProfile(val urlName: String) { CAR("car"), BIKE("bike"), FOOT("foot") }
+
 /** How fast a route, or one of its segments, moves. */
 sealed interface SpeedChoice {
     /** Resolved from the joystick preset speeds in Settings when playback starts. */
     data class Preset(val preset: JoystickPreset) : SpeedChoice
-    data class Custom(val speedMps: Float) : SpeedChoice
+    /** [profile] is only used on road segments; `null` means [RoadProfile.CAR]. */
+    data class Custom(val speedMps: Float, val profile: RoadProfile? = null) : SpeedChoice
 }
 
 /** Per-segment overrides; the defaults mean "use the route's settings". */
@@ -35,6 +40,8 @@ data class SegmentSettings(
     val dwellSeconds: Int = 0,
     /** Speed jitter of +/- this many percent. */
     val variationPercent: Int = 0,
+    /** `null` = the route's [Route.followRoads]. */
+    val followRoads: Boolean? = null,
 )
 
 /** A user-built route. List order of [points] is travel order (1..N). */
@@ -49,7 +56,29 @@ data class Route(
     val loop: Boolean = false,
     /** Plays N -> 1 without renumbering the points. */
     val reversed: Boolean = false,
+    /** Route-wide default for segments. Old routes load as `false` and keep playing straight. */
+    val followRoads: Boolean = false,
+    /** Keyed by [directedKey]; both directions are stored for every road segment. */
+    val roadPaths: Map<String, RoadPath> = emptyMap(),
 )
+
+/**
+ * A fetched road path for one travel direction. The from/to coordinates and [profile] are the
+ * inputs it was fetched for; it is stale once they no longer match the route.
+ */
+data class RoadPath(
+    val profile: RoadProfile,
+    val fromLatitude: Double,
+    val fromLongitude: Double,
+    val toLatitude: Double,
+    val toLongitude: Double,
+    /** OSRM polyline6 encoding of the road geometry (snapped to the road network). */
+    val polyline: String,
+    val distanceM: Double,
+)
+
+/** Key of [Route.roadPaths] for travel from [fromId] to [toId]. */
+fun directedKey(fromId: String, toId: String): String = "$fromId>$toId"
 
 /** The route being edited on the map. [sourceRouteId] is the saved route it came from, if any. */
 data class RouteDraft(val route: Route, val sourceRouteId: String? = null, val dirty: Boolean = false)
@@ -71,6 +100,25 @@ fun segmentKey(a: String, b: String): String = if (a <= b) "$a|$b" else "$b|$a"
 
 fun Route.segmentSettings(aId: String, bId: String): SegmentSettings =
     segments[segmentKey(aId, bId)] ?: SegmentSettings()
+
+/** The segment's own speed, else the route default. */
+fun Route.effectiveSpeed(aId: String, bId: String): SpeedChoice = segmentSettings(aId, bId).speed ?: defaultSpeed
+
+/** Whether the segment follows roads: its own setting, else the route default. */
+fun Route.followsRoads(aId: String, bId: String): Boolean = segmentSettings(aId, bId).followRoads ?: followRoads
+
+/** The road profile of the segment's [effectiveSpeed]. */
+fun Route.effectiveProfile(aId: String, bId: String): RoadProfile = effectiveSpeed(aId, bId).roadProfile()
+
+/** Walk and run use foot paths, bike uses cycle paths, drive and unset Custom use car roads. */
+fun SpeedChoice.roadProfile(): RoadProfile = when (this) {
+    is SpeedChoice.Preset -> when (preset) {
+        JoystickPreset.WALK, JoystickPreset.RUN -> RoadProfile.FOOT
+        JoystickPreset.BIKE -> RoadProfile.BIKE
+        JoystickPreset.DRIVE -> RoadProfile.CAR
+    }
+    is SpeedChoice.Custom -> profile ?: RoadProfile.CAR
+}
 
 /** Segments in travel order, honouring [Route.reversed] and [Route.loop]. Empty below two points. */
 fun Route.travelSegments(): List<RouteSegment> {
@@ -114,4 +162,26 @@ fun Route.isValid(requireName: Boolean = true, minPoints: Int = ROUTE_MIN_POINTS
             it.latitude in -90.0..90.0 && it.longitude in -180.0..180.0
     }
     return pointsOk && defaultSpeed.isValid() && segments.values.all { it != null && it.isValid() }
+}
+
+/** Finite in-range coordinates and distance, and a polyline that decodes to at least two points. */
+@Suppress("SENSELESS_COMPARISON")
+fun RoadPath.isValid(): Boolean {
+    if (profile == null || polyline == null) return false
+    val latitudesOk = listOf(fromLatitude, toLatitude).all { it.isFinite() && it in -90.0..90.0 }
+    val longitudesOk = listOf(fromLongitude, toLongitude).all { it.isFinite() && it in -180.0..180.0 }
+    val distanceOk = distanceM.isFinite() && distanceM >= 0.0
+    return latitudesOk && longitudesOk && distanceOk && (EncodedPolyline.decode(polyline)?.size ?: 0) >= 2
+}
+
+/** Drops unusable stored paths (bad key, data or polyline); never rejects the route itself. */
+@Suppress("SENSELESS_COMPARISON", "USELESS_ELVIS")
+fun Route.sanitizeRoadPaths(): Route {
+    val ids = points.map { it.id }.toSet()
+    val stored: Map<String, RoadPath> = roadPaths ?: emptyMap()
+    val kept = stored.filter { (key, path) ->
+        val ends = key.split('>')
+        ends.size == 2 && ends[0] in ids && ends[1] in ids && path != null && path.isValid()
+    }
+    return copy(roadPaths = kept)
 }

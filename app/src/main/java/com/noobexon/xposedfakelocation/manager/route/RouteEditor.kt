@@ -1,15 +1,19 @@
 package com.noobexon.xposedfakelocation.manager.route
 
+import com.noobexon.xposedfakelocation.data.model.RoadProfile
 import com.noobexon.xposedfakelocation.data.model.Route
 import com.noobexon.xposedfakelocation.data.model.RoutePoint
 import com.noobexon.xposedfakelocation.data.model.SegmentSettings
+import com.noobexon.xposedfakelocation.data.model.SpeedChoice
+import com.noobexon.xposedfakelocation.data.model.directedKey
 import com.noobexon.xposedfakelocation.data.model.sanitizeRouteLabel
 import com.noobexon.xposedfakelocation.data.model.segmentKey
+import com.noobexon.xposedfakelocation.data.model.segmentSettings
 import com.noobexon.xposedfakelocation.data.model.travelSegments
 
 /**
  * Pure edits on a [Route]. Segment settings are keyed by point IDs, so they survive reorders for
- * pairs that are still neighbours; [pruneSegments] drops the rest when a route is saved.
+ * pairs that are still neighbours; [pruneSegments] drops the rest (and their road paths) when a route is saved.
  */
 object RouteEditor {
     fun append(route: Route, latitude: Double, longitude: Double, id: String, label: String? = null): Route =
@@ -60,7 +64,24 @@ object RouteEditor {
     }
 
     fun pruneSegments(route: Route): Route {
-        val live = route.travelSegments().map { segmentKey(it.from.id, it.to.id) }.toSet()
-        return route.copy(segments = route.segments.filterKeys { it in live })
+        val travel = route.travelSegments()
+        val live = travel.map { segmentKey(it.from.id, it.to.id) }.toSet()
+        val liveDirections = travel.flatMap { listOf(directedKey(it.from.id, it.to.id), directedKey(it.to.id, it.from.id)) }.toSet()
+        return route.copy(
+            segments = route.segments.filterKeys { it in live },
+            roadPaths = route.roadPaths.filterKeys { it in liveDirections },
+        )
+    }
+
+    /** Sets the road profile on the Custom speed the segment uses: its own, else the route default's. */
+    fun setProfile(route: Route, aId: String, bId: String, profile: RoadProfile): Route {
+        val settings = route.segmentSettings(aId, bId)
+        val own = settings.speed
+        val default = route.defaultSpeed
+        return when {
+            own is SpeedChoice.Custom -> setSegment(route, aId, bId, settings.copy(speed = own.copy(profile = profile)))
+            own == null && default is SpeedChoice.Custom -> route.copy(defaultSpeed = default.copy(profile = profile))
+            else -> route
+        }
     }
 }

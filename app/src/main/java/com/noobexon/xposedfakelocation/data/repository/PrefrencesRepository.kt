@@ -571,7 +571,7 @@ class PreferencesRepository(context: Context) {
     /** The route being edited; an empty draft when none is stored or it can't be read. */
     fun getRouteDraft(): RouteDraft =
         RouteJson.parseDraft(localPrefs.getString(KEY_ROUTE_DRAFT, null))
-            ?: RouteDraft(Route(id = UUID.randomUUID().toString()))
+            ?: RouteDraft(Route(id = UUID.randomUUID().toString(), followRoads = true))
 
     fun saveRouteDraft(draft: RouteDraft) =
         editLocal { putString(KEY_ROUTE_DRAFT, RouteJson.gson.toJson(draft)) }

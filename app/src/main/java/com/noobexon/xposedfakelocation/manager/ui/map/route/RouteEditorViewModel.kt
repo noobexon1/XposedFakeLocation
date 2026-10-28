@@ -124,7 +124,7 @@ class RouteEditorViewModel(application: Application) : AndroidViewModel(applicat
     fun showClearDialog(show: Boolean) = _ui.update { it.copy(showClearDialog = show) }
 
     fun clearRoute() {
-        replaceDraft(RouteDraft(Route(id = newId())))
+        replaceDraft(RouteDraft(Route(id = newId(), followRoads = true)))
         showClearDialog(false)
     }
 
