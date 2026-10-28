@@ -20,6 +20,8 @@ data class SettingsBackup(
     val routes: List<Route>? = null,
     /** Absent in files exported before address search; import then leaves the search server untouched. */
     val geocodingServerUrl: String? = null,
+    /** Absent in files exported before road routing; import then leaves the routing server untouched. */
+    val routingServerUrl: String? = null,
 )
 
 /** All spoofing-related values (LSPosed remote prefs). */

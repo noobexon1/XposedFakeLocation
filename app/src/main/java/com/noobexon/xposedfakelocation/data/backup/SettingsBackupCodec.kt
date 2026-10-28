@@ -5,7 +5,9 @@ import com.noobexon.xposedfakelocation.data.model.RouteJson
 import com.noobexon.xposedfakelocation.data.model.SETTINGS_BACKUP_VERSION
 import com.noobexon.xposedfakelocation.data.model.SettingsBackup
 import com.noobexon.xposedfakelocation.data.model.isValid
+import com.noobexon.xposedfakelocation.data.model.sanitizeRoadPaths
 import com.noobexon.xposedfakelocation.data.model.withSanitizedLabels
+import com.noobexon.xposedfakelocation.data.normalizeRoutingServerUrl
 import com.noobexon.xposedfakelocation.data.normalizeServerUrl
 
 /** Thrown (wrapped in [Result]) when a settings file cannot be parsed or is unsupported. */
@@ -48,12 +50,13 @@ class SettingsBackupCodec(
                 fav.longitude.isFinite()
         }
         @Suppress("SENSELESS_COMPARISON")
-        val routes = parsed.routes?.filter { it != null && it.isValid() }?.map { it.withSanitizedLabels() }
+        val routes = parsed.routes?.filter { it != null && it.isValid() }?.map { it.withSanitizedLabels().sanitizeRoadPaths() }
         parsed.copy(
             favorites = favorites,
             joystick = parsed.joystick?.takeIf { it.isValid() },
             routes = routes,
             geocodingServerUrl = normalizeServerUrl(parsed.geocodingServerUrl),
+            routingServerUrl = normalizeRoutingServerUrl(parsed.routingServerUrl),
         )
     }
 }

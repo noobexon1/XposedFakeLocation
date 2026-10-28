@@ -22,8 +22,8 @@ class SettingsBackupManager(
     /**
      * Writes [backup] into the repository with **replace** semantics.
      *
-     * Favorites, appearance, joystick settings, saved routes and the search server (local prefs) are always applied;
-     * a missing joystick, routes or search server section leaves those untouched. Spoofing values (remote prefs) are applied only
+     * Favorites, appearance, joystick settings, saved routes and the search and routing servers (local prefs) are always applied;
+     * a missing joystick, routes, search or routing server section leaves those untouched. Spoofing values (remote prefs) are applied only
      * when [canWriteRemote] is `true`; otherwise they are skipped so the caller can tell the user to re-import once the module is active.
      */
     suspend fun apply(backup: SettingsBackup, canWriteRemote: Boolean) {
@@ -34,6 +34,7 @@ class SettingsBackupManager(
         backup.joystick?.let { repository.saveJoystickSettings(it.toSettings()) }
         backup.routes?.let { repository.replaceRoutes(it) }
         backup.geocodingServerUrl?.let { repository.saveGeocodingServerUrl(it) }
+        backup.routingServerUrl?.let { repository.saveRoutingServerUrl(it) }
 
         if (!canWriteRemote) return
 

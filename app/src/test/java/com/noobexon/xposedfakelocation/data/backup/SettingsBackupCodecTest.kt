@@ -1,10 +1,13 @@
 package com.noobexon.xposedfakelocation.data.backup
 
+import com.noobexon.xposedfakelocation.data.EncodedPolyline
 import com.noobexon.xposedfakelocation.data.model.AppearanceBackup
 import com.noobexon.xposedfakelocation.data.model.FavoriteLocation
 import com.noobexon.xposedfakelocation.data.model.JoystickBackup
 import com.noobexon.xposedfakelocation.data.model.JoystickMode
 import com.noobexon.xposedfakelocation.data.model.JoystickPreset
+import com.noobexon.xposedfakelocation.data.model.RoadPath
+import com.noobexon.xposedfakelocation.data.model.RoadProfile
 import com.noobexon.xposedfakelocation.data.model.Route
 import com.noobexon.xposedfakelocation.data.model.RoutePoint
 import com.noobexon.xposedfakelocation.data.model.SpeedChoice
@@ -55,6 +58,7 @@ class SettingsBackupCodecTest {
             ),
         ),
         geocodingServerUrl = "https://photon.example.org",
+        routingServerUrl = "https://osrm.example.org/{profile}",
     )
 
     @Test
@@ -252,5 +256,32 @@ class SettingsBackupCodecTest {
         val settings = JoystickBackup("TELEPORT", 3f, 1.4f, 3f, 5.5f, 14f, "JETPACK").toSettings()
         assertEquals(JoystickMode.DYNAMIC, settings.mode)
         assertEquals(JoystickPreset.WALK, settings.selectedPreset)
+    }
+
+    @Test
+    fun roadPathsRoundTripAndBadOnesAreDropped() {
+        val good = RoadPath(RoadProfile.CAR, 1.0, 2.0, 1.1, 2.1, EncodedPolyline.encode(listOf(1.0 to 2.0, 1.1 to 2.1)), 15_000.0)
+        val route = sampleBackup().routes!!.first().copy(
+            followRoads = true,
+            roadPaths = mapOf("a>b" to good, "b>a" to good.copy(polyline = "~~~~"), "a>zz" to good),
+        )
+        val restored = codec.fromJson(codec.toJson(sampleBackup().copy(routes = listOf(route)))).getOrThrow()
+        val loaded = restored.routes!!.single()
+        assertTrue(loaded.followRoads)
+        assertEquals(mapOf("a>b" to good), loaded.roadPaths)
+    }
+
+    @Test
+    fun routingServerUrlIsNormalizedOnImport() {
+        val trailing = codec.toJson(sampleBackup().copy(routingServerUrl = " https://osrm.example.org/{profile}/ "))
+        assertEquals("https://osrm.example.org/{profile}", codec.fromJson(trailing).getOrThrow().routingServerUrl)
+        val invalid = codec.toJson(sampleBackup().copy(routingServerUrl = "https://a.org/{x}"))
+        assertNull(codec.fromJson(invalid).getOrThrow().routingServerUrl)
+    }
+
+    @Test
+    fun backupWithoutRoutingServerImportsWithNull() {
+        val json = codec.toJson(sampleBackup().copy(routingServerUrl = null))
+        assertNull(codec.fromJson(json).getOrThrow().routingServerUrl)
     }
 }

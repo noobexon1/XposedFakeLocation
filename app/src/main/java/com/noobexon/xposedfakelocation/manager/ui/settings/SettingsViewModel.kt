@@ -797,6 +797,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             joystick = JoystickBackup.from(preferencesRepository.getJoystickSettings()),
             routes = preferencesRepository.getRoutes(),
             geocodingServerUrl = ui.geocodingServerUrl,
+            routingServerUrl = ui.routingServerUrl,
         )
     }
 
