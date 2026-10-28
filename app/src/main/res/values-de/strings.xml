@@ -61,11 +61,14 @@
     <string name="category_appearance">Erscheinungsbild</string>
     <string name="category_notifications">Benachrichtigungen</string>
     <string name="category_external_control">Externe Steuerung</string>
-    <string name="category_search">Suche</string>
+    <string name="category_search">Suche &amp; Routen</string>
     <string name="setting_search_server_title">Suchserver</string>
     <string name="setting_search_server_description">Photon-kompatibler Server für die Adresssuche auf der Karte. Standard: https://photon.komoot.io</string>
     <string name="setting_search_server_label">Server-URL</string>
     <string name="setting_search_server_invalid">Gib eine gültige http- oder https-URL ein</string>
+    <string name="setting_routing_server_title">Routing-Server</string>
+    <string name="setting_routing_server_description">OSRM-Server, mit dem Routenabschnitte Straßen folgen. {profile} wird durch car, bike oder foot ersetzt. Standard: https://routing.openstreetmap.de/routed-{profile}</string>
+    <string name="setting_routing_server_invalid">Gib eine gültige http- oder https-URL ein; {profile} darf einmal vorkommen</string>
     <string name="category_system_hooks">System-Hooks</string>
     <string name="category_location">Standort</string>
     <string name="category_altitude">Höhe</string>

@@ -61,11 +61,14 @@
     <string name="category_appearance">Appearance</string>
     <string name="category_notifications">Notifications</string>
     <string name="category_external_control">External Control</string>
-    <string name="category_search">Search</string>
+    <string name="category_search">Search &amp; routing</string>
     <string name="setting_search_server_title">Search server</string>
     <string name="setting_search_server_description">Photon-compatible server used for address search on the map. Default: https://photon.komoot.io</string>
     <string name="setting_search_server_label">Server URL</string>
     <string name="setting_search_server_invalid">Enter a valid http or https URL</string>
+    <string name="setting_routing_server_title">Routing server</string>
+    <string name="setting_routing_server_description">OSRM server used to make route segments follow roads. {profile} is replaced by car, bike or foot. Default: https://routing.openstreetmap.de/routed-{profile}</string>
+    <string name="setting_routing_server_invalid">Enter a valid http or https URL; {profile} may appear once</string>
     <string name="category_system_hooks">System Hooks</string>
     <string name="category_wifi_identity">Wi-Fi Identity</string>
     <string name="category_location">Location</string>

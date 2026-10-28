@@ -18,6 +18,7 @@ import com.noobexon.xposedfakelocation.data.DEFAULT_LANGUAGE_TAG
 import com.noobexon.xposedfakelocation.data.DEFAULT_MEAN_SEA_LEVEL
 import com.noobexon.xposedfakelocation.data.DEFAULT_MEAN_SEA_LEVEL_ACCURACY
 import com.noobexon.xposedfakelocation.data.DEFAULT_RANDOMIZE_RADIUS
+import com.noobexon.xposedfakelocation.data.DEFAULT_ROUTING_SERVER_URL
 import com.noobexon.xposedfakelocation.data.DEFAULT_SPEED
 import com.noobexon.xposedfakelocation.data.DEFAULT_SPEED_ACCURACY
 import com.noobexon.xposedfakelocation.data.DEFAULT_THEME_OPTION
@@ -207,6 +208,7 @@ object SettingKeys {
     const val WIFI_RSSI = "wifi_rssi"
     const val BROADCAST = "broadcast"
     const val SEARCH_SERVER = "search_server"
+    const val ROUTING_SERVER = "routing_server"
     const val THEME = "theme"
     const val LANGUAGE = "language"
 }
@@ -400,8 +402,9 @@ data class SettingsUiState(
     val wifiSsid: String = DEFAULT_WIFI_SSID,
     val wifiBssid: String = DEFAULT_WIFI_BSSID,
     val wifiRssi: Int = DEFAULT_WIFI_RSSI,
-    // Address search
+    // Address search and routing
     val geocodingServerUrl: String = DEFAULT_GEOCODING_SERVER_URL,
+    val routingServerUrl: String = DEFAULT_ROUTING_SERVER_URL,
     // App
     val languageTag: String = DEFAULT_LANGUAGE_TAG,
     val themeOption: ThemeOption = ThemeOption.fromTag(DEFAULT_THEME_OPTION),

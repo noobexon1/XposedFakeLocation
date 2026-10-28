@@ -58,11 +58,14 @@
     <string name="category_appearance">外观</string>
     <string name="category_notifications">通知</string>
     <string name="category_external_control">外部控制</string>
-    <string name="category_search">搜索</string>
+    <string name="category_search">搜索与路线</string>
     <string name="setting_search_server_title">搜索服务器</string>
     <string name="setting_search_server_description">用于地图地址搜索的 Photon 兼容服务器。默认：https://photon.komoot.io</string>
     <string name="setting_search_server_label">服务器 URL</string>
     <string name="setting_search_server_invalid">请输入有效的 http 或 https URL</string>
+    <string name="setting_routing_server_title">路线服务器</string>
+    <string name="setting_routing_server_description">用于让路线路段沿道路行进的 OSRM 服务器。{profile} 会替换为 car、bike 或 foot。默认：https://routing.openstreetmap.de/routed-{profile}</string>
+    <string name="setting_routing_server_invalid">请输入有效的 http 或 https URL；{profile} 最多出现一次</string>
     <string name="category_system_hooks">系统级 Hook</string>
     <string name="category_wifi_identity">Wi-Fi 身份</string>
     <string name="category_location">位置</string>

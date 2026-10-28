@@ -94,6 +94,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.noobexon.xposedfakelocation.R
 import com.noobexon.xposedfakelocation.data.MPS_TO_KMH
+import com.noobexon.xposedfakelocation.data.normalizeRoutingServerUrl
 import com.noobexon.xposedfakelocation.data.normalizeServerUrl
 import com.noobexon.xposedfakelocation.data.model.JoystickMode
 import com.noobexon.xposedfakelocation.data.model.JoystickPreset
@@ -261,6 +262,17 @@ fun SettingsScreen(
                 onValueChange = settingsViewModel::setGeocodingServerUrl,
                 onReset = settingsViewModel::resetGeocodingServerUrl,
                 errorRes = { if (normalizeServerUrl(it) == null) R.string.setting_search_server_invalid else null },
+            ),
+            SettingEntry.Text(
+                key = SettingKeys.ROUTING_SERVER,
+                titleRes = R.string.setting_routing_server_title,
+                descriptionRes = R.string.setting_routing_server_description,
+                labelRes = R.string.setting_search_server_label,
+                value = uiState.routingServerUrl,
+                inputKind = TextInputKind.URL,
+                onValueChange = settingsViewModel::setRoutingServerUrl,
+                onReset = settingsViewModel::resetRoutingServerUrl,
+                errorRes = { if (normalizeRoutingServerUrl(it) == null) R.string.setting_routing_server_invalid else null },
             )
         ),
         SettingsCategory.APPEARANCE to listOf(
