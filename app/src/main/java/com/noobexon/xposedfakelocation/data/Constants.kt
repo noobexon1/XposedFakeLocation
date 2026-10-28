@@ -138,6 +138,15 @@ const val KEY_ROUTE_DRAFT = "route_draft"
 const val KEY_MAP_MODE = "map_mode"
 const val KEY_ROUTE_OVERLAY_X = "route_overlay_x"
 const val KEY_ROUTE_OVERLAY_Y = "route_overlay_y"
+const val ROUTE_POINT_LABEL_MAX_LENGTH = 200
+
+// ADDRESS SEARCH
+const val KEY_GEOCODING_SERVER_URL = "geocoding_server_url"
+const val DEFAULT_GEOCODING_SERVER_URL = "https://photon.komoot.io"
+const val SEARCH_RESULT_LIMIT = 6
+const val SEARCH_MIN_QUERY_LENGTH = 3
+const val SEARCH_DEBOUNCE_MS = 400L
+const val SEARCH_TIMEOUT_MS = 8_000
 
 const val MPS_TO_KMH = 3.6f
 const val DEFAULT_JOYSTICK_MAX_SPEED = 50f / MPS_TO_KMH
