@@ -1,5 +1,6 @@
-# === Superpowers SDD scratch ===
+# === Local agent notes ===
 /.superpowers/
+/docs/superpowers/
 
 # === Android build artifacts ===
 /build/
