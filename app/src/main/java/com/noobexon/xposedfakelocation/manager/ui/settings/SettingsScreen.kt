@@ -1202,7 +1202,8 @@ private fun TextSettingItem(
             description = description,
             showTooltip = showTooltip,
             onToggleTooltip = { showTooltip = !showTooltip },
-            onReset = onReset,
+            // If the stored value is already the default, `value` won't change, so resync here too.
+            onReset = onReset?.let { reset -> { text = value; reset() } },
             trailing = {}
         )
 
