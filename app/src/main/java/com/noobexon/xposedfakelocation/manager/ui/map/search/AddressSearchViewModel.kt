@@ -11,6 +11,7 @@ import com.noobexon.xposedfakelocation.manager.geo.LatLon
 import com.noobexon.xposedfakelocation.manager.geo.Place
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -79,6 +80,8 @@ class AddressSearchViewModel(private val client: GeocodingClient) : ViewModel() 
             } catch (e: GeocodingException) {
                 SearchResults.Failed(e.kind)
             }
+            // A blocking request can fail after cancellation and surface its error instead of CancellationException.
+            ensureActive()
             _ui.update { it.copy(results = results) }
         }
     }

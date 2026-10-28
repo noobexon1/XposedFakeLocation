@@ -4,8 +4,10 @@ import com.noobexon.xposedfakelocation.manager.geo.GeocodingClient
 import com.noobexon.xposedfakelocation.manager.geo.GeocodingException
 import com.noobexon.xposedfakelocation.manager.geo.LatLon
 import com.noobexon.xposedfakelocation.manager.geo.Place
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.advanceUntilIdle
@@ -13,6 +15,7 @@ import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
+import kotlinx.coroutines.withContext
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -138,6 +141,49 @@ class AddressSearchViewModelTest {
         advanceUntilIdle()
         assertEquals(AddressSearchUiState(), vm.ui.value)
         assertTrue(client.calls.isEmpty())
+    }
+
+    /** Like a blocking HttpURLConnection: ignores cancellation, then fails. */
+    private fun failsAfterCancel(gate: CompletableDeferred<Unit>, blockingQuery: String = "paris") = object : GeocodingClient {
+        override suspend fun search(query: String, near: LatLon?): List<Place> =
+            if (query == blockingQuery) {
+                withContext(NonCancellable) {
+                    gate.await()
+                    throw GeocodingException(GeocodingException.Kind.NETWORK)
+                }
+            } else {
+                listOf(paris)
+            }
+    }
+
+    @Test
+    fun closeDuringABlockingRequestDoesNotShowItsFailure() = runTest(dispatcher) {
+        val gate = CompletableDeferred<Unit>()
+        val slow = AddressSearchViewModel(failsAfterCancel(gate))
+        slow.open()
+        slow.onQueryChange("paris")
+        advanceTimeBy(401)
+        runCurrent()
+        assertEquals(SearchResults.Loading, slow.ui.value.results)
+        slow.close()
+        gate.complete(Unit)
+        advanceUntilIdle()
+        assertEquals(AddressSearchUiState(), slow.ui.value)
+    }
+
+    @Test
+    fun staleBlockingFailureDoesNotOverwriteNewerResults() = runTest(dispatcher) {
+        val gate = CompletableDeferred<Unit>()
+        val slow = AddressSearchViewModel(failsAfterCancel(gate, blockingQuery = "berl"))
+        slow.onQueryChange("berl")
+        advanceTimeBy(401)
+        runCurrent()
+        slow.onQueryChange("berlin")
+        advanceUntilIdle()
+        assertEquals(SearchResults.Found(listOf(paris)), slow.ui.value.results)
+        gate.complete(Unit)
+        advanceUntilIdle()
+        assertEquals(SearchResults.Found(listOf(paris)), slow.ui.value.results)
     }
 
     @Test
