@@ -67,6 +67,11 @@ class MapViewModel(application: Application) : AndroidViewModel(application) {
     private val _centerMapEvent = Channel<Unit>(Channel.BUFFERED)
     val centerMapEvent: Flow<Unit> = _centerMapEvent.receiveAsFlow()
 
+    private val _cameraMoveEvent = Channel<GeoPoint>(Channel.BUFFERED)
+
+    /** One-shot event that animates the camera without touching the spoof marker. */
+    val cameraMoveEvent: Flow<GeoPoint> = _cameraMoveEvent.receiveAsFlow()
+
     /**
      * One-shot event emitted after a favorite is successfully saved. [MapScreen] collects this
      * and navigates the user to the Favorites screen so they can immediately see the new entry.
@@ -183,6 +188,16 @@ class MapViewModel(application: Application) : AndroidViewModel(application) {
      */
     fun triggerCenterMapEvent() {
         _centerMapEvent.trySend(Unit)
+    }
+
+    /** Animates the camera to [point] and makes it the spoof target, like "Go to point". */
+    fun goToPoint(point: GeoPoint) {
+        _goToPointEvent.trySend(point)
+    }
+
+    /** Animates the camera to [point] only. */
+    fun moveCamera(point: GeoPoint) {
+        _cameraMoveEvent.trySend(point)
     }
 
     // ---- Go to point dialog ----

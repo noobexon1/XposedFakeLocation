@@ -182,6 +182,13 @@
     <string name="override_off">Off</string>
 
     <string name="map_go_to_point">Go to Point</string>
+    <string name="cd_search_address">Search address</string>
+    <string name="map_search_hint">Search address or place</string>
+    <string name="map_search_no_results">No results</string>
+    <string name="map_search_error_network">Couldn\'t reach the search server</string>
+    <string name="map_search_error_parse">Unexpected response from the search server</string>
+    <string name="map_search_attribution">Search by Photon · © OpenStreetMap contributors</string>
+    <string name="action_retry">Retry</string>
     <string name="map_add_to_favorites">Add to Favorites</string>
     <string name="map_add_to_templates">Add to Templates</string>
     <string name="map_update_template_location">Update Template Location</string>

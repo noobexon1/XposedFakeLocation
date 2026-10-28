@@ -76,6 +76,9 @@ import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay
  * @param onRoutePointTap Called with the id of a tapped route point.
  * @param onRoutePointMoved Called with a point's id and new location when a drag ends.
  * @param onRouteSegmentTap Called with the from/to point ids of a tapped segment.
+ * @param cameraMoveEvent One-shot camera moves that leave the marker alone (e.g. a search pick
+ *   while spoofing).
+ * @param onMapCenterChange Called with the map center after panning or zooming settles.
  */
 @Composable
 fun MapViewContainer(
@@ -100,6 +103,8 @@ fun MapViewContainer(
     onRoutePointTap: (String) -> Unit = {},
     onRoutePointMoved: (String, GeoPoint) -> Unit = { _, _ -> },
     onRouteSegmentTap: (String, String) -> Unit = { _, _ -> },
+    cameraMoveEvent: Flow<GeoPoint> = emptyFlow(),
+    onMapCenterChange: (GeoPoint) -> Unit = {},
 ) {
     val context = LocalContext.current
 
@@ -114,6 +119,8 @@ fun MapViewContainer(
     // Handle map events and updates
     HandleCenterMapEvent(mapView, locationOverlay, centerMapEvent)
     HandleGoToPointEvent(mapView, goToPointEvent, onClickedLocationChange)
+    HandleCameraMoveEvent(mapView, cameraMoveEvent)
+    ReportMapCenter(mapView, onMapCenterChange)
     val markerLocation = if (routeMode && !isPlaying) null else lastClickedLocation
     HandleMarkerUpdates(mapView, userMarker, markerLocation)
     SetupMapClickListener(mapView, isPlaying) { point ->

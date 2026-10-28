@@ -7,13 +7,16 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Clear
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.LocationSearching
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.MyLocation
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.DropdownMenu
@@ -40,6 +43,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -47,13 +51,21 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.noobexon.xposedfakelocation.R
 import com.noobexon.xposedfakelocation.data.model.MapMode
+import com.noobexon.xposedfakelocation.manager.geo.LatLon
+import com.noobexon.xposedfakelocation.manager.geo.Place
 import com.noobexon.xposedfakelocation.manager.joystick.JoystickButton
 import com.noobexon.xposedfakelocation.manager.ui.map.route.MapModeSwitch
 import com.noobexon.xposedfakelocation.manager.ui.map.route.RouteEditorViewModel
 import com.noobexon.xposedfakelocation.manager.ui.map.route.RouteLoadConfirmation
 import com.noobexon.xposedfakelocation.manager.ui.map.route.RouteModeUi
+import com.noobexon.xposedfakelocation.manager.ui.map.search.AddressSearchField
+import com.noobexon.xposedfakelocation.manager.ui.map.search.AddressSearchResults
+import com.noobexon.xposedfakelocation.manager.ui.map.search.AddressSearchViewModel
+import com.noobexon.xposedfakelocation.manager.ui.map.search.SearchPickAction
+import com.noobexon.xposedfakelocation.manager.ui.map.search.searchPickAction
 import com.noobexon.xposedfakelocation.manager.ui.navigation.Screen
 import kotlinx.coroutines.launch
+import org.osmdroid.util.GeoPoint
 
 /**
  * Top-level Map screen composable.
@@ -74,6 +86,7 @@ import kotlinx.coroutines.launch
  * @param navController Used by [DrawerContent] for in-app navigation.
  * @param mapViewModel The screen's ViewModel; injected at the [NavHost] level.
  * @param routeEditorViewModel Route mode state; shared with Favorites at the [NavHost] level.
+ * @param addressSearchViewModel Address search state; turns the app bar into a search field.
  */
 @OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 @Composable
@@ -81,6 +94,7 @@ fun MapScreen(
     navController: NavController,
     mapViewModel: MapViewModel,
     routeEditorViewModel: RouteEditorViewModel,
+    addressSearchViewModel: AddressSearchViewModel,
 ) {
     val context = LocalContext.current
     val uiState by mapViewModel.uiState.collectAsStateWithLifecycle()
@@ -98,9 +112,28 @@ fun MapScreen(
     val routePlaying by routeEditorViewModel.isRoutePlaying.collectAsStateWithLifecycle()
     val joystickRunning by routeEditorViewModel.joystickRunning.collectAsStateWithLifecycle()
     val routeMode = mapMode == MapMode.ROUTE
+    val search by addressSearchViewModel.ui.collectAsStateWithLifecycle()
+    val keyboardController = LocalSoftwareKeyboardController.current
+    val onPlacePicked: (Place) -> Unit = { place ->
+        keyboardController?.hide()
+        addressSearchViewModel.close()
+        val point = GeoPoint(place.latitude, place.longitude)
+        when (searchPickAction(place, routeMode, spoofingActive = isPlaying, routePlaying = routePlaying)) {
+            is SearchPickAction.PlaceMarker -> mapViewModel.goToPoint(point)
+            is SearchPickAction.AddRoutePoint -> {
+                routeEditorViewModel.addPoint(point, label = place.title)
+                mapViewModel.moveCamera(point)
+            }
+            is SearchPickAction.MoveCamera -> mapViewModel.moveCamera(point)
+        }
+    }
 
     BackHandler(enabled = drawerState.isOpen) {
         scope.launch { drawerState.close() }
+    }
+
+    BackHandler(enabled = search.isOpen) {
+        addressSearchViewModel.close()
     }
 
     // When returning to the map after navigating away via the drawer, restore the drawer open.
@@ -137,12 +170,20 @@ fun MapScreen(
             topBar = {
                 TopAppBar(
                     title = {
-                        Text(
-                            text = stringResource(R.string.app_name),
-                            style = MaterialTheme.typography.titleMedium,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
+                        if (search.isOpen) {
+                            AddressSearchField(
+                                query = search.query,
+                                onQueryChange = addressSearchViewModel::onQueryChange,
+                                onSearch = addressSearchViewModel::searchNow,
+                            )
+                        } else {
+                            Text(
+                                text = stringResource(R.string.app_name),
+                                style = MaterialTheme.typography.titleMedium,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
                     },
                     colors = TopAppBarDefaults.topAppBarColors(
                         containerColor = MaterialTheme.colorScheme.primary,
@@ -151,62 +192,79 @@ fun MapScreen(
                         actionIconContentColor = MaterialTheme.colorScheme.onPrimary
                     ),
                     navigationIcon = {
-                        IconButton(onClick = { scope.launch { drawerState.open() } }) {
-                            Icon(imageVector = Icons.Default.Menu, contentDescription = stringResource(R.string.cd_menu))
+                        if (search.isOpen) {
+                            IconButton(onClick = addressSearchViewModel::close) {
+                                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.cd_collapse_search))
+                            }
+                        } else {
+                            IconButton(onClick = { scope.launch { drawerState.open() } }) {
+                                Icon(imageVector = Icons.Default.Menu, contentDescription = stringResource(R.string.cd_menu))
+                            }
                         }
                     },
                     actions = {
-                        JoystickButton(enabled = isPlaying && uiState.lastClickedLocation != null && !routePlaying)
-                        IconButton(onClick = { mapViewModel.triggerCenterMapEvent() }) {
-                            Icon(imageVector = Icons.Default.MyLocation, contentDescription = stringResource(R.string.cd_center))
-                        }
-                        IconButton(onClick = { showOptionsMenu = true }) {
-                            Icon(imageVector = Icons.Default.MoreVert, contentDescription = stringResource(R.string.cd_options))
-                        }
-                        DropdownMenu(
-                            expanded = showOptionsMenu,
-                            onDismissRequest = { showOptionsMenu = false }
-                        ) {
-                            DropdownMenuItem(
-                                leadingIcon = {
-                                    Icon(
-                                        imageVector = Icons.Default.LocationSearching,
-                                        contentDescription = stringResource(R.string.map_go_to_point)
-                                    )
-                                },
-                                text = { Text(stringResource(R.string.map_go_to_point)) },
-                                onClick = {
-                                    showOptionsMenu = false
-                                    mapViewModel.showGoToPointDialog()
-                                }
-                            )
-                            DropdownMenuItem(
-                                leadingIcon = {
-                                    Icon(
-                                        imageVector = Icons.Default.FavoriteBorder,
-                                        contentDescription = stringResource(R.string.map_add_to_favorites)
-                                    )
-                                },
-                                text = { Text(stringResource(R.string.map_add_to_favorites)) },
-                                onClick = {
-                                    showOptionsMenu = false
-                                    mapViewModel.showAddToFavoritesDialog()
-                                }
-                            )
-                            DropdownMenuItem(
-                                leadingIcon = {
-                                    Icon(
-                                        imageVector = Icons.Default.Clear,
-                                        contentDescription = stringResource(R.string.map_clear_location)
-                                    )
-                                },
-                                text = { Text(stringResource(R.string.map_clear_location)) },
-                                onClick = {
-                                    showOptionsMenu = false
-                                    mapViewModel.updateClickedLocation(null)
-                                },
-                                enabled = isFabClickable
-                            )
+                        if (search.isOpen) {
+                            IconButton(onClick = {
+                                if (search.query.isEmpty()) addressSearchViewModel.close() else addressSearchViewModel.onQueryChange("")
+                            }) {
+                                Icon(Icons.Default.Close, contentDescription = stringResource(R.string.cd_clear_search))
+                            }
+                        } else {
+                            IconButton(onClick = addressSearchViewModel::open) {
+                                Icon(Icons.Default.Search, contentDescription = stringResource(R.string.cd_search_address))
+                            }
+                            JoystickButton(enabled = isPlaying && uiState.lastClickedLocation != null && !routePlaying)
+                            IconButton(onClick = { mapViewModel.triggerCenterMapEvent() }) {
+                                Icon(imageVector = Icons.Default.MyLocation, contentDescription = stringResource(R.string.cd_center))
+                            }
+                            IconButton(onClick = { showOptionsMenu = true }) {
+                                Icon(imageVector = Icons.Default.MoreVert, contentDescription = stringResource(R.string.cd_options))
+                            }
+                            DropdownMenu(
+                                expanded = showOptionsMenu,
+                                onDismissRequest = { showOptionsMenu = false }
+                            ) {
+                                DropdownMenuItem(
+                                    leadingIcon = {
+                                        Icon(
+                                            imageVector = Icons.Default.LocationSearching,
+                                            contentDescription = stringResource(R.string.map_go_to_point)
+                                        )
+                                    },
+                                    text = { Text(stringResource(R.string.map_go_to_point)) },
+                                    onClick = {
+                                        showOptionsMenu = false
+                                        mapViewModel.showGoToPointDialog()
+                                    }
+                                )
+                                DropdownMenuItem(
+                                    leadingIcon = {
+                                        Icon(
+                                            imageVector = Icons.Default.FavoriteBorder,
+                                            contentDescription = stringResource(R.string.map_add_to_favorites)
+                                        )
+                                    },
+                                    text = { Text(stringResource(R.string.map_add_to_favorites)) },
+                                    onClick = {
+                                        showOptionsMenu = false
+                                        mapViewModel.showAddToFavoritesDialog()
+                                    }
+                                )
+                                DropdownMenuItem(
+                                    leadingIcon = {
+                                        Icon(
+                                            imageVector = Icons.Default.Clear,
+                                            contentDescription = stringResource(R.string.map_clear_location)
+                                        )
+                                    },
+                                    text = { Text(stringResource(R.string.map_clear_location)) },
+                                    onClick = {
+                                        showOptionsMenu = false
+                                        mapViewModel.updateClickedLocation(null)
+                                    },
+                                    enabled = isFabClickable
+                                )
+                            }
                         }
                     }
                 )
@@ -283,6 +341,8 @@ fun MapScreen(
                     onRoutePointTap = routeEditorViewModel::showPointActions,
                     onRoutePointMoved = routeEditorViewModel::movePoint,
                     onRouteSegmentTap = { a, b -> routeEditorViewModel.showSegment(a to b) },
+                    cameraMoveEvent = mapViewModel.cameraMoveEvent,
+                    onMapCenterChange = { addressSearchViewModel.setBias(LatLon(it.latitude, it.longitude)) },
                 )
                 MapModeSwitch(
                     mode = mapMode,
@@ -299,6 +359,14 @@ fun MapScreen(
                             routeEditorViewModel.requestOpenRoutesTab()
                             navController.navigate(Screen.Favorites.route) { launchSingleTop = true }
                         },
+                    )
+                }
+                if (search.isOpen) {
+                    AddressSearchResults(
+                        results = search.results,
+                        onPick = onPlacePicked,
+                        onRetry = addressSearchViewModel::retry,
+                        modifier = Modifier.align(Alignment.TopCenter).padding(top = 8.dp),
                     )
                 }
             }

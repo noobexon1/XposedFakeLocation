@@ -179,6 +179,13 @@
     <string name="override_off">关闭</string>
 
     <string name="map_go_to_point">前往坐标点</string>
+    <string name="cd_search_address">搜索地址</string>
+    <string name="map_search_hint">搜索地址或地点</string>
+    <string name="map_search_no_results">无结果</string>
+    <string name="map_search_error_network">无法连接搜索服务器</string>
+    <string name="map_search_error_parse">搜索服务器返回了意外的响应</string>
+    <string name="map_search_attribution">搜索：Photon · © OpenStreetMap 贡献者</string>
+    <string name="action_retry">重试</string>
     <string name="map_add_to_favorites">添加到收藏</string>
     <string name="map_add_to_templates">添加到模板</string>
     <string name="map_update_template_location">更新模板位置</string>

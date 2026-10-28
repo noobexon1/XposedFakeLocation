@@ -170,6 +170,13 @@
     <string name="override_off">Aus</string>
 
     <string name="map_go_to_point">Gehe zu Punkt</string>
+    <string name="cd_search_address">Adresse suchen</string>
+    <string name="map_search_hint">Adresse oder Ort suchen</string>
+    <string name="map_search_no_results">Keine Ergebnisse</string>
+    <string name="map_search_error_network">Suchserver nicht erreichbar</string>
+    <string name="map_search_error_parse">Unerwartete Antwort vom Suchserver</string>
+    <string name="map_search_attribution">Suche: Photon · © OpenStreetMap-Mitwirkende</string>
+    <string name="action_retry">Erneut versuchen</string>
     <string name="map_add_to_favorites">Zu Favoriten hinzufügen</string>
     <string name="map_add_to_templates">Zu Vorlagen hinzufügen</string>
     <string name="map_update_template_location">Vorlagenstandort aktualisieren</string>

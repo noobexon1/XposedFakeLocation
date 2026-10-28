@@ -28,7 +28,11 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.withContext
+import org.osmdroid.events.DelayedMapListener
 import org.osmdroid.events.MapEventsReceiver
+import org.osmdroid.events.MapListener
+import org.osmdroid.events.ScrollEvent
+import org.osmdroid.events.ZoomEvent
 import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.MapView
 import org.osmdroid.views.overlay.MapEventsOverlay
@@ -121,6 +125,53 @@ internal fun HandleGoToPointEvent(
         }
     }
 }
+
+/** Animates the camera on each [cameraMoveEvent] emission; the marker is left alone. */
+@Composable
+internal fun HandleCameraMoveEvent(
+    mapView: MapView,
+    cameraMoveEvent: Flow<GeoPoint>,
+) {
+    val lifecycleOwner = LocalLifecycleOwner.current
+    LaunchedEffect(lifecycleOwner, cameraMoveEvent) {
+        lifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
+            cameraMoveEvent.collect { mapView.controller.animateTo(it) }
+        }
+    }
+}
+
+/**
+ * Reports the map center once panning or zooming settles. Nothing is reported before the first
+ * camera move, because an unlaid-out map reports (0, 0).
+ */
+@Composable
+internal fun ReportMapCenter(
+    mapView: MapView,
+    onMapCenterChange: (GeoPoint) -> Unit,
+) {
+    val currentOnChange by rememberUpdatedState(onMapCenterChange)
+    DisposableEffect(mapView) {
+        fun report() {
+            val center = mapView.mapCenter
+            currentOnChange(GeoPoint(center.latitude, center.longitude))
+        }
+        val listener = DelayedMapListener(object : MapListener {
+            override fun onScroll(event: ScrollEvent?): Boolean {
+                report()
+                return false
+            }
+
+            override fun onZoom(event: ZoomEvent?): Boolean {
+                report()
+                return false
+            }
+        }, MAP_CENTER_REPORT_DELAY_MS)
+        mapView.addMapListener(listener)
+        onDispose { mapView.removeMapListener(listener) }
+    }
+}
+
+private const val MAP_CENTER_REPORT_DELAY_MS = 500L
 
 /**
  * Keeps the spoof-target [Marker] on the map in sync with [lastClickedLocation].
