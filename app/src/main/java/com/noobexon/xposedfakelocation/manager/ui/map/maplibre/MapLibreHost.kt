@@ -192,6 +192,10 @@ private fun createMapView(context: Context): MapView? {
     } catch (e: RuntimeException) {
         Log.w(TAG, "Couldn't create the MapLibre map", e)
         null
+    } catch (e: LinkageError) {
+        // MapLibre's loader swallows a failed native load, so it surfaces here.
+        Log.w(TAG, "MapLibre native code is unavailable", e)
+        null
     }
 }
 

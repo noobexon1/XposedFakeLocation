@@ -178,6 +178,8 @@ class OfflineAreasViewModel(application: Application) : AndroidViewModel(applica
         val listed = store.regions()
         regions.clear()
         listed.forEach { regions[it.id] = downloading[it.id] ?: it }
+        // A region created after the listing was taken is already being tracked.
+        regions.putAll(downloading)
         stored.keys.retainAll(regions.keys)
         for (region in regions.values.toList()) {
             if (region.id !in downloading || region.id !in stored) {

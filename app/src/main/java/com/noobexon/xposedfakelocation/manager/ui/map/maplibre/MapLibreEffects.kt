@@ -110,8 +110,8 @@ internal fun HandleMapLibreCameraEvents(
 
 /**
  * Positions the camera once per map, with the same rules as the osmdroid map: first load uses
- * [resolveInitialCamera]; re-entry restores the saved zoom (and the last device location when
- * there is no marker; the marker effect centers on the marker).
+ * [resolveInitialCamera]; re-entry restores the saved zoom around the marker, or the last device
+ * location when there is no marker.
  */
 @Composable
 internal fun PositionInitialMapLibreCamera(
@@ -132,8 +132,9 @@ internal fun PositionInitialMapLibreCamera(
         if (positioned) return@LaunchedEffect
         if (hasResolvedInitialLocation) {
             val zoom = MapZoom.toMapLibre(mapZoom ?: DEFAULT_MAP_ZOOM)
-            if (lastClickedLocation == null && userLocation != null) {
-                map.moveCamera(CameraUpdateFactory.newLatLngZoom(userLocation.toLatLng(), zoom))
+            val center = lastClickedLocation ?: userLocation
+            if (center != null) {
+                map.moveCamera(CameraUpdateFactory.newLatLngZoom(center.toLatLng(), zoom))
             } else {
                 map.moveCamera(CameraUpdateFactory.zoomTo(zoom))
             }

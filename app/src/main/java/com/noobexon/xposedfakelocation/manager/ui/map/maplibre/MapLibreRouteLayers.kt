@@ -270,11 +270,16 @@ private fun Symbol.segmentIds(): Pair<String, String>? {
     return from to to
 }
 
-/** Shows the spoof marker at [location] (none for `null`) and moves the camera to it, like osmdroid. */
+/**
+ * Shows the spoof marker at [location] (none for `null`) and moves the camera when it changes, like
+ * osmdroid. The marker a map starts with is left to [PositionInitialMapLibreCamera], whose zoom an
+ * animation here would cancel.
+ */
 @Composable
 internal fun MapLibreSpoofMarker(map: MapLibreMap?, layers: MapLibreLayers?, style: Style?, location: GeoPoint?) {
     val context = LocalContext.current
     val color = MaterialTheme.colorScheme.primary.toArgb()
+    val shownLocation = remember(map) { arrayOf(location) }
     LaunchedEffect(layers, style, location, color) {
         if (layers == null || style == null || !style.isFullyLoaded) return@LaunchedEffect
         val pinImage = "$PIN_IMAGE-$color"
@@ -290,7 +295,8 @@ internal fun MapLibreSpoofMarker(map: MapLibreMap?, layers: MapLibreLayers?, sty
         }
     }
     LaunchedEffect(map, location) {
-        if (map != null && location != null) map.animateTo(location)
+        if (map != null && location != null && location != shownLocation[0]) map.animateTo(location)
+        shownLocation[0] = location
     }
 }
 
