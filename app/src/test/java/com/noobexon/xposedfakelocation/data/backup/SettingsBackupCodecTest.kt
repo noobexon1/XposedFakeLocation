@@ -59,6 +59,8 @@ class SettingsBackupCodecTest {
         ),
         geocodingServerUrl = "https://photon.example.org",
         routingServerUrl = "https://osrm.example.org/{profile}",
+        mapRenderer = "maplibre",
+        mapStyleUrl = "https://tiles.example.org/style.json?key=abc",
     )
 
     @Test
@@ -283,5 +285,28 @@ class SettingsBackupCodecTest {
     fun backupWithoutRoutingServerImportsWithNull() {
         val json = codec.toJson(sampleBackup().copy(routingServerUrl = null))
         assertNull(codec.fromJson(json).getOrThrow().routingServerUrl)
+    }
+
+    @Test
+    fun unknownMapRendererIsDropped() {
+        val json = codec.toJson(sampleBackup().copy(mapRenderer = "leaflet"))
+        assertNull(codec.fromJson(json).getOrThrow().mapRenderer)
+    }
+
+    @Test
+    fun mapStyleUrlIsNormalizedOnImport() {
+        val trimmed = codec.toJson(sampleBackup().copy(mapStyleUrl = " https://tiles.example.org/style.json "))
+        assertEquals("https://tiles.example.org/style.json", codec.fromJson(trimmed).getOrThrow().mapStyleUrl)
+        val blank = codec.toJson(sampleBackup().copy(mapStyleUrl = ""))
+        assertEquals("", codec.fromJson(blank).getOrThrow().mapStyleUrl)
+        val invalid = codec.toJson(sampleBackup().copy(mapStyleUrl = "ftp://nope"))
+        assertNull(codec.fromJson(invalid).getOrThrow().mapStyleUrl)
+    }
+
+    @Test
+    fun backupWithoutMapSettingsImportsWithNulls() {
+        val restored = codec.fromJson(codec.toJson(sampleBackup().copy(mapRenderer = null, mapStyleUrl = null))).getOrThrow()
+        assertNull(restored.mapRenderer)
+        assertNull(restored.mapStyleUrl)
     }
 }

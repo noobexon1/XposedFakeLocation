@@ -828,6 +828,8 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             routes = preferencesRepository.getRoutes(),
             geocodingServerUrl = ui.geocodingServerUrl,
             routingServerUrl = ui.routingServerUrl,
+            mapRenderer = ui.mapRenderer.tag,
+            mapStyleUrl = ui.mapStyleUrl,
         )
     }
 

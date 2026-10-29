@@ -22,6 +22,10 @@ data class SettingsBackup(
     val geocodingServerUrl: String? = null,
     /** Absent in files exported before road routing; import then leaves the routing server untouched. */
     val routingServerUrl: String? = null,
+    /** Absent in files exported before the MapLibre renderer; import then leaves the renderer untouched. */
+    val mapRenderer: String? = null,
+    /** Absent in older files. Blank means the default OpenFreeMap styles. */
+    val mapStyleUrl: String? = null,
 )
 
 /** All spoofing-related values (LSPosed remote prefs). */

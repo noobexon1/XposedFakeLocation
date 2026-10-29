@@ -1,5 +1,6 @@
 package com.noobexon.xposedfakelocation.data.backup
 
+import com.noobexon.xposedfakelocation.data.model.MapRenderer
 import com.noobexon.xposedfakelocation.data.model.SettingsBackup
 import com.noobexon.xposedfakelocation.data.repository.PreferencesRepository
 
@@ -22,8 +23,9 @@ class SettingsBackupManager(
     /**
      * Writes [backup] into the repository with **replace** semantics.
      *
-     * Favorites, appearance, joystick settings, saved routes and the search and routing servers (local prefs) are always applied;
-     * a missing joystick, routes, search or routing server section leaves those untouched. Spoofing values (remote prefs) are applied only
+     * Favorites, appearance, joystick settings, saved routes, the search and routing servers, and the map renderer and style URL
+     * (local prefs) are always applied; a missing joystick, routes, search or routing server, map renderer or style URL section
+     * leaves those untouched. Spoofing values (remote prefs) are applied only
      * when [canWriteRemote] is `true`; otherwise they are skipped so the caller can tell the user to re-import once the module is active.
      */
     suspend fun apply(backup: SettingsBackup, canWriteRemote: Boolean) {
@@ -35,6 +37,8 @@ class SettingsBackupManager(
         backup.routes?.let { repository.replaceRoutes(it) }
         backup.geocodingServerUrl?.let { repository.saveGeocodingServerUrl(it) }
         backup.routingServerUrl?.let { repository.saveRoutingServerUrl(it) }
+        backup.mapRenderer?.let { repository.saveMapRenderer(MapRenderer.fromTag(it)) }
+        backup.mapStyleUrl?.let { repository.saveMapStyleUrl(it) }
 
         if (!canWriteRemote) return
 
