@@ -377,4 +377,15 @@
     <string name="map_style_error_message">请检查网络连接或设置中的样式 URL。</string>
     <string name="maplibre_unavailable_title">此设备不支持 MapLibre</string>
     <string name="maplibre_unavailable_message">切换到 osmdroid 以继续使用地图。</string>
+    <!-- Offline areas -->
+    <string name="map_download_area">下载此区域</string>
+    <string name="offline_area_too_large">此区域太大。请放大地图以下载较小的区域。</string>
+    <string name="offline_area_name_title">下载此区域</string>
+    <string name="offline_area_name_label">名称</string>
+    <string name="offline_area_name_invalid">请输入 1 到 60 个字符</string>
+    <string name="action_download">下载</string>
+    <string name="offline_download_progress">正在下载 %1$s · %2$d%%</string>
+    <string name="offline_download_waiting">正在等待网络</string>
+    <string name="offline_download_done">%1$s 已可离线使用</string>
+    <string name="offline_download_failed">下载失败：%1$s</string>
 </resources>

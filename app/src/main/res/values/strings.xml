@@ -381,4 +381,15 @@
     <string name="map_style_error_message">Check your connection, or the style URL in Settings.</string>
     <string name="maplibre_unavailable_title">MapLibre isn\'t available on this device</string>
     <string name="maplibre_unavailable_message">Switch to osmdroid to keep using the map.</string>
+    <!-- Offline areas -->
+    <string name="map_download_area">Download this area</string>
+    <string name="offline_area_too_large">This area is too large. Zoom in to download a smaller area.</string>
+    <string name="offline_area_name_title">Download this area</string>
+    <string name="offline_area_name_label">Name</string>
+    <string name="offline_area_name_invalid">Enter 1 to 60 characters</string>
+    <string name="action_download">Download</string>
+    <string name="offline_download_progress">Downloading %1$s · %2$d%%</string>
+    <string name="offline_download_waiting">Waiting for network</string>
+    <string name="offline_download_done">%1$s is ready for offline use</string>
+    <string name="offline_download_failed">Download failed: %1$s</string>
 </resources>

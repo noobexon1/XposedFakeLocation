@@ -1,0 +1,88 @@
+package com.noobexon.xposedfakelocation.manager.ui.map.maplibre
+
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Card
+import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
+import com.noobexon.xposedfakelocation.R
+import com.noobexon.xposedfakelocation.data.OFFLINE_AREA_NAME_MAX_LENGTH
+
+/** Asks for the offline area's name, prefilled with [initialName]; [onConfirm] gets it trimmed. */
+@Composable
+internal fun OfflineAreaNameDialog(initialName: String, onConfirm: (String) -> Unit, onDismiss: () -> Unit) {
+    var name by remember { mutableStateOf(initialName) }
+    val valid = name.trim().length in 1..OFFLINE_AREA_NAME_MAX_LENGTH
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.offline_area_name_title)) },
+        text = {
+            OutlinedTextField(
+                value = name,
+                onValueChange = { name = it },
+                label = { Text(stringResource(R.string.offline_area_name_label)) },
+                singleLine = true,
+                isError = !valid,
+                supportingText = if (valid) null else {
+                    { Text(stringResource(R.string.offline_area_name_invalid)) }
+                },
+            )
+        },
+        confirmButton = {
+            TextButton(onClick = { onConfirm(name.trim()) }, enabled = valid) {
+                Text(stringResource(R.string.action_download))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) }
+        },
+    )
+}
+
+/** The running download with Cancel, which stops it and deletes the area. */
+@Composable
+internal fun OfflineDownloadCard(download: OfflineDownload, onCancel: () -> Unit, modifier: Modifier = Modifier) {
+    Card(modifier = modifier) {
+        Row(
+            modifier = Modifier.padding(start = 16.dp, end = 8.dp, top = 8.dp, bottom = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = stringResource(R.string.offline_download_progress, download.name, download.percent),
+                    style = MaterialTheme.typography.bodyMedium,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                if (download.waitingForNetwork) {
+                    Text(
+                        text = stringResource(R.string.offline_download_waiting),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                LinearProgressIndicator(
+                    progress = { download.percent / 100f },
+                    modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+                )
+            }
+            TextButton(onClick = onCancel) { Text(stringResource(R.string.action_cancel)) }
+        }
+    }
+}
