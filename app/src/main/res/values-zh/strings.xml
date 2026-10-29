@@ -58,11 +58,14 @@
     <string name="category_appearance">外观</string>
     <string name="category_notifications">通知</string>
     <string name="category_external_control">外部控制</string>
-    <string name="category_search">搜索</string>
+    <string name="category_search">搜索与路线</string>
     <string name="setting_search_server_title">搜索服务器</string>
     <string name="setting_search_server_description">用于地图地址搜索的 Photon 兼容服务器。默认：https://photon.komoot.io</string>
     <string name="setting_search_server_label">服务器 URL</string>
     <string name="setting_search_server_invalid">请输入有效的 http 或 https URL</string>
+    <string name="setting_routing_server_title">路线服务器</string>
+    <string name="setting_routing_server_description">用于让路线路段沿道路行进的 OSRM 服务器。{profile} 会替换为 car、bike 或 foot。默认：https://routing.openstreetmap.de/routed-{profile}</string>
+    <string name="setting_routing_server_invalid">请输入有效的 http 或 https URL；{profile} 最多出现一次</string>
     <string name="category_system_hooks">系统级 Hook</string>
     <string name="category_wifi_identity">Wi-Fi 身份</string>
     <string name="category_location">位置</string>
@@ -340,4 +343,23 @@
     <string name="favorites_routes_empty_description">在地图的路线模式中创建路线并保存到这里。</string>
     <string name="favorites_route_points">%1$d 个点</string>
     <string name="favorites_route_rename_title">重命名路线</string>
+    <string name="route_follow_roads">沿道路</string>
+    <string name="route_path_label">路径</string>
+    <string name="route_path_straight">直线</string>
+    <string name="route_profile_label">出行方式</string>
+    <string name="route_profile_car">汽车</string>
+    <string name="route_profile_bike">自行车</string>
+    <string name="route_profile_foot">步行</string>
+    <string name="route_road_ready">道路路径 · %1$s</string>
+    <string name="route_road_loading">正在获取道路路径…</string>
+    <string name="route_road_no_route">这两点之间没有道路</string>
+    <string name="route_road_server">路线服务器不可用</string>
+    <string name="route_road_network">无法连接路线服务器</string>
+    <string name="route_road_parse">路线服务器返回了意外的响应</string>
+    <string name="route_road_attribution">路线 © OpenStreetMap 贡献者，OSRM</string>
+    <string name="route_missing_roads_title">缺少道路路径</string>
+    <plurals name="route_missing_roads_message">
+        <item quantity="other">%1$d 个路段没有道路路径。按直线播放？</item>
+    </plurals>
+    <string name="route_play_anyway">仍然播放</string>
 </resources>

@@ -10,9 +10,15 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
-import com.noobexon.xposedfakelocation.data.GeoMath
+import com.noobexon.xposedfakelocation.data.ROAD_PATH_DRAW_MAX_POINTS
+import com.noobexon.xposedfakelocation.data.ROAD_PATH_DRAW_TOLERANCE_M
 import com.noobexon.xposedfakelocation.data.model.Route
 import com.noobexon.xposedfakelocation.data.model.travelSegments
+import com.noobexon.xposedfakelocation.manager.route.PathGeometry
+import com.noobexon.xposedfakelocation.manager.route.RoadFailure
+import com.noobexon.xposedfakelocation.manager.route.RoadStatus
+import com.noobexon.xposedfakelocation.manager.route.roadCoordinates
+import com.noobexon.xposedfakelocation.manager.route.roadStatus
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.suspendCancellableCoroutine
@@ -26,14 +32,16 @@ import org.osmdroid.views.overlay.Polyline
 import kotlin.coroutines.resume
 
 /**
- * Draws [route] as numbered markers and direction-arrowed segments, rebuilding the overlays
- * whenever the route or [editable] changes. Pass `null` to remove them.
+ * Draws [route] as numbered markers and direction-arrowed segments (along their road path when
+ * one is stored), rebuilding the overlays whenever the route, [editable] or [roadFailures] change.
+ * Pass `null` to remove them.
  */
 @Composable
 internal fun RouteOverlaysEffect(
     mapView: MapView,
     route: Route?,
     editable: Boolean,
+    roadFailures: Map<String, RoadFailure>,
     onPointTap: (String) -> Unit,
     onPointMoved: (String, GeoPoint) -> Unit,
     onSegmentTap: (String, String) -> Unit,
@@ -44,6 +52,7 @@ internal fun RouteOverlaysEffect(
     val startColor = MaterialTheme.colorScheme.tertiary.toArgb()
     val endColor = MaterialTheme.colorScheme.error.toArgb()
     val textColor = MaterialTheme.colorScheme.onPrimary.toArgb()
+    val warningColor = MaterialTheme.colorScheme.error.toArgb()
     val currentOnPointTap by rememberUpdatedState(onPointTap)
     val currentOnPointMoved by rememberUpdatedState(onPointMoved)
     val currentOnSegmentTap by rememberUpdatedState(onSegmentTap)
@@ -56,7 +65,7 @@ internal fun RouteOverlaysEffect(
         }
     }
 
-    LaunchedEffect(mapView, route, editable, lineColor, pointColor, startColor, endColor, textColor) {
+    LaunchedEffect(mapView, route, editable, roadFailures, lineColor, pointColor, startColor, endColor, textColor, warningColor) {
         mapView.overlays.removeAll(overlays)
         overlays.clear()
         if (route != null && route.points.isNotEmpty()) {
@@ -64,9 +73,13 @@ internal fun RouteOverlaysEffect(
             route.travelSegments().forEach { segment ->
                 val a = segment.from
                 val b = segment.to
+                val status = route.roadStatus(a, b, roadFailures)
+                val path = route.roadCoordinates(a, b)
+                    ?.let { if (it.size > ROAD_PATH_DRAW_MAX_POINTS) PathGeometry.simplify(it, ROAD_PATH_DRAW_TOLERANCE_M) else it }
+                    ?: listOf(a.latitude to a.longitude, b.latitude to b.longitude)
                 overlays += Polyline(mapView).apply {
-                    setPoints(listOf(GeoPoint(a.latitude, a.longitude), GeoPoint(b.latitude, b.longitude)))
-                    outlinePaint.color = lineColor
+                    setPoints(path.map { GeoPoint(it.first, it.second) })
+                    outlinePaint.color = if (status == RoadStatus.Loading) (lineColor and 0x00FFFFFF) or LOADING_ALPHA else lineColor
                     outlinePaint.strokeWidth = 4 * density
                     if (segment.closing) outlinePaint.pathEffect = DashPathEffect(floatArrayOf(12 * density, 8 * density), 0f)
                     setOnClickListener { _, _, _ ->
@@ -74,13 +87,14 @@ internal fun RouteOverlaysEffect(
                         true
                     }
                 }
-                val distance = GeoMath.distanceMeters(a.latitude, a.longitude, b.latitude, b.longitude)
-                if (distance > 0.0) {
-                    val bearing = GeoMath.initialBearing(a.latitude, a.longitude, b.latitude, b.longitude)
-                    val (midLat, midLon) = GeoMath.destination(a.latitude, a.longitude, bearing, distance / 2)
+                PathGeometry.halfway(path)?.let { half ->
                     overlays += Marker(mapView).apply {
-                        position = GeoPoint(midLat, midLon)
-                        icon = RouteMarkerIcons.arrow(context, bearing.toFloat(), lineColor)
+                        position = GeoPoint(half.latitude, half.longitude)
+                        icon = if (status is RoadStatus.Failed) {
+                            RouteMarkerIcons.warning(context, warningColor)
+                        } else {
+                            RouteMarkerIcons.arrow(context, half.bearingDegrees.toFloat(), lineColor)
+                        }
                         setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER)
                         setInfoWindow(null)
                         setOnMarkerClickListener { _, _ ->
@@ -145,6 +159,9 @@ internal fun HandleFitRouteEvent(mapView: MapView, route: Route?, fitRouteEvent:
 
 // Lets CenterMapOnUserLocation restore the camera first, so this fit isn't overwritten.
 private const val FIT_DELAY_MS = 400L
+
+// 40% alpha for a road segment whose path is still loading.
+private const val LOADING_ALPHA = 0x66 shl 24
 
 private suspend fun MapView.awaitFirstLayout() {
     // osmdroid ignores new first-layout listeners once its own layout flag is set.

@@ -61,11 +61,14 @@
     <string name="category_appearance">Erscheinungsbild</string>
     <string name="category_notifications">Benachrichtigungen</string>
     <string name="category_external_control">Externe Steuerung</string>
-    <string name="category_search">Suche</string>
+    <string name="category_search">Suche &amp; Routen</string>
     <string name="setting_search_server_title">Suchserver</string>
     <string name="setting_search_server_description">Photon-kompatibler Server für die Adresssuche auf der Karte. Standard: https://photon.komoot.io</string>
     <string name="setting_search_server_label">Server-URL</string>
     <string name="setting_search_server_invalid">Gib eine gültige http- oder https-URL ein</string>
+    <string name="setting_routing_server_title">Routing-Server</string>
+    <string name="setting_routing_server_description">OSRM-Server, mit dem Routenabschnitte Straßen folgen. {profile} wird durch car, bike oder foot ersetzt. Standard: https://routing.openstreetmap.de/routed-{profile}</string>
+    <string name="setting_routing_server_invalid">Gib eine gültige http- oder https-URL ein; {profile} darf einmal vorkommen</string>
     <string name="category_system_hooks">System-Hooks</string>
     <string name="category_location">Standort</string>
     <string name="category_altitude">Höhe</string>
@@ -331,4 +334,24 @@
     <string name="favorites_routes_empty_description">Erstelle im Routenmodus auf der Karte eine Route und speichere sie hier.</string>
     <string name="favorites_route_points">%1$d Punkte</string>
     <string name="favorites_route_rename_title">Route umbenennen</string>
+    <string name="route_follow_roads">Straßen folgen</string>
+    <string name="route_path_label">Weg</string>
+    <string name="route_path_straight">Gerade</string>
+    <string name="route_profile_label">Unterwegs mit</string>
+    <string name="route_profile_car">Auto</string>
+    <string name="route_profile_bike">Fahrrad</string>
+    <string name="route_profile_foot">Zu Fuß</string>
+    <string name="route_road_ready">Straßenweg · %1$s</string>
+    <string name="route_road_loading">Straßenweg wird geladen…</string>
+    <string name="route_road_no_route">Keine Straße zwischen diesen Punkten</string>
+    <string name="route_road_server">Routing-Server nicht verfügbar</string>
+    <string name="route_road_network">Routing-Server nicht erreichbar</string>
+    <string name="route_road_parse">Unerwartete Antwort vom Routing-Server</string>
+    <string name="route_road_attribution">Routen © OpenStreetMap-Mitwirkende, OSRM</string>
+    <string name="route_missing_roads_title">Fehlende Straßenwege</string>
+    <plurals name="route_missing_roads_message">
+        <item quantity="one">%1$d Abschnitt hat keinen Straßenweg. Gerade abspielen?</item>
+        <item quantity="other">%1$d Abschnitte haben keinen Straßenweg. Gerade abspielen?</item>
+    </plurals>
+    <string name="route_play_anyway">Trotzdem abspielen</string>
 </resources>

@@ -148,6 +148,16 @@ const val SEARCH_MIN_QUERY_LENGTH = 3
 const val SEARCH_DEBOUNCE_MS = 400L
 const val SEARCH_TIMEOUT_MS = 8_000
 
+// ROAD ROUTING
+const val KEY_ROUTING_SERVER_URL = "routing_server_url"
+const val ROUTING_PROFILE_PLACEHOLDER = "{profile}"
+const val DEFAULT_ROUTING_SERVER_URL = "https://routing.openstreetmap.de/routed-{profile}"
+const val ROUTING_TIMEOUT_MS = 8_000
+const val ROAD_FETCH_DEBOUNCE_MS = 600L
+const val ROAD_FETCH_SPACING_MS = 1_000L
+const val ROAD_PATH_DRAW_MAX_POINTS = 500
+const val ROAD_PATH_DRAW_TOLERANCE_M = 2.0
+
 const val MPS_TO_KMH = 3.6f
 const val DEFAULT_JOYSTICK_MAX_SPEED = 50f / MPS_TO_KMH
 const val DEFAULT_JOYSTICK_PRESET_WALK = 1.4f

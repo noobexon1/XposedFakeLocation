@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -23,6 +24,7 @@ import com.noobexon.xposedfakelocation.data.JOYSTICK_MAX_SPEED_MPS
 import com.noobexon.xposedfakelocation.data.JOYSTICK_MIN_SPEED_MPS
 import com.noobexon.xposedfakelocation.data.MPS_TO_KMH
 import com.noobexon.xposedfakelocation.data.model.JoystickPreset
+import com.noobexon.xposedfakelocation.data.model.RoadProfile
 import com.noobexon.xposedfakelocation.data.model.SpeedChoice
 import com.noobexon.xposedfakelocation.manager.joystick.displayKmh
 import com.noobexon.xposedfakelocation.manager.ui.settings.labelRes
@@ -68,7 +70,7 @@ fun SpeedChoicePicker(choice: SpeedChoice?, allowDefault: Boolean, onChange: (Sp
                 onValueChange = {
                     text = it
                     val kmh = it.toFloatOrNull()
-                    if (kmh != null && kmh in range) onChange(SpeedChoice.Custom(kmh / MPS_TO_KMH))
+                    if (kmh != null && kmh in range) onChange(choice.copy(speedMps = kmh / MPS_TO_KMH))
                 },
                 label = { Text(stringResource(R.string.route_speed_custom_label)) },
                 isError = !valid,
@@ -76,6 +78,24 @@ fun SpeedChoicePicker(choice: SpeedChoice?, allowDefault: Boolean, onChange: (Sp
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 modifier = Modifier.fillMaxWidth(),
             )
+        }
+    }
+}
+
+/** Car / Bike / Foot chips for the road profile of a Custom speed. */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+fun RoadProfilePicker(profile: RoadProfile, onChange: (RoadProfile) -> Unit) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text(stringResource(R.string.route_profile_label), style = MaterialTheme.typography.labelLarge)
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            RoadProfile.entries.forEach { option ->
+                FilterChip(
+                    selected = option == profile,
+                    onClick = { onChange(option) },
+                    label = { Text(stringResource(option.labelRes)) },
+                )
+            }
         }
     }
 }

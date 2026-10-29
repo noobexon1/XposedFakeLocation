@@ -3,6 +3,9 @@ package com.noobexon.xposedfakelocation.manager.ui.map.route
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.KeyboardOptions
@@ -12,6 +15,7 @@ import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material.icons.filled.FormatListNumbered
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
@@ -19,11 +23,13 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
@@ -32,19 +38,28 @@ import androidx.compose.ui.unit.dp
 import com.noobexon.xposedfakelocation.R
 import com.noobexon.xposedfakelocation.data.ROUTE_MAX_DWELL_SECONDS
 import com.noobexon.xposedfakelocation.data.ROUTE_MAX_VARIATION_PERCENT
+import com.noobexon.xposedfakelocation.data.model.RoadProfile
 import com.noobexon.xposedfakelocation.data.model.SegmentSettings
+import com.noobexon.xposedfakelocation.manager.route.RoadStatus
 import kotlin.math.roundToInt
 
 private const val VARIATION_STEP_PERCENT = 5
 
-/** Per-segment speed, wait and variation; every change applies immediately. */
-@OptIn(ExperimentalMaterial3Api::class)
+/**
+ * Per-segment speed, path, wait and variation; every change applies immediately.
+ * [roadStatus] is `null` for a straight segment. [profile] is non-null when profile chips apply.
+ */
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun SegmentSheet(
     fromNumber: Int,
     toNumber: Int,
     settings: SegmentSettings,
+    roadStatus: RoadStatus?,
+    profile: RoadProfile?,
     onChange: (SegmentSettings) -> Unit,
+    onProfileChange: (RoadProfile) -> Unit,
+    onRetry: () -> Unit,
     onDismiss: () -> Unit,
 ) {
     ModalBottomSheet(onDismissRequest = onDismiss) {
@@ -54,6 +69,22 @@ fun SegmentSheet(
         ) {
             Text(stringResource(R.string.route_segment_title, fromNumber, toNumber), style = MaterialTheme.typography.titleMedium)
             SpeedChoicePicker(choice = settings.speed, allowDefault = true, onChange = { onChange(settings.copy(speed = it)) })
+            Text(stringResource(R.string.route_path_label), style = MaterialTheme.typography.labelLarge)
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                listOf(
+                    null to R.string.route_speed_default,
+                    false to R.string.route_path_straight,
+                    true to R.string.route_follow_roads,
+                ).forEach { (value, label) ->
+                    FilterChip(
+                        selected = settings.followRoads == value,
+                        onClick = { onChange(settings.copy(followRoads = value)) },
+                        label = { Text(stringResource(label)) },
+                    )
+                }
+            }
+            profile?.let { RoadProfilePicker(profile = it, onChange = onProfileChange) }
+            roadStatus?.let { RoadStatusLine(status = it, onRetry = onRetry) }
             var waitText by remember { mutableStateOf(settings.dwellSeconds.toString()) }
             val wait = waitText.toIntOrNull()
             OutlinedTextField(
@@ -79,6 +110,29 @@ fun SegmentSheet(
                 steps = ROUTE_MAX_VARIATION_PERCENT / VARIATION_STEP_PERCENT - 1,
             )
         }
+    }
+}
+
+@Composable
+private fun RoadStatusLine(status: RoadStatus, onRetry: () -> Unit) {
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        when (status) {
+            is RoadStatus.Ready -> Text(stringResource(R.string.route_road_ready, distanceText(status.distanceM)))
+            RoadStatus.Loading -> Text(stringResource(R.string.route_road_loading))
+            is RoadStatus.Failed -> Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    stringResource(roadErrorRes(status.kind)),
+                    color = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.weight(1f),
+                )
+                TextButton(onClick = onRetry) { Text(stringResource(R.string.action_retry)) }
+            }
+        }
+        Text(
+            stringResource(R.string.route_road_attribution),
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
     }
 }
 

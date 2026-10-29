@@ -13,7 +13,13 @@ import kotlin.math.roundToInt
 
 /** Bitmap icons for route markers; drawn by hand so they need no drawable resources. */
 internal object RouteMarkerIcons {
-    fun numbered(context: Context, number: Int, fill: Int, textColor: Int): Drawable {
+    fun numbered(context: Context, number: Int, fill: Int, textColor: Int): Drawable =
+        badge(context, number.toString(), fill, textColor)
+
+    /** A "!" badge marking a segment whose road path failed. */
+    fun warning(context: Context, fill: Int): Drawable = badge(context, "!", fill, Color.WHITE)
+
+    private fun badge(context: Context, text: String, fill: Int, textColor: Int): Drawable {
         val density = context.resources.displayMetrics.density
         val size = (28 * density).roundToInt()
         val bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
@@ -31,7 +37,7 @@ internal object RouteMarkerIcons {
         paint.textSize = 13 * density
         paint.textAlign = Paint.Align.CENTER
         paint.typeface = Typeface.DEFAULT_BOLD
-        canvas.drawText(number.toString(), center, center - (paint.descent() + paint.ascent()) / 2, paint)
+        canvas.drawText(text, center, center - (paint.descent() + paint.ascent()) / 2, paint)
         return BitmapDrawable(context.resources, bitmap)
     }
 

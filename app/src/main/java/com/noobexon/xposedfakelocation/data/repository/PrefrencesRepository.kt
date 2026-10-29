@@ -20,6 +20,7 @@ import com.noobexon.xposedfakelocation.data.DEFAULT_MAP_ZOOM
 import com.noobexon.xposedfakelocation.data.DEFAULT_MEAN_SEA_LEVEL
 import com.noobexon.xposedfakelocation.data.DEFAULT_MEAN_SEA_LEVEL_ACCURACY
 import com.noobexon.xposedfakelocation.data.DEFAULT_RANDOMIZE_RADIUS
+import com.noobexon.xposedfakelocation.data.DEFAULT_ROUTING_SERVER_URL
 import com.noobexon.xposedfakelocation.data.DEFAULT_SPEED
 import com.noobexon.xposedfakelocation.data.DEFAULT_SPEED_ACCURACY
 import com.noobexon.xposedfakelocation.data.DEFAULT_THEME_OPTION
@@ -67,6 +68,7 @@ import com.noobexon.xposedfakelocation.data.KEY_ROUTES
 import com.noobexon.xposedfakelocation.data.KEY_ROUTE_DRAFT
 import com.noobexon.xposedfakelocation.data.KEY_ROUTE_OVERLAY_X
 import com.noobexon.xposedfakelocation.data.KEY_ROUTE_OVERLAY_Y
+import com.noobexon.xposedfakelocation.data.KEY_ROUTING_SERVER_URL
 import com.noobexon.xposedfakelocation.data.KEY_SPEED
 import com.noobexon.xposedfakelocation.data.KEY_SPEED_ACCURACY
 import com.noobexon.xposedfakelocation.data.KEY_TARGET_APPS
@@ -98,6 +100,7 @@ import com.noobexon.xposedfakelocation.data.model.MapMode
 import com.noobexon.xposedfakelocation.data.model.Route
 import com.noobexon.xposedfakelocation.data.model.RouteDraft
 import com.noobexon.xposedfakelocation.data.model.RouteJson
+import com.noobexon.xposedfakelocation.data.normalizeRoutingServerUrl
 import com.noobexon.xposedfakelocation.data.normalizeServerUrl
 import com.noobexon.xposedfakelocation.data.normalizeWifiSsid
 import com.noobexon.xposedfakelocation.manager.App
@@ -571,7 +574,7 @@ class PreferencesRepository(context: Context) {
     /** The route being edited; an empty draft when none is stored or it can't be read. */
     fun getRouteDraft(): RouteDraft =
         RouteJson.parseDraft(localPrefs.getString(KEY_ROUTE_DRAFT, null))
-            ?: RouteDraft(Route(id = UUID.randomUUID().toString()))
+            ?: RouteDraft(Route(id = UUID.randomUUID().toString(), followRoads = true))
 
     fun saveRouteDraft(draft: RouteDraft) =
         editLocal { putString(KEY_ROUTE_DRAFT, RouteJson.gson.toJson(draft)) }
@@ -605,6 +608,17 @@ class PreferencesRepository(context: Context) {
     /** A missing or invalid stored URL (e.g. hand-edited prefs) falls back to the default server. */
     private fun readGeocodingServerUrl(prefs: SharedPreferences): String =
         normalizeServerUrl(prefs.getString(KEY_GEOCODING_SERVER_URL, null)) ?: DEFAULT_GEOCODING_SERVER_URL
+    // endregion
+    // region Routing server (local)
+    fun getRoutingServerUrlFlow(): Flow<String> = localFlow(KEY_ROUTING_SERVER_URL, ::readRoutingServerUrl)
+
+    fun getRoutingServerUrl(): String = readRoutingServerUrl(localPrefs)
+
+    suspend fun saveRoutingServerUrl(url: String) = editLocal { putString(KEY_ROUTING_SERVER_URL, url) }
+
+    /** A missing or invalid stored URL falls back to the default server. */
+    private fun readRoutingServerUrl(prefs: SharedPreferences): String =
+        normalizeRoutingServerUrl(prefs.getString(KEY_ROUTING_SERVER_URL, null)) ?: DEFAULT_ROUTING_SERVER_URL
     // endregion
     // region Map Zoom (local)
     fun getMapZoom(): Double {

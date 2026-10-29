@@ -20,3 +20,16 @@ fun normalizeServerUrl(input: String?): String? {
     val ok = schemeOk && portOk && !uri.host.isNullOrBlank() && uri.rawQuery == null && uri.rawFragment == null
     return trimmed.takeIf { ok }
 }
+
+/**
+ * Like [normalizeServerUrl], but allows one [ROUTING_PROFILE_PLACEHOLDER], which is kept. No other
+ * braces are allowed.
+ */
+fun normalizeRoutingServerUrl(input: String?): String? {
+    val trimmed = input?.trim()?.trimEnd('/') ?: return null
+    if (trimmed.split(ROUTING_PROFILE_PLACEHOLDER).size > 2) return null
+    val rest = trimmed.replace(ROUTING_PROFILE_PLACEHOLDER, "")
+    if ('{' in rest || '}' in rest) return null
+    normalizeServerUrl(trimmed.replace(ROUTING_PROFILE_PLACEHOLDER, "car")) ?: return null
+    return trimmed
+}

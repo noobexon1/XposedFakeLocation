@@ -21,6 +21,7 @@ import androidx.compose.ui.viewinterop.AndroidView
 import com.noobexon.xposedfakelocation.R
 import com.noobexon.xposedfakelocation.data.DEFAULT_MAP_ZOOM
 import com.noobexon.xposedfakelocation.data.model.Route
+import com.noobexon.xposedfakelocation.manager.route.RoadFailure
 import com.noobexon.xposedfakelocation.manager.ui.map.route.HandleFitRouteEvent
 import com.noobexon.xposedfakelocation.manager.ui.map.route.RouteOverlaysEffect
 import kotlinx.coroutines.flow.Flow
@@ -71,6 +72,7 @@ import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay
  *   spoofing is on (then it shows the spoofed, possibly moving, position).
  * @param route The route to draw in Route mode.
  * @param routeEditable Whether route markers can be tapped and dragged (false while playing).
+ * @param roadFailures Road paths that failed to fetch; their segments show a warning badge.
  * @param fitRouteEvent One-shot request to frame the whole [route].
  * @param onRouteTap Called with the tapped map location in Route mode (adds a point).
  * @param onRoutePointTap Called with the id of a tapped route point.
@@ -98,6 +100,7 @@ fun MapViewContainer(
     routeMode: Boolean = false,
     route: Route? = null,
     routeEditable: Boolean = false,
+    roadFailures: Map<String, RoadFailure> = emptyMap(),
     fitRouteEvent: Flow<Unit> = emptyFlow(),
     onRouteTap: (GeoPoint) -> Unit = {},
     onRoutePointTap: (String) -> Unit = {},
@@ -130,6 +133,7 @@ fun MapViewContainer(
         mapView = mapView,
         route = route.takeIf { routeMode },
         editable = routeEditable,
+        roadFailures = roadFailures,
         onPointTap = onRoutePointTap,
         onPointMoved = onRoutePointMoved,
         onSegmentTap = onRouteSegmentTap,

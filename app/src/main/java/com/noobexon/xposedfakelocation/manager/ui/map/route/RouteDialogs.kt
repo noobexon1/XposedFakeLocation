@@ -1,6 +1,8 @@
 package com.noobexon.xposedfakelocation.manager.ui.map.route
 
 import androidx.annotation.StringRes
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.AlertDialog
@@ -14,7 +16,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.unit.dp
 import com.noobexon.xposedfakelocation.R
+import com.noobexon.xposedfakelocation.data.model.RoadProfile
 import com.noobexon.xposedfakelocation.data.model.SpeedChoice
 
 /** Asks for a name; offers Update / Save as new when the draft came from a saved route. */
@@ -79,12 +83,20 @@ fun SetNumberDialog(count: Int, current: Int, onConfirm: (Int) -> Unit, onDismis
     )
 }
 
+/** Route default speed; with [followRoads], a Custom speed also gets a road profile. */
 @Composable
-fun DefaultSpeedDialog(choice: SpeedChoice, onChange: (SpeedChoice) -> Unit, onDismiss: () -> Unit) {
+fun DefaultSpeedDialog(choice: SpeedChoice, followRoads: Boolean, onChange: (SpeedChoice) -> Unit, onDismiss: () -> Unit) {
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.route_default_speed_title)) },
-        text = { SpeedChoicePicker(choice = choice, allowDefault = false, onChange = { it?.let(onChange) }) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                SpeedChoicePicker(choice = choice, allowDefault = false, onChange = { it?.let(onChange) })
+                if (followRoads && choice is SpeedChoice.Custom) {
+                    RoadProfilePicker(profile = choice.profile ?: RoadProfile.CAR, onChange = { onChange(choice.copy(profile = it)) })
+                }
+            }
+        },
         confirmButton = { TextButton(onClick = onDismiss) { Text(stringResource(android.R.string.ok)) } },
     )
 }

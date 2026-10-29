@@ -27,6 +27,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
@@ -38,6 +39,7 @@ import com.noobexon.xposedfakelocation.manager.App
  * way; otherwise starts the draft, asking for the (optional) overlay and notification permissions.
  *
  * @param blockedReason why the route can't start, or `null` when it can.
+ * @param missingRoadSegments road segments without a road path; asks before playing them straight.
  */
 @Composable
 fun RoutePlayButton(
@@ -45,9 +47,11 @@ fun RoutePlayButton(
     routePlaying: Boolean,
     otherSpoofingActive: Boolean,
     onStopSpoofing: () -> Unit,
+    missingRoadSegments: Int = 0,
 ) {
     val context = LocalContext.current
     var showOverlayRationale by remember { mutableStateOf(false) }
+    var showMissingRoads by remember { mutableStateOf(false) }
     val moduleInactive = stringResource(R.string.system_hooks_module_inactive)
     val blockedMessage = blockedReason?.let { stringResource(it) }
 
@@ -69,6 +73,10 @@ fun RoutePlayButton(
         ActivityResultContracts.StartActivityForResult()
     ) { startWithNotificationPermission() }
 
+    fun startAfterChecks() {
+        if (!Settings.canDrawOverlays(context)) showOverlayRationale = true else startWithNotificationPermission()
+    }
+
     val stopping = routePlaying || otherSpoofingActive
     val active = stopping || blockedReason == null
     SmallFloatingActionButton(
@@ -78,8 +86,8 @@ fun RoutePlayButton(
                 otherSpoofingActive -> onStopSpoofing()
                 blockedMessage != null -> Toast.makeText(context, blockedMessage, Toast.LENGTH_SHORT).show()
                 App.service == null -> Toast.makeText(context, moduleInactive, Toast.LENGTH_SHORT).show()
-                !Settings.canDrawOverlays(context) -> showOverlayRationale = true
-                else -> startWithNotificationPermission()
+                missingRoadSegments > 0 -> showMissingRoads = true
+                else -> startAfterChecks()
             }
         },
         containerColor = if (active) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f),
@@ -89,6 +97,23 @@ fun RoutePlayButton(
         Icon(
             imageVector = if (stopping) Icons.Default.Stop else Icons.Default.PlayArrow,
             contentDescription = stringResource(if (stopping) R.string.cd_route_stop else R.string.cd_route_play),
+        )
+    }
+
+    if (showMissingRoads) {
+        AlertDialog(
+            onDismissRequest = { showMissingRoads = false },
+            title = { Text(stringResource(R.string.route_missing_roads_title)) },
+            text = { Text(pluralStringResource(R.plurals.route_missing_roads_message, missingRoadSegments, missingRoadSegments)) },
+            confirmButton = {
+                TextButton(onClick = {
+                    showMissingRoads = false
+                    startAfterChecks()
+                }) { Text(stringResource(R.string.route_play_anyway)) }
+            },
+            dismissButton = {
+                TextButton(onClick = { showMissingRoads = false }) { Text(stringResource(R.string.action_cancel)) }
+            },
         )
     }
 

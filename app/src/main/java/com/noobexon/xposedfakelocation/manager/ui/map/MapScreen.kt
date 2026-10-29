@@ -111,6 +111,7 @@ fun MapScreen(
     val draft by routeEditorViewModel.draft.collectAsStateWithLifecycle()
     val routePlaying by routeEditorViewModel.isRoutePlaying.collectAsStateWithLifecycle()
     val joystickRunning by routeEditorViewModel.joystickRunning.collectAsStateWithLifecycle()
+    val roadFailures by routeEditorViewModel.roadFailures.collectAsStateWithLifecycle()
     val routeMode = mapMode == MapMode.ROUTE
     val search by addressSearchViewModel.ui.collectAsStateWithLifecycle()
     val keyboardController = LocalSoftwareKeyboardController.current
@@ -336,6 +337,7 @@ fun MapScreen(
                     routeMode = routeMode,
                     route = draft.route,
                     routeEditable = !isPlaying && !routePlaying,
+                    roadFailures = roadFailures,
                     fitRouteEvent = routeEditorViewModel.fitRouteEvent,
                     onRouteTap = { routeEditorViewModel.addPoint(it) },
                     onRoutePointTap = routeEditorViewModel::showPointActions,

@@ -5,16 +5,23 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.noobexon.xposedfakelocation.R
 import com.noobexon.xposedfakelocation.data.ROUTE_MIN_POINTS
+import com.noobexon.xposedfakelocation.data.model.SpeedChoice
+import com.noobexon.xposedfakelocation.data.model.effectiveSpeed
+import com.noobexon.xposedfakelocation.data.model.followsRoads
+import com.noobexon.xposedfakelocation.data.model.roadProfile
 import com.noobexon.xposedfakelocation.data.model.segmentKey
 import com.noobexon.xposedfakelocation.data.model.segmentSettings
 import com.noobexon.xposedfakelocation.data.model.travelSegments
 import com.noobexon.xposedfakelocation.manager.route.RoutePlayButton
+import com.noobexon.xposedfakelocation.manager.route.missingRoadSegmentCount
+import com.noobexon.xposedfakelocation.manager.route.roadStatus
 
 /** Route mode's bottom panel plus every route sheet and dialog, wired to [viewModel]. */
 @Composable
@@ -30,6 +37,7 @@ fun BoxScope.RouteModeUi(
     val joystickRunning by viewModel.joystickRunning.collectAsStateWithLifecycle()
     val savedRoutes by viewModel.savedRoutes.collectAsStateWithLifecycle()
     val ui by viewModel.ui.collectAsStateWithLifecycle()
+    val roadFailures by viewModel.roadFailures.collectAsStateWithLifecycle()
     val route = draft.route
     val editable = !isPlaying && playback == null
     val blockedReason = when {
@@ -49,11 +57,13 @@ fun BoxScope.RouteModeUi(
                 routePlaying = playback != null,
                 otherSpoofingActive = isPlaying && playback == null,
                 onStopSpoofing = onStopSpoofing,
+                missingRoadSegments = remember(route) { route.missingRoadSegmentCount() },
             )
         },
         onDefaultSpeedClick = { viewModel.showDefaultSpeedDialog(true) },
         onLoopChange = viewModel::setLoop,
         onReversedChange = viewModel::setReversed,
+        onFollowRoadsChange = viewModel::setFollowRoads,
         onOrderChange = viewModel::setOrder,
         onDeletePoint = viewModel::deletePoint,
         onSave = { viewModel.showSaveDialog(true) },
@@ -97,7 +107,13 @@ fun BoxScope.RouteModeUi(
                 fromNumber = segment.fromNumber,
                 toNumber = segment.toNumber,
                 settings = route.segmentSettings(a, b),
+                roadStatus = route.roadStatus(segment.from, segment.to, roadFailures),
+                profile = route.effectiveSpeed(a, b)
+                    .takeIf { it is SpeedChoice.Custom && route.followsRoads(a, b) }
+                    ?.roadProfile(),
                 onChange = { viewModel.updateSegment(a, b, it) },
+                onProfileChange = { viewModel.setSegmentProfile(a, b, it) },
+                onRetry = { viewModel.retryRoad(a, b) },
                 onDismiss = { viewModel.showSegment(null) },
             )
         }
@@ -106,6 +122,7 @@ fun BoxScope.RouteModeUi(
     if (ui.showDefaultSpeedDialog) {
         DefaultSpeedDialog(
             choice = route.defaultSpeed,
+            followRoads = route.followRoads,
             onChange = viewModel::setDefaultSpeed,
             onDismiss = { viewModel.showDefaultSpeedDialog(false) },
         )

@@ -7,11 +7,12 @@ import com.noobexon.xposedfakelocation.data.ROUTE_MIN_POINTS
 import com.noobexon.xposedfakelocation.data.model.JoystickSettings
 import com.noobexon.xposedfakelocation.data.model.Route
 import com.noobexon.xposedfakelocation.data.model.RouteSegment
+import com.noobexon.xposedfakelocation.data.model.effectiveSpeed
 import com.noobexon.xposedfakelocation.data.model.resolveMps
 import com.noobexon.xposedfakelocation.data.model.segmentSettings
 import com.noobexon.xposedfakelocation.data.model.travelSegments
 
-/** One straight stretch of a [RoutePlan], in travel direction. */
+/** One straight stretch of a [RoutePlan], in travel direction. Road segments become many legs. */
 data class Leg(
     val startLatitude: Double,
     val startLongitude: Double,
@@ -54,24 +55,33 @@ class RoutePlan(val legs: List<Leg>, val loop: Boolean) {
 
     companion object {
         fun from(route: Route, settings: JoystickSettings): RoutePlan =
-            RoutePlan(route.travelSegments().map { leg(route, it, settings) }, route.loop)
+            RoutePlan(route.travelSegments().flatMap { legs(route, it, settings) }, route.loop)
 
-        private fun leg(route: Route, segment: RouteSegment, settings: JoystickSettings): Leg {
+        /** One leg for a straight segment; one per road piece when a usable road path is stored. */
+        private fun legs(route: Route, segment: RouteSegment, settings: JoystickSettings): List<Leg> {
             val from = segment.from
             val to = segment.to
             val overrides = route.segmentSettings(from.id, to.id)
-            return Leg(
-                startLatitude = from.latitude,
-                startLongitude = from.longitude,
-                endLatitude = to.latitude,
-                endLongitude = to.longitude,
-                distanceM = GeoMath.distanceMeters(from.latitude, from.longitude, to.latitude, to.longitude),
-                bearingDegrees = GeoMath.initialBearing(from.latitude, from.longitude, to.latitude, to.longitude).toFloat(),
-                speedMps = (overrides.speed ?: route.defaultSpeed).resolveMps(settings),
-                variation = overrides.variationPercent.coerceIn(0, ROUTE_MAX_VARIATION_PERCENT) / 100.0,
-                dwellSeconds = overrides.dwellSeconds.coerceIn(0, ROUTE_MAX_DWELL_SECONDS).toDouble(),
-                endPointNumber = segment.toNumber,
-            )
+            val speed = route.effectiveSpeed(from.id, to.id).resolveMps(settings)
+            val variation = overrides.variationPercent.coerceIn(0, ROUTE_MAX_VARIATION_PERCENT) / 100.0
+            val dwell = overrides.dwellSeconds.coerceIn(0, ROUTE_MAX_DWELL_SECONDS).toDouble()
+            val coordinates = route.roadCoordinates(from, to)?.takeIf { it.size >= 2 }
+                ?: listOf(from.latitude to from.longitude, to.latitude to to.longitude)
+            val lastPiece = coordinates.size - 2
+            return coordinates.zipWithNext().mapIndexed { i, (start, end) ->
+                Leg(
+                    startLatitude = start.first,
+                    startLongitude = start.second,
+                    endLatitude = end.first,
+                    endLongitude = end.second,
+                    distanceM = GeoMath.distanceMeters(start.first, start.second, end.first, end.second),
+                    bearingDegrees = GeoMath.initialBearing(start.first, start.second, end.first, end.second).toFloat(),
+                    speedMps = speed,
+                    variation = variation,
+                    dwellSeconds = if (i == lastPiece) dwell else 0.0,
+                    endPointNumber = segment.toNumber,
+                )
+            }
         }
     }
 }
