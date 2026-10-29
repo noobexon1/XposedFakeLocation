@@ -2,11 +2,13 @@ package com.noobexon.xposedfakelocation.manager.ui.map.maplibre
 
 import android.content.Context
 import android.graphics.RectF
+import android.graphics.drawable.Drawable
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
@@ -97,6 +99,15 @@ internal class MapLibreLayers(mapView: MapView, map: MapLibreMap, style: Style) 
         setIconIgnorePlacement(true)
     }
 
+    /** A point is being dragged; redrawing now would strand the dragged symbol. */
+    var dragging = false
+
+    /** A redraw was skipped because of [dragging]. */
+    var redrawSkipped = false
+
+    /** Bumped to redraw the route when a drag ends without changing it (or after a skipped redraw). */
+    var redrawRequests by mutableIntStateOf(0)
+
     /** Re-adds the route lines after a style change. */
     fun restyle(style: Style) = addRouteLines(style, belowLayerId = arrows.layerId)
 
@@ -173,8 +184,13 @@ internal fun MapLibreRouteEffect(
     val drawing = remember(route, roadFailures) {
         route?.takeIf { it.points.isNotEmpty() }?.let { routeDrawing(it, roadFailures) }
     }
-    LaunchedEffect(layers, style, drawing, editable, colors) {
+    LaunchedEffect(layers, style, drawing, editable, colors, layers?.redrawRequests) {
         if (layers == null || style == null || !style.isFullyLoaded) return@LaunchedEffect
+        if (layers.dragging) {
+            layers.redrawSkipped = true
+            return@LaunchedEffect
+        }
+        layers.redrawSkipped = false
         layers.showRoute(context, style, drawing, editable, colors)
     }
 }
@@ -192,8 +208,10 @@ private fun MapLibreLayers.showRoute(context: Context, style: Style, drawing: Ro
     listOf(ROUTE_SOLID_LAYER, ROUTE_DASHED_LAYER).forEach { id ->
         style.getLayer(id)?.setProperties(PropertyFactory.lineColor(colors.line))
     }
-    style.addImage(ARROW_IMAGE, RouteMarkerIcons.arrow(context, 0f, colors.line))
-    style.addImage(WARNING_IMAGE, RouteMarkerIcons.warning(context, colors.warning))
+    val arrowImage = "$ARROW_IMAGE-${colors.line}"
+    val warningImage = "$WARNING_IMAGE-${colors.warning}"
+    style.addImageOnce(arrowImage) { RouteMarkerIcons.arrow(context, 0f, colors.line) }
+    style.addImageOnce(warningImage) { RouteMarkerIcons.warning(context, colors.warning) }
     arrows.deleteAll()
     points.deleteAll()
     if (drawing == null) return
@@ -202,7 +220,7 @@ private fun MapLibreLayers.showRoute(context: Context, style: Style, drawing: Ro
             (segment.marker as? SegmentMarker.Arrow)?.let { arrow ->
                 SymbolOptions()
                     .withLatLng(LatLng(arrow.latitude, arrow.longitude))
-                    .withIconImage(ARROW_IMAGE)
+                    .withIconImage(arrowImage)
                     .withIconRotate(arrow.bearingDegrees.toFloat())
                     .withData(segmentData(segment))
             }
@@ -212,7 +230,7 @@ private fun MapLibreLayers.showRoute(context: Context, style: Style, drawing: Ro
         (segment.marker as? SegmentMarker.Warning)?.let { warning ->
             SymbolOptions()
                 .withLatLng(LatLng(warning.latitude, warning.longitude))
-                .withIconImage(WARNING_IMAGE)
+                .withIconImage(warningImage)
                 .withData(segmentData(segment))
         }
     }
@@ -223,7 +241,7 @@ private fun MapLibreLayers.showRoute(context: Context, style: Style, drawing: Ro
             PointRole.NORMAL -> colors.point
         }
         val image = "xfl-route-point-${point.number}-$fill-${colors.text}"
-        style.addImage(image, RouteMarkerIcons.numbered(context, point.number, fill, colors.text))
+        style.addImageOnce(image) { RouteMarkerIcons.numbered(context, point.number, fill, colors.text) }
         SymbolOptions()
             .withLatLng(LatLng(point.latitude, point.longitude))
             .withIconImage(image)
@@ -231,6 +249,11 @@ private fun MapLibreLayers.showRoute(context: Context, style: Style, drawing: Ro
             .withData(JsonObject().apply { addProperty(PROP_ID, point.id) })
     }
     points.create(warnings + numbered)
+}
+
+/** Image ids encode everything the image depends on, so an existing image never needs replacing. */
+private inline fun Style.addImageOnce(id: String, render: () -> Drawable) {
+    if (getImage(id) == null) addImage(id, render())
 }
 
 private fun segmentData(segment: DrawnSegment) = JsonObject().apply {
@@ -254,13 +277,14 @@ internal fun MapLibreSpoofMarker(map: MapLibreMap?, layers: MapLibreLayers?, sty
     val color = MaterialTheme.colorScheme.primary.toArgb()
     LaunchedEffect(layers, style, location, color) {
         if (layers == null || style == null || !style.isFullyLoaded) return@LaunchedEffect
-        style.addImage(PIN_IMAGE, RouteMarkerIcons.pin(context, color))
+        val pinImage = "$PIN_IMAGE-$color"
+        style.addImageOnce(pinImage) { RouteMarkerIcons.pin(context, color) }
         layers.marker.deleteAll()
         if (location != null) {
             layers.marker.create(
                 SymbolOptions()
                     .withLatLng(location.toLatLng())
-                    .withIconImage(PIN_IMAGE)
+                    .withIconImage(pinImage)
                     .withIconAnchor(Property.ICON_ANCHOR_BOTTOM)
             )
         }
@@ -317,11 +341,21 @@ internal fun MapLibreTapHandler(
             true
         }
         val drag = object : OnSymbolDragListener {
-            override fun onAnnotationDragStarted(annotation: Symbol) = Unit
+            override fun onAnnotationDragStarted(annotation: Symbol) {
+                layers.dragging = true
+            }
+
             override fun onAnnotationDrag(annotation: Symbol) = Unit
+
             override fun onAnnotationDragFinished(annotation: Symbol) {
-                val id = annotation.stringData(PROP_ID) ?: return
-                currentOnPointMoved(id, GeoPoint(annotation.latLng.latitude, annotation.latLng.longitude))
+                layers.dragging = false
+                val id = annotation.stringData(PROP_ID)
+                if (id != null && currentEditable) {
+                    currentOnPointMoved(id, GeoPoint(annotation.latLng.latitude, annotation.latLng.longitude))
+                    if (layers.redrawSkipped) layers.redrawRequests++
+                } else {
+                    layers.redrawRequests++
+                }
             }
         }
         layers.points.addClickListener(pointClick)
