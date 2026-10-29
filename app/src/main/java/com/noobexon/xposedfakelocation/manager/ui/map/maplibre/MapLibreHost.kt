@@ -185,7 +185,10 @@ internal fun MapLibreHost(
 private fun createMapView(context: Context): MapView? {
     if (!MapLibreSupport.ensure(context)) return null
     return try {
-        MapView(context, MapLibreMapOptions.createFromAttributes(context).textureMode(true)).apply { onCreate(null) }
+        // No texture mode: with a TextureView the render thread waits for buffers that only the main
+        // thread frees, while synchronous queries (taps, drag detection) block the main thread on the
+        // render thread, which deadlocks (ANR).
+        MapView(context, MapLibreMapOptions.createFromAttributes(context).textureMode(false)).apply { onCreate(null) }
     } catch (e: RuntimeException) {
         Log.w(TAG, "Couldn't create the MapLibre map", e)
         null
