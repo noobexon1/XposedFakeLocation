@@ -61,6 +61,11 @@
     <string name="category_appearance">Appearance</string>
     <string name="category_notifications">Notifications</string>
     <string name="category_external_control">External Control</string>
+    <string name="category_search">Search</string>
+    <string name="setting_search_server_title">Search server</string>
+    <string name="setting_search_server_description">Photon-compatible server used for address search on the map. Default: https://photon.komoot.io</string>
+    <string name="setting_search_server_label">Server URL</string>
+    <string name="setting_search_server_invalid">Enter a valid http or https URL</string>
     <string name="category_system_hooks">System Hooks</string>
     <string name="category_wifi_identity">Wi-Fi Identity</string>
     <string name="category_location">Location</string>
@@ -177,6 +182,13 @@
     <string name="override_off">Off</string>
 
     <string name="map_go_to_point">Go to Point</string>
+    <string name="cd_search_address">Search address</string>
+    <string name="map_search_hint">Search address or place</string>
+    <string name="map_search_no_results">No results</string>
+    <string name="map_search_error_network">Couldn\'t reach the search server</string>
+    <string name="map_search_error_parse">Unexpected response from the search server</string>
+    <string name="map_search_attribution">Search by Photon · © OpenStreetMap contributors</string>
+    <string name="action_retry">Retry</string>
     <string name="map_add_to_favorites">Add to Favorites</string>
     <string name="map_add_to_templates">Add to Templates</string>
     <string name="map_update_template_location">Update Template Location</string>

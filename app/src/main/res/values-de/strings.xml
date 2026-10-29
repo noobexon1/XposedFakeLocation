@@ -61,6 +61,11 @@
     <string name="category_appearance">Erscheinungsbild</string>
     <string name="category_notifications">Benachrichtigungen</string>
     <string name="category_external_control">Externe Steuerung</string>
+    <string name="category_search">Suche</string>
+    <string name="setting_search_server_title">Suchserver</string>
+    <string name="setting_search_server_description">Photon-kompatibler Server für die Adresssuche auf der Karte. Standard: https://photon.komoot.io</string>
+    <string name="setting_search_server_label">Server-URL</string>
+    <string name="setting_search_server_invalid">Gib eine gültige http- oder https-URL ein</string>
     <string name="category_system_hooks">System-Hooks</string>
     <string name="category_location">Standort</string>
     <string name="category_altitude">Höhe</string>
@@ -165,6 +170,13 @@
     <string name="override_off">Aus</string>
 
     <string name="map_go_to_point">Gehe zu Punkt</string>
+    <string name="cd_search_address">Adresse suchen</string>
+    <string name="map_search_hint">Adresse oder Ort suchen</string>
+    <string name="map_search_no_results">Keine Ergebnisse</string>
+    <string name="map_search_error_network">Suchserver nicht erreichbar</string>
+    <string name="map_search_error_parse">Unerwartete Antwort vom Suchserver</string>
+    <string name="map_search_attribution">Suche: Photon · © OpenStreetMap-Mitwirkende</string>
+    <string name="action_retry">Erneut versuchen</string>
     <string name="map_add_to_favorites">Zu Favoriten hinzufügen</string>
     <string name="map_add_to_templates">Zu Vorlagen hinzufügen</string>
     <string name="map_update_template_location">Vorlagenstandort aktualisieren</string>

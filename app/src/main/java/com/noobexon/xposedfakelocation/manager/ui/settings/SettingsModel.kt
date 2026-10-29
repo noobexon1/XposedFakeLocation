@@ -7,6 +7,7 @@ import com.noobexon.xposedfakelocation.data.DEFAULT_ALTITUDE
 import com.noobexon.xposedfakelocation.data.DEFAULT_ENABLE_BROADCAST_CONTROL
 import com.noobexon.xposedfakelocation.data.DEFAULT_ENABLE_SYSTEM_HOOKS
 import com.noobexon.xposedfakelocation.data.DEFAULT_ENABLE_WIFI_IDENTITY
+import com.noobexon.xposedfakelocation.data.DEFAULT_GEOCODING_SERVER_URL
 import com.noobexon.xposedfakelocation.data.DEFAULT_HIDE_FAKE_LOCATION_TOAST
 import com.noobexon.xposedfakelocation.data.DEFAULT_JOYSTICK_MAX_SPEED
 import com.noobexon.xposedfakelocation.data.DEFAULT_JOYSTICK_PRESET_BIKE
@@ -53,6 +54,7 @@ enum class SettingsCategory(@StringRes val titleRes: Int) {
     SYSTEM_HOOKS(R.string.category_system_hooks),
     WIFI_IDENTITY(R.string.category_wifi_identity),
     EXTERNAL_CONTROL(R.string.category_external_control),
+    SEARCH(R.string.category_search),
     APPEARANCE(R.string.category_appearance),
     LANGUAGE(R.string.category_language)
 }
@@ -204,13 +206,15 @@ object SettingKeys {
     const val WIFI_BSSID = "wifi_bssid"
     const val WIFI_RSSI = "wifi_rssi"
     const val BROADCAST = "broadcast"
+    const val SEARCH_SERVER = "search_server"
     const val THEME = "theme"
     const val LANGUAGE = "language"
 }
 
 enum class TextInputKind {
     TEXT,
-    SIGNED_NUMBER
+    SIGNED_NUMBER,
+    URL
 }
 
 /** Every variant exposes a stable [key]
@@ -281,6 +285,9 @@ sealed interface SettingEntry {
     /**
      * A plain text row for settings that do not need a toggle or slider but still need a labelled,
      * searchable input field.
+     *
+     * @property errorRes Returns an error message for the current text, or `null` when it is valid.
+     *   Invalid text is shown with the error and is not committed.
      */
     data class Text(
         override val key: String,
@@ -290,7 +297,8 @@ sealed interface SettingEntry {
         val value: String,
         val inputKind: TextInputKind = TextInputKind.TEXT,
         val onValueChange: (String) -> Unit,
-        override val onReset: (() -> Unit)? = null
+        override val onReset: (() -> Unit)? = null,
+        val errorRes: (String) -> Int? = { null },
     ) : SettingEntry
 
     /**
@@ -392,6 +400,8 @@ data class SettingsUiState(
     val wifiSsid: String = DEFAULT_WIFI_SSID,
     val wifiBssid: String = DEFAULT_WIFI_BSSID,
     val wifiRssi: Int = DEFAULT_WIFI_RSSI,
+    // Address search
+    val geocodingServerUrl: String = DEFAULT_GEOCODING_SERVER_URL,
     // App
     val languageTag: String = DEFAULT_LANGUAGE_TAG,
     val themeOption: ThemeOption = ThemeOption.fromTag(DEFAULT_THEME_OPTION),

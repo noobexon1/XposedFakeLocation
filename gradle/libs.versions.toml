@@ -18,6 +18,7 @@ gson = "2.14.0"
 hiddenapibypass = "6.1"
 coil = "2.7.0"
 reorderable = "2.4.3"
+kotlinxCoroutinesTest = "1.8.1"
 
 xposed-api = "101.0.0"
 xposed-service = "101.0.0"
@@ -48,6 +49,7 @@ gson = { group = "com.google.code.gson", name = "gson", version.ref = "gson" }
 hiddenapibypass = { group = "org.lsposed.hiddenapibypass", name = "hiddenapibypass", version.ref = "hiddenapibypass" }
 coil-compose = { group = "io.coil-kt", name = "coil-compose", version.ref = "coil" }
 reorderable = { group = "sh.calvin.reorderable", name = "reorderable", version.ref = "reorderable" }
+kotlinx-coroutines-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-test", version.ref = "kotlinxCoroutinesTest" }
 
 libxposed-api = { group = "io.github.libxposed", name = "api", version.ref = "xposed-api" }
 libxposed-service = { group = "io.github.libxposed", name = "service", version.ref = "xposed-service" }

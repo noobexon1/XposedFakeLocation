@@ -38,6 +38,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.noobexon.xposedfakelocation.R
 import com.noobexon.xposedfakelocation.data.ROUTE_MIN_POINTS
@@ -180,9 +181,12 @@ private fun PointList(route: Route, editable: Boolean, onOrderChange: (List<Stri
                     Column(modifier = Modifier.weight(1f)) {
                         Text(stringResource(R.string.route_point_label, number), style = MaterialTheme.typography.bodyMedium)
                         Text(
-                            text = stringResource(R.string.coordinates_lat_lon, "%.5f".format(point.latitude), "%.5f".format(point.longitude)),
+                            text = point.label
+                                ?: stringResource(R.string.coordinates_lat_lon, "%.5f".format(point.latitude), "%.5f".format(point.longitude)),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
                         )
                     }
                     IconButton(enabled = editable, onClick = { onDeletePoint(point.id) }) {

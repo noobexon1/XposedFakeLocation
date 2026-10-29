@@ -58,6 +58,11 @@
     <string name="category_appearance">外观</string>
     <string name="category_notifications">通知</string>
     <string name="category_external_control">外部控制</string>
+    <string name="category_search">搜索</string>
+    <string name="setting_search_server_title">搜索服务器</string>
+    <string name="setting_search_server_description">用于地图地址搜索的 Photon 兼容服务器。默认：https://photon.komoot.io</string>
+    <string name="setting_search_server_label">服务器 URL</string>
+    <string name="setting_search_server_invalid">请输入有效的 http 或 https URL</string>
     <string name="category_system_hooks">系统级 Hook</string>
     <string name="category_wifi_identity">Wi-Fi 身份</string>
     <string name="category_location">位置</string>
@@ -174,6 +179,13 @@
     <string name="override_off">关闭</string>
 
     <string name="map_go_to_point">前往坐标点</string>
+    <string name="cd_search_address">搜索地址</string>
+    <string name="map_search_hint">搜索地址或地点</string>
+    <string name="map_search_no_results">无结果</string>
+    <string name="map_search_error_network">无法连接搜索服务器</string>
+    <string name="map_search_error_parse">搜索服务器返回了意外的响应</string>
+    <string name="map_search_attribution">搜索：Photon · © OpenStreetMap 贡献者</string>
+    <string name="action_retry">重试</string>
     <string name="map_add_to_favorites">添加到收藏</string>
     <string name="map_add_to_templates">添加到模板</string>
     <string name="map_update_template_location">更新模板位置</string>

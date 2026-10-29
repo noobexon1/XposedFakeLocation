@@ -13,6 +13,7 @@ import com.noobexon.xposedfakelocation.data.DEFAULT_ALTITUDE
 import com.noobexon.xposedfakelocation.data.DEFAULT_ENABLE_BROADCAST_CONTROL
 import com.noobexon.xposedfakelocation.data.DEFAULT_ENABLE_SYSTEM_HOOKS
 import com.noobexon.xposedfakelocation.data.DEFAULT_ENABLE_WIFI_IDENTITY
+import com.noobexon.xposedfakelocation.data.DEFAULT_GEOCODING_SERVER_URL
 import com.noobexon.xposedfakelocation.data.DEFAULT_HIDE_FAKE_LOCATION_TOAST
 import com.noobexon.xposedfakelocation.data.DEFAULT_LANGUAGE_TAG
 import com.noobexon.xposedfakelocation.data.DEFAULT_MAP_ZOOM
@@ -42,6 +43,7 @@ import com.noobexon.xposedfakelocation.data.KEY_ENABLE_BROADCAST_CONTROL
 import com.noobexon.xposedfakelocation.data.KEY_ENABLE_SYSTEM_HOOKS
 import com.noobexon.xposedfakelocation.data.KEY_ENABLE_WIFI_IDENTITY
 import com.noobexon.xposedfakelocation.data.KEY_FAVORITES
+import com.noobexon.xposedfakelocation.data.KEY_GEOCODING_SERVER_URL
 import com.noobexon.xposedfakelocation.data.KEY_HIDE_FAKE_LOCATION_TOAST
 import com.noobexon.xposedfakelocation.data.KEY_IS_PLAYING
 import com.noobexon.xposedfakelocation.data.KEY_JOYSTICK_MAX_SPEED
@@ -96,6 +98,7 @@ import com.noobexon.xposedfakelocation.data.model.MapMode
 import com.noobexon.xposedfakelocation.data.model.Route
 import com.noobexon.xposedfakelocation.data.model.RouteDraft
 import com.noobexon.xposedfakelocation.data.model.RouteJson
+import com.noobexon.xposedfakelocation.data.normalizeServerUrl
 import com.noobexon.xposedfakelocation.data.normalizeWifiSsid
 import com.noobexon.xposedfakelocation.manager.App
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -591,6 +594,17 @@ class PreferencesRepository(context: Context) {
         putInt(KEY_ROUTE_OVERLAY_X, x)
         putInt(KEY_ROUTE_OVERLAY_Y, y)
     }
+    // endregion
+    // region Geocoding server (local)
+    fun getGeocodingServerUrlFlow(): Flow<String> = localFlow(KEY_GEOCODING_SERVER_URL, ::readGeocodingServerUrl)
+
+    fun getGeocodingServerUrl(): String = readGeocodingServerUrl(localPrefs)
+
+    suspend fun saveGeocodingServerUrl(url: String) = editLocal { putString(KEY_GEOCODING_SERVER_URL, url) }
+
+    /** A missing or invalid stored URL (e.g. hand-edited prefs) falls back to the default server. */
+    private fun readGeocodingServerUrl(prefs: SharedPreferences): String =
+        normalizeServerUrl(prefs.getString(KEY_GEOCODING_SERVER_URL, null)) ?: DEFAULT_GEOCODING_SERVER_URL
     // endregion
     // region Map Zoom (local)
     fun getMapZoom(): Double {

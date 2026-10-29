@@ -22,6 +22,7 @@ import com.noobexon.xposedfakelocation.data.DEFAULT_ALTITUDE
 import com.noobexon.xposedfakelocation.data.DEFAULT_ENABLE_BROADCAST_CONTROL
 import com.noobexon.xposedfakelocation.data.DEFAULT_ENABLE_SYSTEM_HOOKS
 import com.noobexon.xposedfakelocation.data.DEFAULT_ENABLE_WIFI_IDENTITY
+import com.noobexon.xposedfakelocation.data.DEFAULT_GEOCODING_SERVER_URL
 import com.noobexon.xposedfakelocation.data.DEFAULT_HIDE_FAKE_LOCATION_TOAST
 import com.noobexon.xposedfakelocation.data.DEFAULT_JOYSTICK_MAX_SPEED
 import com.noobexon.xposedfakelocation.data.DEFAULT_JOYSTICK_PRESET_BIKE
@@ -50,6 +51,7 @@ import com.noobexon.xposedfakelocation.data.DEFAULT_WIFI_SSID
 import com.noobexon.xposedfakelocation.data.MAX_WIFI_RSSI
 import com.noobexon.xposedfakelocation.data.MIN_WIFI_RSSI
 import com.noobexon.xposedfakelocation.data.SYSTEM_HOOK_PACKAGES
+import com.noobexon.xposedfakelocation.data.normalizeServerUrl
 import com.noobexon.xposedfakelocation.data.repository.PreferencesRepository
 import com.noobexon.xposedfakelocation.manager.App
 import com.noobexon.xposedfakelocation.manager.control.ControlReceiver
@@ -316,6 +318,14 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         preferencesRepository::saveEnableBroadcastControl
     )
 
+    // ---- Address search (local) -------------------------------------------------------------
+
+    private val _geocodingServerUrl = Preference(
+        DEFAULT_GEOCODING_SERVER_URL,
+        preferencesRepository.getGeocodingServerUrlFlow(),
+        preferencesRepository::saveGeocodingServerUrl
+    )
+
     // ---- Joystick (local) --------------------------------------------------------------------
 
     /** Joystick configuration; speeds in m/s. */
@@ -413,6 +423,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         .combine(_wifiRssi.state)                { s, v -> s.copy(wifiRssi = v) }
         .combine(_languageTag.state)             { s, v -> s.copy(languageTag = v) }
         .combine(_themeOption.state)             { s, v -> s.copy(themeOption = ThemeOption.fromTag(v)) }
+        .combine(_geocodingServerUrl.state)      { s, v -> s.copy(geocodingServerUrl = v) }
         .stateIn(viewModelScope, SharingStarted.Eagerly, SettingsUiState())
 
     // ---- Setters -----------------------------------------------------------------------------
@@ -618,6 +629,14 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     /** Resets the Wi-Fi RSSI row value to its default. */
     fun resetWifiRssi() = setWifiRssi(DEFAULT_WIFI_RSSI.toString())
 
+    /** Saves [value] if it is a valid http(s) URL; the settings row blocks invalid input. */
+    fun setGeocodingServerUrl(value: String) {
+        normalizeServerUrl(value)?.let(_geocodingServerUrl::set)
+    }
+
+    /** Resets the search server to the public Photon instance. */
+    fun resetGeocodingServerUrl() = setGeocodingServerUrl(DEFAULT_GEOCODING_SERVER_URL)
+
     /**
      * Restores every spoofing and behavioural preference to its constant default value (see
      * `data/Constants.kt`). Unlike the per-row reset icons (which only clear a value), this bulk
@@ -653,6 +672,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         resetWifiBssid()
         resetWifiRssi()
         setEnableBroadcastControl(DEFAULT_ENABLE_BROADCAST_CONTROL)
+        resetGeocodingServerUrl()
         JoystickSettings().let { defaults ->
             setJoystickMode(defaults.mode)
             setJoystickSelectedPreset(defaults.selectedPreset)
@@ -758,6 +778,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             ),
             joystick = JoystickBackup.from(preferencesRepository.getJoystickSettings()),
             routes = preferencesRepository.getRoutes(),
+            geocodingServerUrl = ui.geocodingServerUrl,
         )
     }
 

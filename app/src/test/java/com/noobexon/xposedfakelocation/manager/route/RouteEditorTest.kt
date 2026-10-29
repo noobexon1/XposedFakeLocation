@@ -5,6 +5,7 @@ import com.noobexon.xposedfakelocation.data.model.RoutePoint
 import com.noobexon.xposedfakelocation.data.model.SegmentSettings
 import com.noobexon.xposedfakelocation.data.model.segmentKey
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertSame
 import org.junit.Test
 
@@ -77,5 +78,34 @@ class RouteEditorTest {
         )
         assertEquals(r.segments, RouteEditor.pruneSegments(r).segments)
         assertEquals(emptyMap<String, SegmentSettings>(), RouteEditor.pruneSegments(r.copy(loop = false)).segments)
+    }
+
+    @Test
+    fun appendStoresSanitizedLabel() {
+        val updated = RouteEditor.append(route("a"), 5.0, 6.0, "b", label = "  Dizengoff Center ")
+        assertEquals("Dizengoff Center", updated.points.last().label)
+    }
+
+    @Test
+    fun appendTreatsBlankLabelAsNone() {
+        assertNull(RouteEditor.append(route("a"), 5.0, 6.0, "b", label = "   ").points.last().label)
+    }
+
+    @Test
+    fun moveClearsLabel() {
+        val labeled = RouteEditor.append(route("a"), 1.0, 1.0, "b", label = "Home")
+        assertNull(RouteEditor.move(labeled, "b", 2.0, 2.0).points.last().label)
+    }
+
+    @Test
+    fun reorderKeepsLabel() {
+        val labeled = RouteEditor.append(route("a"), 1.0, 1.0, "b", label = "Home")
+        assertEquals("Home", RouteEditor.setOrder(labeled, listOf("b", "a")).points.first().label)
+    }
+
+    @Test
+    fun longLabelIsCapped() {
+        val updated = RouteEditor.append(route("a"), 1.0, 1.0, "b", label = "x".repeat(250))
+        assertEquals(200, updated.points.last().label!!.length)
     }
 }

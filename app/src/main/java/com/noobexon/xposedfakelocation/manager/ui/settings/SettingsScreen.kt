@@ -94,6 +94,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.noobexon.xposedfakelocation.R
 import com.noobexon.xposedfakelocation.data.MPS_TO_KMH
+import com.noobexon.xposedfakelocation.data.normalizeServerUrl
 import com.noobexon.xposedfakelocation.data.model.JoystickMode
 import com.noobexon.xposedfakelocation.data.model.JoystickPreset
 import com.noobexon.xposedfakelocation.manager.localization.LanguageOption
@@ -248,6 +249,19 @@ fun SettingsScreen(
         },
         SettingsCategory.EXTERNAL_CONTROL to listOf(
             SettingEntry.Switch(SettingKeys.BROADCAST, R.string.setting_external_broadcast_title, R.string.setting_external_broadcast_description, uiState.enableBroadcastControl, settingsViewModel::setEnableBroadcastControl)
+        ),
+        SettingsCategory.SEARCH to listOf(
+            SettingEntry.Text(
+                key = SettingKeys.SEARCH_SERVER,
+                titleRes = R.string.setting_search_server_title,
+                descriptionRes = R.string.setting_search_server_description,
+                labelRes = R.string.setting_search_server_label,
+                value = uiState.geocodingServerUrl,
+                inputKind = TextInputKind.URL,
+                onValueChange = settingsViewModel::setGeocodingServerUrl,
+                onReset = settingsViewModel::resetGeocodingServerUrl,
+                errorRes = { if (normalizeServerUrl(it) == null) R.string.setting_search_server_invalid else null },
+            )
         ),
         SettingsCategory.APPEARANCE to listOf(
             SettingEntry.Theme(uiState.themeOption) { option ->
@@ -652,7 +666,8 @@ private fun SettingEntryRow(entry: SettingEntry) {
             value = entry.value,
             inputKind = entry.inputKind,
             onValueChange = entry.onValueChange,
-            onReset = entry.onReset
+            onReset = entry.onReset,
+            errorRes = entry.errorRes
         )
         is SettingEntry.Language -> LanguageSettingItem(
             selectedLanguage = entry.selected,
@@ -1165,7 +1180,8 @@ private fun TextSettingItem(
     value: String,
     inputKind: TextInputKind,
     onValueChange: (String) -> Unit,
-    onReset: (() -> Unit)? = null
+    onReset: (() -> Unit)? = null,
+    errorRes: (String) -> Int? = { null }
 ) {
     val focusManager = LocalFocusManager.current
     var showTooltip by remember { mutableStateOf(false) }
@@ -1186,21 +1202,30 @@ private fun TextSettingItem(
             description = description,
             showTooltip = showTooltip,
             onToggleTooltip = { showTooltip = !showTooltip },
-            onReset = onReset,
+            // If the stored value is already the default, `value` won't change, so resync here too.
+            onReset = onReset?.let { reset -> { text = value; reset() } },
             trailing = {}
         )
 
         Spacer(modifier = Modifier.height(Dimensions.SPACING_SMALL))
 
+        val error = errorRes(text)
         OutlinedTextField(
             value = text,
             onValueChange = { text = it },
             label = { Text(label) },
             singleLine = true,
+            isError = error != null,
+            supportingText = if (error != null) {
+                { Text(stringResource(error)) }
+            } else {
+                null
+            },
             keyboardOptions = KeyboardOptions(
                 keyboardType = when (inputKind) {
                     TextInputKind.TEXT -> KeyboardType.Text
                     TextInputKind.SIGNED_NUMBER -> KeyboardType.Text
+                    TextInputKind.URL -> KeyboardType.Uri
                 },
                 imeAction = ImeAction.Done
             ),
@@ -1210,7 +1235,7 @@ private fun TextSettingItem(
                 .onFocusChanged { focusState ->
                     if (focusState.isFocused) {
                         hasFocused = true
-                    } else if (hasFocused) {
+                    } else if (hasFocused && errorRes(text) == null) {
                         onValueChange(text)
                     }
                 }

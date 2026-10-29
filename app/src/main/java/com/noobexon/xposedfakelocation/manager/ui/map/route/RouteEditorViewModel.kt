@@ -99,7 +99,8 @@ class RouteEditorViewModel(application: Application) : AndroidViewModel(applicat
         repository.saveRouteDraft(updated)
     }
 
-    fun addPoint(point: GeoPoint) = edit { RouteEditor.append(it, point.latitude, point.longitude, newId()) }
+    fun addPoint(point: GeoPoint, label: String? = null) =
+        edit { RouteEditor.append(it, point.latitude, point.longitude, newId(), label) }
     fun movePoint(id: String, point: GeoPoint) = edit { RouteEditor.move(it, id, point.latitude, point.longitude) }
     fun deletePoint(id: String) = edit { RouteEditor.delete(it, id) }
     fun moveEarlier(id: String) = edit { RouteEditor.moveEarlier(it, id) }

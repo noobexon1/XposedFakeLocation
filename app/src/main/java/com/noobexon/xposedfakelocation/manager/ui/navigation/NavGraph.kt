@@ -2,17 +2,24 @@ package com.noobexon.xposedfakelocation.manager.ui.navigation
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import com.noobexon.xposedfakelocation.BuildConfig
 import com.noobexon.xposedfakelocation.data.model.MapMode
+import com.noobexon.xposedfakelocation.data.repository.PreferencesRepository
+import com.noobexon.xposedfakelocation.manager.geo.ConfiguredGeocodingClient
+import com.noobexon.xposedfakelocation.manager.geo.photonLanguage
+import com.noobexon.xposedfakelocation.manager.localization.LocaleController
 import com.noobexon.xposedfakelocation.manager.ui.about.AboutScreen
 import com.noobexon.xposedfakelocation.manager.ui.favorites.FavoritesScreen
 import com.noobexon.xposedfakelocation.manager.ui.favorites.FavoritesTab
 import com.noobexon.xposedfakelocation.manager.ui.map.MapScreen
 import com.noobexon.xposedfakelocation.manager.ui.map.MapViewModel
 import com.noobexon.xposedfakelocation.manager.ui.map.route.RouteEditorViewModel
+import com.noobexon.xposedfakelocation.manager.ui.map.search.AddressSearchViewModel
 import com.noobexon.xposedfakelocation.manager.ui.permissions.PermissionsScreen
 import com.noobexon.xposedfakelocation.manager.ui.settings.SettingsScreen
 import com.noobexon.xposedfakelocation.manager.ui.targetapps.TargetAppsScreen
@@ -24,6 +31,17 @@ fun AppNavGraph(
 ) {
     val mapViewModel: MapViewModel = viewModel()
     val routeEditorViewModel: RouteEditorViewModel = viewModel()
+    val addressSearchViewModel: AddressSearchViewModel = viewModel {
+        val app = this[ViewModelProvider.AndroidViewModelFactory.APPLICATION_KEY]!!
+        val repository = PreferencesRepository(app)
+        AddressSearchViewModel(
+            ConfiguredGeocodingClient(
+                serverUrl = repository::getGeocodingServerUrl,
+                language = { photonLanguage(LocaleController.attachBaseContext(app).resources.configuration.locales[0]) },
+                userAgent = "XposedFakeLocation/${BuildConfig.VERSION_NAME}",
+            )
+        )
+    }
 
     NavHost(
         navController = navController,
@@ -47,7 +65,7 @@ fun AppNavGraph(
             )
         }
         composable(route = Screen.Map.route) {
-            MapScreen(navController = navController, mapViewModel, routeEditorViewModel)
+            MapScreen(navController = navController, mapViewModel, routeEditorViewModel, addressSearchViewModel)
         }
         composable(route = Screen.Permissions.route) {
             PermissionsScreen(navController = navController)
