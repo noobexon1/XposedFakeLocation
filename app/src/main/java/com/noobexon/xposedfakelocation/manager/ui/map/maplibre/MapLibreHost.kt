@@ -37,6 +37,8 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.noobexon.xposedfakelocation.R
+import com.noobexon.xposedfakelocation.data.model.Route
+import com.noobexon.xposedfakelocation.manager.route.RoadFailure
 import com.noobexon.xposedfakelocation.manager.ui.map.LoadingSpinner
 import com.noobexon.xposedfakelocation.manager.ui.map.MapZoom
 import kotlinx.coroutines.awaitCancellation
@@ -62,16 +64,26 @@ internal fun MapLibreHost(
     isLoading: Boolean,
     lastClickedLocation: GeoPoint?,
     userLocation: GeoPoint?,
+    isPlaying: Boolean,
     mapZoom: Double?,
     hasResolvedInitialLocation: Boolean,
     goToPointEvent: Flow<GeoPoint>,
     centerMapEvent: Flow<Unit>,
-    cameraMoveEvent: Flow<GeoPoint>,
     onClickedLocationChange: (GeoPoint?) -> Unit,
     onUserLocationChange: (GeoPoint) -> Unit,
     onMapZoomChange: (Double) -> Unit,
     onLoadingFinished: () -> Unit,
     onInitialLocationResolved: () -> Unit,
+    routeMode: Boolean,
+    route: Route?,
+    routeEditable: Boolean,
+    roadFailures: Map<String, RoadFailure>,
+    fitRouteEvent: Flow<Unit>,
+    onRouteTap: (GeoPoint) -> Unit,
+    onRoutePointTap: (String) -> Unit,
+    onRoutePointMoved: (String, GeoPoint) -> Unit,
+    onRouteSegmentTap: (String, String) -> Unit,
+    cameraMoveEvent: Flow<GeoPoint>,
     onMapCenterChange: (GeoPoint) -> Unit,
     onVisibleAreaChange: (VisibleArea) -> Unit,
     onUseOsmdroid: () -> Unit,
@@ -118,6 +130,8 @@ internal fun MapLibreHost(
     }
 
     val currentMap = map
+    // Before ActivateBlueDot: both run when the first style loads, and the blue dot must be added last (on top).
+    val layers = rememberMapLibreLayers(mapView, currentMap, style)
     if (currentMap != null) {
         ActivateBlueDot(currentMap, style)
         HandleMapLibreCameraEvents(currentMap, goToPointEvent, centerMapEvent, cameraMoveEvent, onClickedLocationChange)
@@ -135,7 +149,23 @@ internal fun MapLibreHost(
             onPositioned = { positioned = true },
         )
         ReportMapLibreCamera(currentMap, positioned, onMapCenterChange, onVisibleAreaChange)
+        MapLibreTapHandler(
+            map = currentMap,
+            layers = layers,
+            isPlaying = isPlaying,
+            routeMode = routeMode,
+            editable = routeEditable,
+            onClickedLocationChange = onClickedLocationChange,
+            onRouteTap = onRouteTap,
+            onPointTap = onRoutePointTap,
+            onPointMoved = onRoutePointMoved,
+            onSegmentTap = onRouteSegmentTap,
+        )
+        HandleMapLibreFitRoute(currentMap, route, fitRouteEvent)
     }
+    val markerLocation = if (routeMode && !isPlaying) null else lastClickedLocation
+    MapLibreSpoofMarker(currentMap, layers, style, markerLocation)
+    MapLibreRouteEffect(layers, style, route.takeIf { routeMode }, routeEditable, roadFailures)
 
     Box(modifier = Modifier.fillMaxSize()) {
         AndroidView(factory = { mapView }, modifier = Modifier.fillMaxSize())
