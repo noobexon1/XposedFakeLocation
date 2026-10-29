@@ -380,6 +380,9 @@
     <string name="offline_download_waiting">Warte auf Netzwerk</string>
     <string name="offline_download_done">%1$s ist offline verfügbar</string>
     <string name="offline_download_failed">Download fehlgeschlagen: %1$s</string>
+    <string name="offline_download_problem">Problem: %1$s. Wird weiter versucht.</string>
+    <string name="offline_error_unknown">Unbekannter Fehler</string>
+    <string name="offline_error_tile_limit">das Gebiet braucht mehr als %1$d Kacheln</string>
     <string name="setting_offline_areas_title">Offline-Gebiete</string>
     <string name="setting_offline_areas_description">Für die Nutzung ohne Verbindung heruntergeladene Kartenbereiche. Wird von der MapLibre-Karte verwendet.</string>
     <string name="offline_areas_empty">Noch keine Offline-Gebiete. Öffne auf der MapLibre-Karte ⋮ und tippe auf „Diesen Bereich herunterladen“.</string>

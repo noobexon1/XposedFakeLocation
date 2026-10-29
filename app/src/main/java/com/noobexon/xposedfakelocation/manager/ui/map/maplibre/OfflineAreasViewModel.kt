@@ -4,6 +4,7 @@ import android.app.Application
 import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.noobexon.xposedfakelocation.R
 import com.noobexon.xposedfakelocation.data.model.OfflineAreaMetadata
 import com.noobexon.xposedfakelocation.data.model.OfflineAreaMetadataCodec
 import kotlinx.coroutines.channels.Channel
@@ -27,6 +28,8 @@ data class OfflineDownload(
     val name: String,
     val percent: Int = 0,
     val waitingForNetwork: Boolean = false,
+    /** The last download error other than a lost connection; cleared once progress resumes. */
+    val problem: String? = null,
 )
 
 /** Stored offline areas and the running download. [available] is `false` when MapLibre can't run. */
@@ -110,7 +113,7 @@ class OfflineAreasViewModel(application: Application) : AndroidViewModel(applica
                 fail(areaId, e.message)
                 return@launch
             } finally {
-                creatingAreaId = null
+                if (creatingAreaId == areaId) creatingAreaId = null
             }
             publish()
         }
@@ -136,6 +139,7 @@ class OfflineAreasViewModel(application: Application) : AndroidViewModel(applica
         val targets = regions.values.filter { areaKeyOf(it) == areaKey }
         targets.forEach { region ->
             region.setDownloadState(OfflineRegion.STATE_INACTIVE)
+            region.setObserver(null)
             regions.remove(region.id)
             downloading.remove(region.id)
             stored.remove(region.id)
@@ -168,6 +172,7 @@ class OfflineAreasViewModel(application: Application) : AndroidViewModel(applica
                 var update = status.toStored(region)
                 if (status.isComplete) {
                     region.setDownloadState(OfflineRegion.STATE_INACTIVE)
+                    region.setObserver(null)
                     downloading.remove(region.id)
                     update = update.copy(active = false)
                 }
@@ -181,14 +186,17 @@ class OfflineAreasViewModel(application: Application) : AndroidViewModel(applica
                     publish(waitingForNetwork = true)
                 } else {
                     Log.w(TAG, "Offline download error ${error.reason}: ${error.message}")
+                    publish(problem = error.message?.takeIf { it.isNotBlank() } ?: error.reason)
                 }
             }
 
             override fun mapboxTileCountLimitExceeded(limit: Long) {
+                if (region.id !in regions) return
                 region.setDownloadState(OfflineRegion.STATE_INACTIVE)
+                region.setObserver(null)
                 downloading.remove(region.id)
                 stored[region.id]?.let { stored[region.id] = it.copy(active = false) }
-                _events.trySend(OfflineAreasEvent.Failed("Tile limit $limit exceeded"))
+                failed(getApplication<Application>().getString(R.string.offline_error_tile_limit, limit))
                 publish()
             }
         })
@@ -200,15 +208,18 @@ class OfflineAreasViewModel(application: Application) : AndroidViewModel(applica
     }
 
     /** Recomputes the areas and the map's download card. */
-    private fun publish(waitingForNetwork: Boolean? = null) {
+    private fun publish(waitingForNetwork: Boolean? = null, problem: String? = null) {
         val areas = groupOfflineAreas(stored.values.toList())
         val download = _state.value.download?.let { current ->
             val status = areas.firstOrNull { it.key == current.areaId }?.status
             val waiting = waitingForNetwork ?: current.waitingForNetwork
+            val percent = (status as? OfflineAreaStatus.Downloading)?.percent ?: current.percent
+            val shownProblem = problem ?: current.problem.takeIf { percent <= current.percent }
             when {
                 current.areaId == creatingAreaId ->
-                    current.copy(percent = (status as? OfflineAreaStatus.Downloading)?.percent ?: current.percent, waitingForNetwork = waiting)
-                status is OfflineAreaStatus.Downloading -> current.copy(percent = status.percent, waitingForNetwork = waiting)
+                    current.copy(percent = percent, waitingForNetwork = waiting, problem = shownProblem)
+                status is OfflineAreaStatus.Downloading ->
+                    current.copy(percent = percent, waitingForNetwork = waiting, problem = shownProblem)
                 status is OfflineAreaStatus.Complete -> {
                     _events.trySend(OfflineAreasEvent.Finished(current.name))
                     null
@@ -220,17 +231,26 @@ class OfflineAreasViewModel(application: Application) : AndroidViewModel(applica
     }
 
     private fun fail(areaId: String, message: String?) {
-        _events.trySend(OfflineAreasEvent.Failed(message.orEmpty()))
+        failed(message)
         if (_state.value.download?.areaId == areaId) _state.update { it.copy(download = null) }
         delete(areaId)
+    }
+
+    private fun failed(message: String?) {
+        val text = message?.takeIf { it.isNotBlank() } ?: getApplication<Application>().getString(R.string.offline_error_unknown)
+        _events.trySend(OfflineAreasEvent.Failed(text))
     }
 
     private suspend fun reporting(block: suspend () -> Unit) {
         try {
             block()
         } catch (e: OfflineAreaException) {
-            _events.trySend(OfflineAreasEvent.Failed(e.message.orEmpty()))
+            failed(e.message)
         }
+    }
+
+    override fun onCleared() {
+        downloading.values.forEach { it.setObserver(null) }
     }
 
     private fun areaKeyOf(region: OfflineRegion): String =

@@ -76,6 +76,14 @@ internal fun OfflineDownloadCard(download: OfflineDownload, onCancel: () -> Unit
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
+                } else if (download.problem != null) {
+                    Text(
+                        text = stringResource(R.string.offline_download_problem, download.problem),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                    )
                 }
                 LinearProgressIndicator(
                     progress = { download.percent / 100f },
