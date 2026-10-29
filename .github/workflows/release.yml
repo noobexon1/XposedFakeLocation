@@ -1,8 +1,8 @@
 name: Build & attach release APK
 
 # Triggered when you publish a GitHub Release (with your own notes).
-# CI builds the debug APK, versions it from the release tag, signs it with
-# your debug keystore, and attaches XposedFakeLocation.apk to the release.
+# CI builds the release APK (R8-shrunk), versions it from the release tag, signs it
+# with your debug keystore, and attaches XposedFakeLocation.apk to the release.
 on:
   release:
     types: [published]
@@ -43,11 +43,11 @@ jobs:
       - name: Make gradlew executable
         run: chmod +x ./gradlew
 
-      - name: Build debug APK
-        run: ./gradlew --no-daemon assembleDebug -PappVersionName="$TAG"
+      - name: Build release APK
+        run: ./gradlew --no-daemon assembleRelease -PappVersionName="$TAG"
 
       - name: Rename APK
-        run: cp app/build/outputs/apk/debug/app-debug.apk "$APK_NAME"
+        run: cp app/build/outputs/apk/release/app-release.apk "$APK_NAME"
 
       - name: Check version in APK
         run: |

@@ -12,7 +12,6 @@ osmdroidAndroid = "6.1.20"
 materialIconsExtended = "1.7.8"
 lifecycleViewmodelCompose = "2.8.6"
 lineAwesomeAndroid = "1.1.1"
-fontAwesome = "1.0.0"
 navigationCompose = "2.9.8"
 gson = "2.14.0"
 hiddenapibypass = "6.1"
@@ -45,7 +44,6 @@ androidx-material-icons-extended = { group = "androidx.compose.material", name =
 androidx-lifecycle-viewmodel-compose = { group = "androidx.lifecycle", name = "lifecycle-viewmodel-compose", version.ref = "lifecycleViewmodelCompose" }
 androidx-lifecycle-service = { group = "androidx.lifecycle", name = "lifecycle-service", version.ref = "lifecycleViewmodelCompose" }
 line-awesome-android = { group = "br.com.devsrsouza.compose.icons", name = "line-awesome-android", version.ref = "lineAwesomeAndroid" }
-font-awesome = { group = "br.com.devsrsouza.compose.icons.android", name = "font-awesome", version.ref = "fontAwesome" }
 androidx-navigation-compose = { group = "androidx.navigation", name = "navigation-compose", version.ref = "navigationCompose" }
 gson = { group = "com.google.code.gson", name = "gson", version.ref = "gson" }
 hiddenapibypass = { group = "org.lsposed.hiddenapibypass", name = "hiddenapibypass", version.ref = "hiddenapibypass" }

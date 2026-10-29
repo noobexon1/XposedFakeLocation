@@ -42,3 +42,6 @@
 # field names must not be renamed (otherwise JSON keys change and parsing breaks).
 # ---------------------------------------------------------------------------
 -keep class com.noobexon.xposedfakelocation.data.model.** { *; }
+
+# GitHub contributors response, parsed with Gson in the About screen.
+-keep class com.noobexon.xposedfakelocation.manager.ui.about.AboutViewModel$GithubContributor { *; }
