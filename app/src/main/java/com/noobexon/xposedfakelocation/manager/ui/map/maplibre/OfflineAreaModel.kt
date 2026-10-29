@@ -49,7 +49,7 @@ fun estimateTileCount(bounds: AreaBounds, minZoom: Int, maxZoom: Int): Long {
         val n = 1 shl zoom
         val west = tileX(bounds.west, n)
         val east = tileX(bounds.east, n)
-        val columns = if (bounds.west <= bounds.east) east - west + 1 else (n - west) + east + 1
+        val columns = if (bounds.west <= bounds.east) east - west + 1 else ((n - west) + east + 1).coerceAtMost(n)
         val rows = tileY(bounds.south, n) - tileY(bounds.north, n) + 1
         total += columns.toLong() * rows
     }
