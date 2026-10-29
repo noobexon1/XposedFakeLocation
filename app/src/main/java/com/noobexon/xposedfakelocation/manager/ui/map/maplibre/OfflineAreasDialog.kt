@@ -11,6 +11,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
@@ -38,12 +39,13 @@ import java.util.Date
 
 private const val DOWNLOAD_POLL_MS = 1_000L
 
-/** Lists the stored offline areas with their size, date, source and status; resume or delete them. */
+/** Lists the stored offline areas with their size, date, source and status; resume, rename or delete them. */
 @Composable
 internal fun OfflineAreasDialog(onDismiss: () -> Unit, viewModel: OfflineAreasViewModel = activityOfflineAreasViewModel()) {
     val context = LocalContext.current
     val state by viewModel.state.collectAsStateWithLifecycle()
     var pendingDelete by remember { mutableStateOf<OfflineArea?>(null) }
+    var pendingRename by remember { mutableStateOf<OfflineArea?>(null) }
 
     LaunchedEffect(viewModel) {
         viewModel.refresh()
@@ -84,6 +86,7 @@ internal fun OfflineAreasDialog(onDismiss: () -> Unit, viewModel: OfflineAreasVi
                             OfflineAreaRow(
                                 area = area,
                                 onResume = { viewModel.resume(area.key) },
+                                onRename = { pendingRename = area },
                                 onDelete = { pendingDelete = area },
                             )
                         }
@@ -95,6 +98,19 @@ internal fun OfflineAreasDialog(onDismiss: () -> Unit, viewModel: OfflineAreasVi
             TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_ok)) }
         },
     )
+
+    pendingRename?.let { area ->
+        OfflineAreaNameDialog(
+            initialName = area.name.orEmpty(),
+            onConfirm = { name ->
+                viewModel.rename(area.key, name)
+                pendingRename = null
+            },
+            onDismiss = { pendingRename = null },
+            titleRes = R.string.offline_area_rename_title,
+            confirmRes = R.string.action_save,
+        )
+    }
 
     pendingDelete?.let { area ->
         val name = area.name ?: stringResource(R.string.offline_area_unknown)
@@ -116,7 +132,7 @@ internal fun OfflineAreasDialog(onDismiss: () -> Unit, viewModel: OfflineAreasVi
 }
 
 @Composable
-private fun OfflineAreaRow(area: OfflineArea, onResume: () -> Unit, onDelete: () -> Unit) {
+private fun OfflineAreaRow(area: OfflineArea, onResume: () -> Unit, onRename: () -> Unit, onDelete: () -> Unit) {
     val context = LocalContext.current
     val name = area.name ?: stringResource(R.string.offline_area_unknown)
     val details = listOfNotNull(
@@ -144,6 +160,11 @@ private fun OfflineAreaRow(area: OfflineArea, onResume: () -> Unit, onDelete: ()
         }
         if (area.status == OfflineAreaStatus.Incomplete) {
             TextButton(onClick = onResume) { Text(stringResource(R.string.offline_area_resume)) }
+        }
+        if (area.name != null) {
+            IconButton(onClick = onRename) {
+                Icon(Icons.Default.Edit, contentDescription = stringResource(R.string.cd_rename_named_item, name))
+            }
         }
         IconButton(onClick = onDelete) {
             Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.cd_delete_named_item, name))

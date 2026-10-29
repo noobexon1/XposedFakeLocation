@@ -27,6 +27,14 @@ fun buildSearchUrl(
     language?.let { append("&lang=").append(it) }
 }
 
+/** The Photon `/reverse` request URL for the place at [at], localized to [language]. */
+fun buildReverseUrl(serverUrl: String, at: LatLon, language: String?): String = buildString {
+    append(serverUrl.trimEnd('/'))
+    append("/reverse?lat=").append(at.latitude).append("&lon=").append(at.longitude)
+    append("&limit=1")
+    language?.let { append("&lang=").append(it) }
+}
+
 /** Photon's `lang` value for [locale], or `null` so Photon returns local names. */
 fun photonLanguage(locale: Locale): String? = locale.language.takeIf { it in PHOTON_LANGUAGES }
 
@@ -36,8 +44,13 @@ class PhotonGeocodingClient(
     private val language: String?,
     private val userAgent: String,
 ) : GeocodingClient {
-    override suspend fun search(query: String, near: LatLon?): List<Place> = withContext(Dispatchers.IO) {
-        val url = buildSearchUrl(serverUrl, query, near, language)
+    override suspend fun search(query: String, near: LatLon?): List<Place> =
+        fetch(buildSearchUrl(serverUrl, query, near, language))
+
+    override suspend fun reverse(at: LatLon): Place? =
+        fetch(buildReverseUrl(serverUrl, at, language)).firstOrNull()
+
+    private suspend fun fetch(url: String): List<Place> = withContext(Dispatchers.IO) {
         var connection: HttpURLConnection? = null
         try {
             connection = URL(url).openConnection() as? HttpURLConnection
@@ -71,4 +84,7 @@ class ConfiguredGeocodingClient(
 ) : GeocodingClient {
     override suspend fun search(query: String, near: LatLon?): List<Place> =
         PhotonGeocodingClient(serverUrl(), language(), userAgent).search(query, near)
+
+    override suspend fun reverse(at: LatLon): Place? =
+        PhotonGeocodingClient(serverUrl(), language(), userAgent).reverse(at)
 }

@@ -66,6 +66,7 @@ import com.noobexon.xposedfakelocation.manager.ui.map.maplibre.activityOfflineAr
 import com.noobexon.xposedfakelocation.manager.ui.map.maplibre.OfflineDownloadCard
 import com.noobexon.xposedfakelocation.manager.ui.map.maplibre.VisibleArea
 import com.noobexon.xposedfakelocation.manager.ui.map.maplibre.estimateTileCount
+import com.noobexon.xposedfakelocation.manager.ui.map.maplibre.offlineAreaName
 import com.noobexon.xposedfakelocation.manager.ui.map.maplibre.offlineStyles
 import com.noobexon.xposedfakelocation.manager.ui.map.maplibre.offlineZoomRange
 import com.noobexon.xposedfakelocation.manager.ui.map.route.MapModeSwitch
@@ -489,8 +490,13 @@ fun MapScreen(
         }
 
         pendingDownload?.let { area ->
+            var placeName by remember(area) { mutableStateOf<String?>(null) }
+            LaunchedEffect(area) {
+                placeName = addressSearchViewModel.placeAt(LatLon(area.centerLatitude, area.centerLongitude))?.let(::offlineAreaName)
+            }
             OfflineAreaNameDialog(
                 initialName = String.format(Locale.US, "%.4f, %.4f", area.centerLatitude, area.centerLongitude),
+                suggestedName = placeName,
                 onConfirm = { name ->
                     offlineViewModel.startDownload(name, area, offlineStyles(mapStyleUrl), pixelRatio)
                     pendingDownload = null

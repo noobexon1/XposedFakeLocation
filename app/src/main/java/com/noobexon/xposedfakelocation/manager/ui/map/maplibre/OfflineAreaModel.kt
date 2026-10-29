@@ -1,10 +1,12 @@
 package com.noobexon.xposedfakelocation.manager.ui.map.maplibre
 
+import com.noobexon.xposedfakelocation.data.OFFLINE_AREA_NAME_MAX_LENGTH
 import com.noobexon.xposedfakelocation.data.OFFLINE_MAX_ZOOM
 import com.noobexon.xposedfakelocation.data.OPENFREEMAP_DARK_STYLE_URL
 import com.noobexon.xposedfakelocation.data.OPENFREEMAP_LIGHT_STYLE_URL
 import com.noobexon.xposedfakelocation.data.model.OfflineAreaMetadata
 import com.noobexon.xposedfakelocation.data.model.OfflineAreaStyle
+import com.noobexon.xposedfakelocation.manager.geo.Place
 import java.net.URI
 import java.net.URISyntaxException
 import kotlin.math.PI
@@ -130,6 +132,13 @@ fun groupOfflineAreas(regions: List<StoredRegion>): List<OfflineArea> =
 /** [completed] out of [required] as 0..100; 0 while the total is unknown. */
 fun downloadPercent(completed: Long, required: Long): Int =
     if (required <= 0) 0 else (completed * 100 / required).toInt().coerceIn(0, 100)
+
+/** A default area name from [place]: its title and the first part of its subtitle (usually the city). */
+fun offlineAreaName(place: Place): String =
+    listOfNotNull(place.title, place.subtitle.substringBefore(", ").ifBlank { null })
+        .distinct()
+        .joinToString(", ")
+        .take(OFFLINE_AREA_NAME_MAX_LENGTH)
 
 private fun offlineSourceLabel(metadata: OfflineAreaMetadata): String {
     if (metadata.style != OfflineAreaStyle.CUSTOM) return "OpenFreeMap"

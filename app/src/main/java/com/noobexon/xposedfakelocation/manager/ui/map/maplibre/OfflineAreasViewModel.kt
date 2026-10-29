@@ -137,6 +137,25 @@ class OfflineAreasViewModel(application: Application) : AndroidViewModel(applica
             .forEach(::track)
     }
 
+    /** Renames [areaKey] by rewriting the metadata of each of its regions. Areas without readable metadata are skipped. */
+    fun rename(areaKey: String, name: String) {
+        val store = store ?: return
+        val targets = regions.values.filter { areaKeyOf(it) == areaKey }
+        viewModelScope.launch {
+            reporting {
+                for (region in targets) {
+                    val metadata = OfflineAreaMetadataCodec.decode(region.metadata) ?: continue
+                    store.updateMetadata(region, OfflineAreaMetadataCodec.encode(metadata.copy(name = name)))
+                    stored[region.id]?.let { stored[region.id] = it.copy(metadata = OfflineAreaMetadataCodec.decode(region.metadata)) }
+                }
+            }
+            _state.value.download?.takeIf { it.areaId == areaKey }?.let { current ->
+                _state.update { it.copy(download = current.copy(name = name)) }
+            }
+            reporting { reload(store) }
+        }
+    }
+
     /** Stops and deletes every region of [areaKey]. */
     fun delete(areaKey: String) {
         val store = store ?: return

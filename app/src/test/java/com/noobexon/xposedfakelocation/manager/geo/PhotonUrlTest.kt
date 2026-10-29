@@ -23,6 +23,18 @@ class PhotonUrlTest {
     }
 
     @Test
+    fun reverseUrlHasTheCoordinateAndOptionalLanguage() {
+        assertEquals(
+            "https://photon.komoot.io/reverse?lat=32.08&lon=34.78&limit=1&lang=de",
+            buildReverseUrl("https://photon.komoot.io/", LatLon(32.08, 34.78), "de"),
+        )
+        assertEquals(
+            "http://10.0.2.2:2322/reverse?lat=-1.5&lon=2.25&limit=1",
+            buildReverseUrl("http://10.0.2.2:2322", LatLon(-1.5, 2.25), language = null),
+        )
+    }
+
+    @Test
     fun onlyPhotonLanguagesArePassed() {
         assertEquals("en", photonLanguage(Locale.ENGLISH))
         assertEquals("de", photonLanguage(Locale.GERMANY))

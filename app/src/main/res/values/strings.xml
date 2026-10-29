@@ -395,6 +395,8 @@
     <string name="offline_download_problem">Problem: %1$s</string>
     <string name="offline_error_unknown">Unknown error</string>
     <string name="offline_error_tile_limit">the area needs more than %1$d tiles</string>
+    <string name="offline_area_rename_title">Rename offline area</string>
+    <string name="cd_rename_named_item">Rename %1$s</string>
     <string name="setting_offline_areas_title">Offline areas</string>
     <string name="setting_offline_areas_description">Map areas downloaded for use without a connection. Used by the MapLibre map.</string>
     <string name="offline_areas_empty">No offline areas yet. On the MapLibre map, open ⋮ and tap Download this area.</string>

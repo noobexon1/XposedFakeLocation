@@ -16,8 +16,11 @@ class GeocodingException(val kind: Kind, cause: Throwable? = null) : Exception(k
     enum class Kind { NETWORK, SERVER, PARSE }
 }
 
-/** Looks up places by free-text query. */
+/** Looks up places by free-text query or by coordinate. */
 interface GeocodingClient {
     /** Results for [query], ranked closer to [near] when given. Throws [GeocodingException]. */
     suspend fun search(query: String, near: LatLon?): List<Place>
+
+    /** The place at [at], or `null` if there is none. Throws [GeocodingException]. */
+    suspend fun reverse(at: LatLon): Place? = null
 }

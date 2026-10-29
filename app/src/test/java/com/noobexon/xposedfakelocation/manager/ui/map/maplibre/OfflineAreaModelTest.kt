@@ -4,6 +4,7 @@ import com.noobexon.xposedfakelocation.data.OPENFREEMAP_DARK_STYLE_URL
 import com.noobexon.xposedfakelocation.data.OPENFREEMAP_LIGHT_STYLE_URL
 import com.noobexon.xposedfakelocation.data.model.OfflineAreaMetadata
 import com.noobexon.xposedfakelocation.data.model.OfflineAreaStyle
+import com.noobexon.xposedfakelocation.manager.geo.Place
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
@@ -106,5 +107,12 @@ class OfflineAreaModelTest {
         assertEquals(0, downloadPercent(5, 0))
         assertEquals(33, downloadPercent(1, 3))
         assertEquals(100, downloadPercent(7, 5))
+    }
+
+    @Test
+    fun placeNameUsesTitleAndFirstSubtitlePart() {
+        assertEquals("Dizengoff Center, Tel Aviv", offlineAreaName(Place("Dizengoff Center", "Tel Aviv, Israel", 0.0, 0.0)))
+        assertEquals("Tel Aviv", offlineAreaName(Place("Tel Aviv", "", 0.0, 0.0)))
+        assertEquals(60, offlineAreaName(Place("x".repeat(80), "Somewhere", 0.0, 0.0)).length)
     }
 }

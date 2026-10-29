@@ -391,6 +391,8 @@
     <string name="offline_download_problem">问题：%1$s</string>
     <string name="offline_error_unknown">未知错误</string>
     <string name="offline_error_tile_limit">该区域需要超过 %1$d 个图块</string>
+    <string name="offline_area_rename_title">重命名离线区域</string>
+    <string name="cd_rename_named_item">重命名 %1$s</string>
     <string name="setting_offline_areas_title">离线区域</string>
     <string name="setting_offline_areas_description">已下载、可在无网络时使用的地图区域。由 MapLibre 地图使用。</string>
     <string name="offline_areas_empty">还没有离线区域。在 MapLibre 地图上打开 ⋮ 并点按“下载此区域”。</string>

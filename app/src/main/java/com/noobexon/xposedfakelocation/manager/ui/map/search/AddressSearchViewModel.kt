@@ -62,6 +62,13 @@ class AddressSearchViewModel(private val client: GeocodingClient) : ViewModel() 
 
     fun searchNow() = schedule(0L)
 
+    /** The place at [at], or `null` when there is none or the lookup fails. */
+    suspend fun placeAt(at: LatLon): Place? = try {
+        client.reverse(at)
+    } catch (e: GeocodingException) {
+        null
+    }
+
     fun retry() = searchNow()
 
     private fun schedule(delayMs: Long) {

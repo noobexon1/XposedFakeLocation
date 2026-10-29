@@ -57,6 +57,18 @@ internal class OfflineAreasStore(private val context: Context) {
             })
         }
 
+    suspend fun updateMetadata(region: OfflineRegion, metadata: ByteArray): Unit = suspendCancellableCoroutine { continuation ->
+        region.updateMetadata(metadata, object : OfflineRegion.OfflineRegionUpdateMetadataCallback {
+            override fun onUpdate(metadata: ByteArray) {
+                continuation.resume(Unit)
+            }
+
+            override fun onError(error: String) {
+                continuation.resumeWithException(OfflineAreaException(error))
+            }
+        })
+    }
+
     suspend fun delete(region: OfflineRegion): Unit = suspendCancellableCoroutine { continuation ->
         region.delete(object : OfflineRegion.OfflineRegionDeleteCallback {
             override fun onDelete() {
