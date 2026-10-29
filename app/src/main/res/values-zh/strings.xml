@@ -372,4 +372,9 @@
     <string name="setting_map_style_url_description">仅用于 MapLibre 地图。留空则使用 OpenFreeMap，并跟随应用的浅色或深色主题。输入 MapLibre 样式 JSON 的 URL 以使用其他样式。</string>
     <string name="setting_map_style_url_label">样式 URL（留空 = OpenFreeMap）</string>
     <string name="setting_map_style_url_invalid">请输入有效的 http 或 https URL，或留空</string>
+    <string name="map_use_osmdroid">使用 osmdroid</string>
+    <string name="map_style_error_title">无法加载地图样式</string>
+    <string name="map_style_error_message">请检查网络连接或设置中的样式 URL。</string>
+    <string name="maplibre_unavailable_title">此设备不支持 MapLibre</string>
+    <string name="maplibre_unavailable_message">切换到 osmdroid 以继续使用地图。</string>
 </resources>

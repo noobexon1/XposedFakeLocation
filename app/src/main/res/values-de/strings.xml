@@ -364,4 +364,9 @@
     <string name="setting_map_style_url_description">Wird nur von der MapLibre-Karte verwendet. Leer lassen für OpenFreeMap, das dem hellen oder dunklen Design der App folgt. Gib die URL einer MapLibre-Stil-JSON ein, um einen anderen Stil zu verwenden.</string>
     <string name="setting_map_style_url_label">Stil-URL (leer = OpenFreeMap)</string>
     <string name="setting_map_style_url_invalid">Gib eine gültige http- oder https-URL ein oder lass das Feld leer</string>
+    <string name="map_use_osmdroid">osmdroid verwenden</string>
+    <string name="map_style_error_title">Kartenstil konnte nicht geladen werden</string>
+    <string name="map_style_error_message">Prüfe deine Verbindung oder die Stil-URL in den Einstellungen.</string>
+    <string name="maplibre_unavailable_title">MapLibre ist auf diesem Gerät nicht verfügbar</string>
+    <string name="maplibre_unavailable_message">Wechsle zu osmdroid, um die Karte weiter zu nutzen.</string>
 </resources>

@@ -205,13 +205,13 @@ private fun rememberLocationOverlay(context: Context, mapView: MapView): MyLocat
 }
 
 /**
- * Shown in place of the map while [MapUiState.isLoading] is `true`. Displays a centred
- * [CircularProgressIndicator] with a descriptive label.
+ * Shown instead of (osmdroid) or over (MapLibre) the map while [MapUiState.isLoading] is `true`.
+ * Displays a centred [CircularProgressIndicator] with a descriptive label.
  */
 @Composable
-private fun LoadingSpinner() {
+internal fun LoadingSpinner(modifier: Modifier = Modifier) {
     Box(
-        modifier = Modifier.fillMaxSize(),
+        modifier = modifier.fillMaxSize(),
         contentAlignment = Alignment.Center
     ) {
         Column(
