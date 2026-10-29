@@ -388,7 +388,7 @@
     <string name="offline_download_waiting">正在等待网络</string>
     <string name="offline_download_done">%1$s 已可离线使用</string>
     <string name="offline_download_failed">下载失败：%1$s</string>
-    <string name="offline_download_problem">问题：%1$s。正在重试。</string>
+    <string name="offline_download_problem">问题：%1$s</string>
     <string name="offline_error_unknown">未知错误</string>
     <string name="offline_error_tile_limit">该区域需要超过 %1$d 个图块</string>
     <string name="setting_offline_areas_title">离线区域</string>

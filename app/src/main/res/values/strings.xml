@@ -392,7 +392,7 @@
     <string name="offline_download_waiting">Waiting for network</string>
     <string name="offline_download_done">%1$s is ready for offline use</string>
     <string name="offline_download_failed">Download failed: %1$s</string>
-    <string name="offline_download_problem">Problem: %1$s. Still retrying.</string>
+    <string name="offline_download_problem">Problem: %1$s</string>
     <string name="offline_error_unknown">Unknown error</string>
     <string name="offline_error_tile_limit">the area needs more than %1$d tiles</string>
     <string name="setting_offline_areas_title">Offline areas</string>
