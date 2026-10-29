@@ -65,6 +65,20 @@ android {
         resources {
             merges += "META-INF/xposed/*"
         }
+        // Compressed native libs and dex shrink the download (mostly MapLibre's native code);
+        // Android extracts them on install.
+        jniLibs {
+            useLegacyPackaging = true
+        }
+        dex {
+            useLegacyPackaging = true
+        }
+    }
+
+    lint {
+        // Lifecycle's detector crashes lint with Kotlin 2.2 (IncompatibleClassChangeError), which
+        // fails release builds. The app doesn't use MutableLiveData.
+        disable += "NullSafeMutableLiveData"
     }
 
     kotlinOptions {
@@ -95,7 +109,6 @@ dependencies {
     implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.androidx.lifecycle.service)
     implementation(libs.line.awesome.android)
-    implementation(libs.font.awesome)
     implementation(libs.androidx.navigation.compose)
     implementation(libs.gson)
     implementation(libs.hiddenapibypass)
