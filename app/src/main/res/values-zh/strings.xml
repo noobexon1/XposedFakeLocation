@@ -388,4 +388,16 @@
     <string name="offline_download_waiting">正在等待网络</string>
     <string name="offline_download_done">%1$s 已可离线使用</string>
     <string name="offline_download_failed">下载失败：%1$s</string>
+    <string name="setting_offline_areas_title">离线区域</string>
+    <string name="setting_offline_areas_description">已下载、可在无网络时使用的地图区域。由 MapLibre 地图使用。</string>
+    <string name="offline_areas_empty">还没有离线区域。在 MapLibre 地图上打开 ⋮ 并点按“下载此区域”。</string>
+    <string name="offline_areas_unavailable">此设备不支持 MapLibre。</string>
+    <string name="offline_areas_total">总计：%1$s</string>
+    <string name="offline_area_unknown">未知区域</string>
+    <string name="offline_area_complete">已完成</string>
+    <string name="offline_area_downloading">正在下载 %1$d%%</string>
+    <string name="offline_area_incomplete">未完成</string>
+    <string name="offline_area_resume">继续</string>
+    <string name="offline_area_delete_title">删除离线区域？</string>
+    <string name="offline_area_delete_message">要从此设备删除“%1$s”吗？</string>
 </resources>

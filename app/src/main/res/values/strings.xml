@@ -392,4 +392,16 @@
     <string name="offline_download_waiting">Waiting for network</string>
     <string name="offline_download_done">%1$s is ready for offline use</string>
     <string name="offline_download_failed">Download failed: %1$s</string>
+    <string name="setting_offline_areas_title">Offline areas</string>
+    <string name="setting_offline_areas_description">Map areas downloaded for use without a connection. Used by the MapLibre map.</string>
+    <string name="offline_areas_empty">No offline areas yet. On the MapLibre map, open ⋮ and tap Download this area.</string>
+    <string name="offline_areas_unavailable">MapLibre isn\'t available on this device.</string>
+    <string name="offline_areas_total">Total: %1$s</string>
+    <string name="offline_area_unknown">Unknown area</string>
+    <string name="offline_area_complete">Complete</string>
+    <string name="offline_area_downloading">Downloading %1$d%%</string>
+    <string name="offline_area_incomplete">Incomplete</string>
+    <string name="offline_area_resume">Resume</string>
+    <string name="offline_area_delete_title">Delete offline area?</string>
+    <string name="offline_area_delete_message">Delete \"%1$s\" from this device?</string>
 </resources>

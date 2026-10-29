@@ -380,4 +380,16 @@
     <string name="offline_download_waiting">Warte auf Netzwerk</string>
     <string name="offline_download_done">%1$s ist offline verfügbar</string>
     <string name="offline_download_failed">Download fehlgeschlagen: %1$s</string>
+    <string name="setting_offline_areas_title">Offline-Gebiete</string>
+    <string name="setting_offline_areas_description">Für die Nutzung ohne Verbindung heruntergeladene Kartenbereiche. Wird von der MapLibre-Karte verwendet.</string>
+    <string name="offline_areas_empty">Noch keine Offline-Gebiete. Öffne auf der MapLibre-Karte ⋮ und tippe auf „Diesen Bereich herunterladen“.</string>
+    <string name="offline_areas_unavailable">MapLibre ist auf diesem Gerät nicht verfügbar.</string>
+    <string name="offline_areas_total">Gesamt: %1$s</string>
+    <string name="offline_area_unknown">Unbekanntes Gebiet</string>
+    <string name="offline_area_complete">Vollständig</string>
+    <string name="offline_area_downloading">Wird heruntergeladen: %1$d%%</string>
+    <string name="offline_area_incomplete">Unvollständig</string>
+    <string name="offline_area_resume">Fortsetzen</string>
+    <string name="offline_area_delete_title">Offline-Gebiet löschen?</string>
+    <string name="offline_area_delete_message">„%1$s“ von diesem Gerät löschen?</string>
 </resources>

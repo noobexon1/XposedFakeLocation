@@ -213,6 +213,7 @@ object SettingKeys {
     const val ROUTING_SERVER = "routing_server"
     const val MAP_RENDERER = "map_renderer"
     const val MAP_STYLE_URL = "map_style_url"
+    const val OFFLINE_AREAS = "offline_areas"
     const val THEME = "theme"
     const val LANGUAGE = "language"
 }
@@ -350,6 +351,14 @@ sealed interface SettingEntry {
         override val titleRes: Int get() = R.string.setting_map_renderer_title
         override val descriptionRes: Int get() = R.string.setting_map_renderer_description
     }
+
+    /** A row that opens something (e.g. a dialog) when tapped. */
+    data class Action(
+        override val key: String,
+        @StringRes override val titleRes: Int,
+        @StringRes override val descriptionRes: Int,
+        val onClick: () -> Unit,
+    ) : SettingEntry
 
     /**
      * The joystick's Constant-mode speed preset picker. Tapping the row opens a selection dialog.
