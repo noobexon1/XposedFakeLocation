@@ -46,22 +46,26 @@ internal fun MapLibreMap.currentFix(): LatLon? {
 
 /**
  * Shows the device location (blue dot) once the first style has loaded, if location permission is
- * granted. The component re-adds itself on later style loads.
+ * granted. Re-checked on every resume, so a permission granted later still shows it. The
+ * component re-adds itself on later style loads.
  */
 @SuppressLint("MissingPermission")
 @Composable
 internal fun ActivateBlueDot(map: MapLibreMap, style: Style?) {
     val context = LocalContext.current
-    LaunchedEffect(map, style) {
+    val lifecycle = LocalLifecycleOwner.current.lifecycle
+    LaunchedEffect(map, style, lifecycle) {
         if (style == null) return@LaunchedEffect
-        val component = map.locationComponent
-        if (component.isLocationComponentActivated || !hasLocationPermission(context)) return@LaunchedEffect
-        component.activateLocationComponent(
-            LocationComponentActivationOptions.builder(context, style).useDefaultLocationEngine(true).build()
-        )
-        component.setLocationComponentEnabled(true)
-        component.setCameraMode(CameraMode.NONE)
-        component.setRenderMode(RenderMode.NORMAL)
+        lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
+            val component = map.locationComponent
+            if (component.isLocationComponentActivated || !hasLocationPermission(context)) return@repeatOnLifecycle
+            component.activateLocationComponent(
+                LocationComponentActivationOptions.builder(context, style).useDefaultLocationEngine(true).build()
+            )
+            component.setLocationComponentEnabled(true)
+            component.setCameraMode(CameraMode.NONE)
+            component.setRenderMode(RenderMode.NORMAL)
+        }
     }
 }
 

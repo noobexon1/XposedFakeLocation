@@ -113,7 +113,7 @@ internal fun MapLibreHost(
                 map = ready
             }
         }
-        val onFail = MapView.OnDidFailLoadingMapListener { styleFailed = true }
+        val onFail = MapView.OnDidFailLoadingMapListener { if (style == null) styleFailed = true }
         mapView.addOnDidFailLoadingMapListener(onFail)
         onDispose {
             disposed = true
@@ -208,13 +208,20 @@ private fun configureMap(map: MapLibreMap, density: Float) {
 
 /**
  * Forwards the screen lifecycle to [mapView] and destroys it when the map leaves composition.
- * [onDestroy] runs first, while the map can still be read.
+ * [onDestroy] runs just before the map is destroyed, while it can still be read.
  */
 @Composable
 private fun MapViewLifecycle(mapView: MapView, onDestroy: () -> Unit) {
     val context = LocalContext.current
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     val currentOnDestroy by rememberUpdatedState(onDestroy)
+    // Declared first so it is disposed last, after the lifecycle effect has paused and stopped the map.
+    DisposableEffect(mapView) {
+        onDispose {
+            currentOnDestroy()
+            mapView.onDestroy()
+        }
+    }
     DisposableEffect(lifecycle, mapView) {
         val observer = LifecycleEventObserver { _, event ->
             when (event) {
@@ -236,10 +243,8 @@ private fun MapViewLifecycle(mapView: MapView, onDestroy: () -> Unit) {
         onDispose {
             context.unregisterComponentCallbacks(memory)
             lifecycle.removeObserver(observer)
-            currentOnDestroy()
             if (lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) mapView.onPause()
             if (lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)) mapView.onStop()
-            mapView.onDestroy()
         }
     }
 }
