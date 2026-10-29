@@ -6,7 +6,9 @@ enum class MapRenderer(val tag: String) {
     MAPLIBRE("maplibre");
 
     companion object {
-        /** Unknown or missing tags fall back to [OSMDROID]. */
-        fun fromTag(tag: String?): MapRenderer = entries.firstOrNull { it.tag == tag } ?: OSMDROID
+        val DEFAULT = MAPLIBRE
+
+        /** Unknown or missing tags fall back to [DEFAULT]. */
+        fun fromTag(tag: String?): MapRenderer = entries.firstOrNull { it.tag == tag } ?: DEFAULT
     }
 }

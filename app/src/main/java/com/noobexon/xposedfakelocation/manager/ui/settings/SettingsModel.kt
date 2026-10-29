@@ -437,7 +437,7 @@ data class SettingsUiState(
     val geocodingServerUrl: String = DEFAULT_GEOCODING_SERVER_URL,
     val routingServerUrl: String = DEFAULT_ROUTING_SERVER_URL,
     // Map
-    val mapRenderer: MapRenderer = MapRenderer.OSMDROID,
+    val mapRenderer: MapRenderer = MapRenderer.DEFAULT,
     val mapStyleUrl: String = "",
     // App
     val languageTag: String = DEFAULT_LANGUAGE_TAG,

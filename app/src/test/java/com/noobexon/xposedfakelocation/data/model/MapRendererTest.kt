@@ -11,9 +11,9 @@ class MapRendererTest {
     }
 
     @Test
-    fun unknownOrMissingTagsFallBackToOsmdroid() {
-        assertEquals(MapRenderer.OSMDROID, MapRenderer.fromTag(null))
-        assertEquals(MapRenderer.OSMDROID, MapRenderer.fromTag(""))
-        assertEquals(MapRenderer.OSMDROID, MapRenderer.fromTag("MAPLIBRE"))
+    fun unknownOrMissingTagsFallBackToMapLibre() {
+        assertEquals(MapRenderer.MAPLIBRE, MapRenderer.fromTag(null))
+        assertEquals(MapRenderer.MAPLIBRE, MapRenderer.fromTag(""))
+        assertEquals(MapRenderer.MAPLIBRE, MapRenderer.fromTag("OSMDROID"))
     }
 }

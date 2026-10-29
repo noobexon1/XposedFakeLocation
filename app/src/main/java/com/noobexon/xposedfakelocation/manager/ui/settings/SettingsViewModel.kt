@@ -339,7 +339,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     // ---- Map (local) -------------------------------------------------------------------------
 
     private val _mapRenderer = Preference(
-        MapRenderer.OSMDROID,
+        MapRenderer.DEFAULT,
         preferencesRepository.getMapRendererFlow(),
         preferencesRepository::saveMapRenderer
     )
@@ -719,7 +719,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         setEnableBroadcastControl(DEFAULT_ENABLE_BROADCAST_CONTROL)
         resetGeocodingServerUrl()
         resetRoutingServerUrl()
-        setMapRenderer(MapRenderer.OSMDROID)
+        setMapRenderer(MapRenderer.DEFAULT)
         resetMapStyleUrl()
         JoystickSettings().let { defaults ->
             setJoystickMode(defaults.mode)
