@@ -37,10 +37,10 @@ import org.osmdroid.util.GeoPoint
  * @param styleUrl Custom MapLibre style URL; blank means OpenFreeMap. Ignored by osmdroid.
  * @param darkTheme Whether the app shows its dark theme; picks the OpenFreeMap style.
  * @param isLoading When `true`, hides the map and shows [LoadingSpinner] instead. Becomes `false`
- *   once [MapViewEffects.CenterMapOnUserLocation] finishes the initial camera placement.
- * @param lastClickedLocation Current spoof target, or `null`. Passed to [HandleMarkerUpdates].
- * @param userLocation Cached real device location used by [CenterMapOnUserLocation] for re-entry
- *   restoration and by [HandleCenterMapEvent] for the "center on me" action.
+ *   once the initial camera placement finishes.
+ * @param lastClickedLocation Current spoof target, or `null`; drawn as the location marker.
+ * @param userLocation Cached real device location, used to restore the camera on re-entry and
+ *   for the "center on me" action.
  * @param isPlaying Whether spoofing is active. When `true`, map taps are ignored so the marker
  *   cannot be accidentally moved.
  * @param mapZoom Last persisted zoom level; used to restore the camera on re-entry.
