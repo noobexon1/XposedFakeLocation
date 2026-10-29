@@ -362,4 +362,47 @@
         <item quantity="other">%1$d 个路段没有道路路径。按直线播放？</item>
     </plurals>
     <string name="route_play_anyway">仍然播放</string>
+    <!-- Map renderer -->
+    <string name="category_map">地图</string>
+    <string name="setting_map_renderer_title">地图渲染器</string>
+    <string name="setting_map_renderer_description">osmdroid 显示经典的 OpenStreetMap 瓦片。MapLibre 显示矢量地图，支持深色样式、旋转和离线区域。</string>
+    <string name="map_renderer_osmdroid">osmdroid（经典）</string>
+    <string name="map_renderer_maplibre">MapLibre（矢量）</string>
+    <string name="setting_map_style_url_title">MapLibre 样式 URL</string>
+    <string name="setting_map_style_url_description">仅用于 MapLibre 地图。留空则使用 OpenFreeMap，并跟随应用的浅色或深色主题。输入 MapLibre 样式 JSON 的 URL 以使用其他样式。</string>
+    <string name="setting_map_style_url_label">样式 URL（留空 = OpenFreeMap）</string>
+    <string name="setting_map_style_url_invalid">请输入有效的 http 或 https URL，或留空</string>
+    <string name="map_use_osmdroid">使用 osmdroid</string>
+    <string name="map_style_error_title">无法加载地图样式</string>
+    <string name="map_style_error_message">请检查网络连接或设置中的样式 URL。</string>
+    <string name="maplibre_unavailable_title">此设备不支持 MapLibre</string>
+    <string name="maplibre_unavailable_message">切换到 osmdroid 以继续使用地图。</string>
+    <!-- Offline areas -->
+    <string name="map_download_area">下载此区域</string>
+    <string name="offline_area_too_large">此区域太大。请放大地图以下载较小的区域。</string>
+    <string name="offline_area_name_title">下载此区域</string>
+    <string name="offline_area_name_label">名称</string>
+    <string name="offline_area_name_invalid">请输入 1 到 60 个字符</string>
+    <string name="action_download">下载</string>
+    <string name="offline_download_progress">正在下载 %1$s · %2$d%%</string>
+    <string name="offline_download_waiting">正在等待网络</string>
+    <string name="offline_download_done">%1$s 已可离线使用</string>
+    <string name="offline_download_failed">下载失败：%1$s</string>
+    <string name="offline_download_problem">问题：%1$s</string>
+    <string name="offline_error_unknown">未知错误</string>
+    <string name="offline_error_tile_limit">该区域需要超过 %1$d 个图块</string>
+    <string name="offline_area_rename_title">重命名离线区域</string>
+    <string name="cd_rename_named_item">重命名 %1$s</string>
+    <string name="setting_offline_areas_title">离线区域</string>
+    <string name="setting_offline_areas_description">已下载、可在无网络时使用的地图区域。由 MapLibre 地图使用。</string>
+    <string name="offline_areas_empty">还没有离线区域。在 MapLibre 地图上打开 ⋮ 并点按“下载此区域”。</string>
+    <string name="offline_areas_unavailable">此设备不支持 MapLibre。</string>
+    <string name="offline_areas_total">总计：%1$s</string>
+    <string name="offline_area_unknown">未知区域</string>
+    <string name="offline_area_complete">已完成</string>
+    <string name="offline_area_downloading">正在下载 %1$d%%</string>
+    <string name="offline_area_incomplete">未完成</string>
+    <string name="offline_area_resume">继续</string>
+    <string name="offline_area_delete_title">删除离线区域？</string>
+    <string name="offline_area_delete_message">要从此设备删除“%1$s”吗？</string>
 </resources>

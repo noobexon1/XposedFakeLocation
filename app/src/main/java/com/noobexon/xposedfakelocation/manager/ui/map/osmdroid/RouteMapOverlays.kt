@@ -1,4 +1,4 @@
-package com.noobexon.xposedfakelocation.manager.ui.map.route
+package com.noobexon.xposedfakelocation.manager.ui.map.osmdroid
 
 import android.graphics.DashPathEffect
 import androidx.compose.material3.MaterialTheme
@@ -10,15 +10,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
-import com.noobexon.xposedfakelocation.data.ROAD_PATH_DRAW_MAX_POINTS
-import com.noobexon.xposedfakelocation.data.ROAD_PATH_DRAW_TOLERANCE_M
 import com.noobexon.xposedfakelocation.data.model.Route
-import com.noobexon.xposedfakelocation.data.model.travelSegments
-import com.noobexon.xposedfakelocation.manager.route.PathGeometry
 import com.noobexon.xposedfakelocation.manager.route.RoadFailure
-import com.noobexon.xposedfakelocation.manager.route.RoadStatus
-import com.noobexon.xposedfakelocation.manager.route.roadCoordinates
-import com.noobexon.xposedfakelocation.manager.route.roadStatus
+import com.noobexon.xposedfakelocation.manager.ui.map.PointRole
+import com.noobexon.xposedfakelocation.manager.ui.map.SegmentMarker
+import com.noobexon.xposedfakelocation.manager.ui.map.routeDrawing
+import com.noobexon.xposedfakelocation.manager.ui.map.route.RouteMarkerIcons
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.suspendCancellableCoroutine
@@ -70,53 +67,43 @@ internal fun RouteOverlaysEffect(
         overlays.clear()
         if (route != null && route.points.isNotEmpty()) {
             val density = context.resources.displayMetrics.density
-            route.travelSegments().forEach { segment ->
-                val a = segment.from
-                val b = segment.to
-                val status = route.roadStatus(a, b, roadFailures)
-                val path = route.roadCoordinates(a, b)
-                    ?.let { if (it.size > ROAD_PATH_DRAW_MAX_POINTS) PathGeometry.simplify(it, ROAD_PATH_DRAW_TOLERANCE_M) else it }
-                    ?: listOf(a.latitude to a.longitude, b.latitude to b.longitude)
+            val drawing = routeDrawing(route, roadFailures)
+            drawing.segments.forEach { segment ->
                 overlays += Polyline(mapView).apply {
-                    setPoints(path.map { GeoPoint(it.first, it.second) })
-                    outlinePaint.color = if (status == RoadStatus.Loading) (lineColor and 0x00FFFFFF) or LOADING_ALPHA else lineColor
+                    setPoints(segment.path.map { GeoPoint(it.first, it.second) })
+                    outlinePaint.color = if (segment.loading) (lineColor and 0x00FFFFFF) or LOADING_ALPHA else lineColor
                     outlinePaint.strokeWidth = 4 * density
-                    if (segment.closing) outlinePaint.pathEffect = DashPathEffect(floatArrayOf(12 * density, 8 * density), 0f)
+                    if (segment.dashed) outlinePaint.pathEffect = DashPathEffect(floatArrayOf(12 * density, 8 * density), 0f)
                     setOnClickListener { _, _, _ ->
-                        if (editable) currentOnSegmentTap(a.id, b.id)
+                        if (editable) currentOnSegmentTap(segment.fromId, segment.toId)
                         true
                     }
                 }
-                PathGeometry.halfway(path)?.let { half ->
+                segment.marker?.let { marker ->
                     overlays += Marker(mapView).apply {
-                        position = GeoPoint(half.latitude, half.longitude)
-                        icon = if (status is RoadStatus.Failed) {
-                            RouteMarkerIcons.warning(context, warningColor)
-                        } else {
-                            RouteMarkerIcons.arrow(context, half.bearingDegrees.toFloat(), lineColor)
+                        position = GeoPoint(marker.latitude, marker.longitude)
+                        icon = when (marker) {
+                            is SegmentMarker.Warning -> RouteMarkerIcons.warning(context, warningColor)
+                            is SegmentMarker.Arrow -> RouteMarkerIcons.arrow(context, marker.bearingDegrees.toFloat(), lineColor)
                         }
                         setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER)
                         setInfoWindow(null)
                         setOnMarkerClickListener { _, _ ->
-                            if (editable) currentOnSegmentTap(a.id, b.id)
+                            if (editable) currentOnSegmentTap(segment.fromId, segment.toId)
                             true
                         }
                     }
                 }
             }
-            val last = route.points.size
-            val startNumber = if (route.reversed) last else 1
-            val endNumber = if (route.loop) -1 else if (route.reversed) 1 else last
-            route.points.forEachIndexed { index, point ->
-                val number = index + 1
-                val fill = when (number) {
-                    startNumber -> startColor
-                    endNumber -> endColor
-                    else -> pointColor
+            drawing.points.forEach { point ->
+                val fill = when (point.role) {
+                    PointRole.START -> startColor
+                    PointRole.END -> endColor
+                    PointRole.NORMAL -> pointColor
                 }
                 overlays += Marker(mapView).apply {
                     position = GeoPoint(point.latitude, point.longitude)
-                    icon = RouteMarkerIcons.numbered(context, number, fill, textColor)
+                    icon = RouteMarkerIcons.numbered(context, point.number, fill, textColor)
                     setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER)
                     setInfoWindow(null)
                     isDraggable = editable

@@ -354,4 +354,47 @@
         <item quantity="other">%1$d Abschnitte haben keinen Straßenweg. Gerade abspielen?</item>
     </plurals>
     <string name="route_play_anyway">Trotzdem abspielen</string>
+    <!-- Map renderer -->
+    <string name="category_map">Karte</string>
+    <string name="setting_map_renderer_title">Kartendarstellung</string>
+    <string name="setting_map_renderer_description">osmdroid zeigt die klassischen OpenStreetMap-Kacheln. MapLibre zeigt eine Vektorkarte mit dunklem Stil, Drehung und Offline-Gebieten.</string>
+    <string name="map_renderer_osmdroid">osmdroid (klassisch)</string>
+    <string name="map_renderer_maplibre">MapLibre (Vektor)</string>
+    <string name="setting_map_style_url_title">MapLibre-Stil-URL</string>
+    <string name="setting_map_style_url_description">Wird nur von der MapLibre-Karte verwendet. Leer lassen für OpenFreeMap, das dem hellen oder dunklen Design der App folgt. Gib die URL einer MapLibre-Stil-JSON ein, um einen anderen Stil zu verwenden.</string>
+    <string name="setting_map_style_url_label">Stil-URL (leer = OpenFreeMap)</string>
+    <string name="setting_map_style_url_invalid">Gib eine gültige http- oder https-URL ein oder lass das Feld leer</string>
+    <string name="map_use_osmdroid">osmdroid verwenden</string>
+    <string name="map_style_error_title">Kartenstil konnte nicht geladen werden</string>
+    <string name="map_style_error_message">Prüfe deine Verbindung oder die Stil-URL in den Einstellungen.</string>
+    <string name="maplibre_unavailable_title">MapLibre ist auf diesem Gerät nicht verfügbar</string>
+    <string name="maplibre_unavailable_message">Wechsle zu osmdroid, um die Karte weiter zu nutzen.</string>
+    <!-- Offline areas -->
+    <string name="map_download_area">Diesen Bereich herunterladen</string>
+    <string name="offline_area_too_large">Dieser Bereich ist zu groß. Zoome hinein, um einen kleineren Bereich herunterzuladen.</string>
+    <string name="offline_area_name_title">Diesen Bereich herunterladen</string>
+    <string name="offline_area_name_label">Name</string>
+    <string name="offline_area_name_invalid">Gib 1 bis 60 Zeichen ein</string>
+    <string name="action_download">Herunterladen</string>
+    <string name="offline_download_progress">%1$s wird heruntergeladen · %2$d%%</string>
+    <string name="offline_download_waiting">Warte auf Netzwerk</string>
+    <string name="offline_download_done">%1$s ist offline verfügbar</string>
+    <string name="offline_download_failed">Download fehlgeschlagen: %1$s</string>
+    <string name="offline_download_problem">Problem: %1$s</string>
+    <string name="offline_error_unknown">Unbekannter Fehler</string>
+    <string name="offline_error_tile_limit">das Gebiet braucht mehr als %1$d Kacheln</string>
+    <string name="offline_area_rename_title">Offline-Gebiet umbenennen</string>
+    <string name="cd_rename_named_item">%1$s umbenennen</string>
+    <string name="setting_offline_areas_title">Offline-Gebiete</string>
+    <string name="setting_offline_areas_description">Für die Nutzung ohne Verbindung heruntergeladene Kartenbereiche. Wird von der MapLibre-Karte verwendet.</string>
+    <string name="offline_areas_empty">Noch keine Offline-Gebiete. Öffne auf der MapLibre-Karte ⋮ und tippe auf „Diesen Bereich herunterladen“.</string>
+    <string name="offline_areas_unavailable">MapLibre ist auf diesem Gerät nicht verfügbar.</string>
+    <string name="offline_areas_total">Gesamt: %1$s</string>
+    <string name="offline_area_unknown">Unbekanntes Gebiet</string>
+    <string name="offline_area_complete">Vollständig</string>
+    <string name="offline_area_downloading">Wird heruntergeladen: %1$d%%</string>
+    <string name="offline_area_incomplete">Unvollständig</string>
+    <string name="offline_area_resume">Fortsetzen</string>
+    <string name="offline_area_delete_title">Offline-Gebiet löschen?</string>
+    <string name="offline_area_delete_message">„%1$s“ von diesem Gerät löschen?</string>
 </resources>

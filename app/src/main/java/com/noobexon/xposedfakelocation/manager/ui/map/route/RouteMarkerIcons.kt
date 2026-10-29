@@ -59,4 +59,28 @@ internal object RouteMarkerIcons {
         canvas.drawPath(path, Paint(Paint.ANTI_ALIAS_FLAG).apply { this.color = color })
         return BitmapDrawable(context.resources, bitmap)
     }
+
+    /** The spoof-location pin; its tip is the bottom-center pixel. */
+    fun pin(context: Context, fill: Int): Drawable {
+        val density = context.resources.displayMetrics.density
+        val width = (26 * density).roundToInt()
+        val height = (36 * density).roundToInt()
+        val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(bitmap)
+        val radius = width / 2f - density
+        val centerX = width / 2f
+        val centerY = radius + density
+        val path = Path().apply {
+            addCircle(centerX, centerY, radius, Path.Direction.CW)
+            moveTo(centerX - radius * 0.6f, centerY + radius * 0.8f)
+            lineTo(centerX, height.toFloat())
+            lineTo(centerX + radius * 0.6f, centerY + radius * 0.8f)
+            close()
+        }
+        val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = fill }
+        canvas.drawPath(path, paint)
+        paint.color = Color.WHITE
+        canvas.drawCircle(centerX, centerY, radius * 0.38f, paint)
+        return BitmapDrawable(context.resources, bitmap)
+    }
 }

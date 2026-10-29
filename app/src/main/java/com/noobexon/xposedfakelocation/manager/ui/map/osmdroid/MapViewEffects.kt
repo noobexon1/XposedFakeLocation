@@ -1,10 +1,5 @@
-package com.noobexon.xposedfakelocation.manager.ui.map
+package com.noobexon.xposedfakelocation.manager.ui.map.osmdroid
 
-import android.Manifest
-import android.content.Context
-import android.content.pm.PackageManager
-import android.location.Location
-import android.location.LocationManager
 import android.widget.Toast
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -15,19 +10,15 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.repeatOnLifecycle
 import com.noobexon.xposedfakelocation.R
 import com.noobexon.xposedfakelocation.data.DEFAULT_MAP_ZOOM
-import com.noobexon.xposedfakelocation.data.LOCATION_DETECTION_DELAY_MS
-import com.noobexon.xposedfakelocation.data.LOCATION_DETECTION_MAX_ATTEMPTS
-import com.noobexon.xposedfakelocation.data.WORLD_MAP_ZOOM
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
+import com.noobexon.xposedfakelocation.manager.geo.LatLon
+import com.noobexon.xposedfakelocation.manager.ui.map.getLastKnownDeviceLocation
+import com.noobexon.xposedfakelocation.manager.ui.map.resolveInitialCamera
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.withContext
 import org.osmdroid.events.DelayedMapListener
 import org.osmdroid.events.MapEventsReceiver
 import org.osmdroid.events.MapListener
@@ -261,9 +252,9 @@ internal fun SetupMapClickListener(
 /**
  * Positions the camera once per [mapView].
  *
- * - **First ever load** ([hasResolvedInitialLocation] == false): resolves an initial target — saved
- *   marker, else last-known device location, else a short GPS poll, else a world-view fallback —
- *   clearing the loading state when done and reporting completion via [onInitialLocationResolved].
+ * - **First ever load** ([hasResolvedInitialLocation] == false): resolves an initial target in the
+ *   order defined by [resolveInitialCamera], clearing the loading state when done and reporting
+ *   completion via [onInitialLocationResolved].
  * - **Re-entry** ([hasResolvedInitialLocation] == true): restores the last camera instantly with no
  *   spinner and no detection. The remembered [mapZoom] is re-applied; for the no-marker case the
  *   last [userLocation] is re-centered. Marker centering is left to [HandleMarkerUpdates].
@@ -300,178 +291,21 @@ internal fun CenterMapOnUserLocation(
             return@LaunchedEffect
         }
 
-        if (lastClickedLocation != null) {
-            centerOnMarkerLocation(mapView, lastClickedLocation, mapZoom, onMapZoomChange, onLoadingFinished)
-        } else {
-            val lastKnown = getLastKnownDeviceLocation(context)
-            if (lastKnown != null) {
-                centerOnGeoPoint(mapView, lastKnown, mapZoom, onUserLocationChange, onMapZoomChange, onLoadingFinished)
-            } else {
-                val found = tryToFindAndCenterUserLocation(mapView, locationOverlay, mapZoom, onUserLocationChange, onMapZoomChange, onLoadingFinished)
-                if (!found) {
-                    centerOnDefaultLocation(mapView, onMapZoomChange, onLoadingFinished)
-                }
-            }
-        }
+        val camera = resolveInitialCamera(
+            marker = lastClickedLocation?.let { LatLon(it.latitude, it.longitude) },
+            savedZoom = mapZoom,
+            lastKnown = { getLastKnownDeviceLocation(context) },
+            liveFix = { locationOverlay.myLocation?.let { LatLon(it.latitude, it.longitude) } },
+        )
+        val point = GeoPoint(camera.target.latitude, camera.target.longitude)
+        if (camera.source.isDeviceLocation) onUserLocationChange(point)
+        mapView.controller.setZoom(camera.zoom)
+        if (camera.source.animates) mapView.controller.animateTo(point) else mapView.controller.setCenter(point)
+        onMapZoomChange(camera.zoom)
+        onLoadingFinished()
         onInitialLocationResolved()
         centeredOnce.value = true
     }
-}
-
-/**
- * Restores the camera to a previously placed spoof marker during initial load.
- *
- * Uses the persisted [mapZoom] when available so the zoom level is exactly as the user left it,
- * falling back to [DEFAULT_MAP_ZOOM] for first-ever launches.
- *
- * @param mapView The map to position.
- * @param markerLocation The spoof-target coordinate to centre on.
- * @param mapZoom Persisted zoom level, or `null` if not yet set.
- * @param onMapZoomChange Callback to persist the applied zoom.
- * @param onLoadingFinished Callback to clear [MapUiState.isLoading].
- */
-private suspend fun centerOnMarkerLocation(
-    mapView: MapView,
-    markerLocation: GeoPoint,
-    mapZoom: Double?,
-    onMapZoomChange: (Double) -> Unit,
-    onLoadingFinished: () -> Unit
-) {
-    val zoom = mapZoom ?: DEFAULT_MAP_ZOOM
-    mapView.controller.setZoom(zoom)
-    mapView.controller.animateTo(markerLocation)
-    onMapZoomChange(zoom)
-    onLoadingFinished()
-}
-
-/**
- * Centres the camera on [point] and propagates the resolved location and zoom up to the ViewModel.
- * Used when a last-known device location is available instantly without polling.
- *
- * Uses the persisted [mapZoom] when available so the zoom level is exactly as the user left it,
- * falling back to [DEFAULT_MAP_ZOOM] for first-ever launches.
- *
- * @param mapView The map to centre.
- * @param point The device location to centre on.
- * @param mapZoom Persisted zoom level, or `null` if not yet set.
- * @param onUserLocationChange Callback to cache the location in [MapViewModel].
- * @param onMapZoomChange Callback to persist the applied zoom.
- * @param onLoadingFinished Callback to clear [MapUiState.isLoading].
- */
-private fun centerOnGeoPoint(
-    mapView: MapView,
-    point: GeoPoint,
-    mapZoom: Double?,
-    onUserLocationChange: (GeoPoint) -> Unit,
-    onMapZoomChange: (Double) -> Unit,
-    onLoadingFinished: () -> Unit
-) {
-    val zoom = mapZoom ?: DEFAULT_MAP_ZOOM
-    mapView.controller.setZoom(zoom)
-    mapView.controller.setCenter(point)
-    onUserLocationChange(point)
-    onMapZoomChange(zoom)
-    onLoadingFinished()
-}
-
-/**
- * Queries all enabled [LocationManager] providers on [Dispatchers.IO] and returns the most recent
- * last-known fix, or `null` if none is available or permission is not granted.
- *
- * Running on [Dispatchers.IO] avoids blocking the main thread; [LocationManager.getLastKnownLocation]
- * can perform disk I/O on some devices.
- *
- * @param context Application context used to access [LocationManager] and check permissions.
- * @return The freshest available [GeoPoint], or `null`.
- */
-private suspend fun getLastKnownDeviceLocation(context: Context): GeoPoint? = withContext(Dispatchers.IO) {
-    val granted = ContextCompat.checkSelfPermission(
-        context, Manifest.permission.ACCESS_FINE_LOCATION
-    ) == PackageManager.PERMISSION_GRANTED ||
-        ContextCompat.checkSelfPermission(
-            context, Manifest.permission.ACCESS_COARSE_LOCATION
-        ) == PackageManager.PERMISSION_GRANTED
-    if (!granted) return@withContext null
-
-    val lm = context.getSystemService(Context.LOCATION_SERVICE) as? LocationManager
-        ?: return@withContext null
-    val providers = try {
-        lm.getProviders(true)
-    } catch (e: SecurityException) {
-        return@withContext null
-    }
-    var best: Location? = null
-    for (provider in providers) {
-        val loc = try {
-            lm.getLastKnownLocation(provider)
-        } catch (e: SecurityException) {
-            null
-        } ?: continue
-        if (best == null || loc.time > best.time) best = loc
-    }
-    best?.let { GeoPoint(it.latitude, it.longitude) }
-}
-
-/**
- * Polls [locationOverlay] up to [LOCATION_DETECTION_MAX_ATTEMPTS] times (with
- * [LOCATION_DETECTION_DELAY_MS] between each attempt) and centres the camera if a fix is obtained.
- *
- * This path is taken when [getLastKnownDeviceLocation] returns `null` — i.e. no cached fix exists —
- * and gives the GPS/network provider a short window to acquire one before falling back to
- * [centerOnDefaultLocation].
- *
- * Uses the persisted [mapZoom] when available so the zoom level is exactly as the user left it,
- * falling back to [DEFAULT_MAP_ZOOM] for first-ever launches.
- *
- * @param mapView The map to centre if a location is found.
- * @param locationOverlay Source of live location fixes.
- * @param mapZoom Persisted zoom level, or `null` if not yet set.
- * @param onUserLocationChange Callback to cache the location in [MapViewModel].
- * @param onMapZoomChange Callback to persist the applied zoom.
- * @param onLoadingFinished Callback to clear [MapUiState.isLoading].
- * @return `true` if a location was found and the camera was centred; `false` if the timeout elapsed.
- */
-private suspend fun tryToFindAndCenterUserLocation(
-    mapView: MapView,
-    locationOverlay: MyLocationNewOverlay,
-    mapZoom: Double?,
-    onUserLocationChange: (GeoPoint) -> Unit,
-    onMapZoomChange: (Double) -> Unit,
-    onLoadingFinished: () -> Unit
-): Boolean {
-    val zoom = mapZoom ?: DEFAULT_MAP_ZOOM
-    repeat(LOCATION_DETECTION_MAX_ATTEMPTS) {
-        val userLocation = locationOverlay.myLocation
-        if (userLocation != null) {
-            onUserLocationChange(userLocation)
-            mapView.controller.setZoom(zoom)
-            mapView.controller.animateTo(userLocation)
-            onMapZoomChange(zoom)
-            onLoadingFinished()
-            return true
-        }
-        delay(LOCATION_DETECTION_DELAY_MS)
-    }
-    return false
-}
-
-/**
- * Last-resort fallback: centres the camera on (0°, 0°) at [WORLD_MAP_ZOOM] when no device
- * location could be determined after [LOCATION_DETECTION_MAX_ATTEMPTS] polling attempts.
- *
- * @param mapView The map to centre.
- * @param onMapZoomChange Callback to persist the applied zoom.
- * @param onLoadingFinished Callback to clear [MapUiState.isLoading].
- */
-private fun centerOnDefaultLocation(
-    mapView: MapView,
-    onMapZoomChange: (Double) -> Unit,
-    onLoadingFinished: () -> Unit
-) {
-    mapView.controller.setZoom(WORLD_MAP_ZOOM)
-    mapView.controller.setCenter(GeoPoint(0.0, 0.0))
-    onMapZoomChange(WORLD_MAP_ZOOM)
-    onLoadingFinished()
 }
 
 /**

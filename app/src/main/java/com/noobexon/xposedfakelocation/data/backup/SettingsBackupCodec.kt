@@ -1,12 +1,14 @@
 package com.noobexon.xposedfakelocation.data.backup
 
 import com.google.gson.Gson
+import com.noobexon.xposedfakelocation.data.model.MapRenderer
 import com.noobexon.xposedfakelocation.data.model.RouteJson
 import com.noobexon.xposedfakelocation.data.model.SETTINGS_BACKUP_VERSION
 import com.noobexon.xposedfakelocation.data.model.SettingsBackup
 import com.noobexon.xposedfakelocation.data.model.isValid
 import com.noobexon.xposedfakelocation.data.model.sanitizeRoadPaths
 import com.noobexon.xposedfakelocation.data.model.withSanitizedLabels
+import com.noobexon.xposedfakelocation.data.normalizeMapStyleUrl
 import com.noobexon.xposedfakelocation.data.normalizeRoutingServerUrl
 import com.noobexon.xposedfakelocation.data.normalizeServerUrl
 
@@ -57,6 +59,8 @@ class SettingsBackupCodec(
             routes = routes,
             geocodingServerUrl = normalizeServerUrl(parsed.geocodingServerUrl),
             routingServerUrl = normalizeRoutingServerUrl(parsed.routingServerUrl),
+            mapRenderer = parsed.mapRenderer?.takeIf { tag -> MapRenderer.entries.any { it.tag == tag } },
+            mapStyleUrl = normalizeMapStyleUrl(parsed.mapStyleUrl),
         )
     }
 }

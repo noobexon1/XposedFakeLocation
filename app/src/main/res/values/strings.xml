@@ -366,4 +366,47 @@
         <item quantity="other">%1$d segments have no road path. Play them straight?</item>
     </plurals>
     <string name="route_play_anyway">Play anyway</string>
+    <!-- Map renderer -->
+    <string name="category_map">Map</string>
+    <string name="setting_map_renderer_title">Map renderer</string>
+    <string name="setting_map_renderer_description">osmdroid shows the classic OpenStreetMap tiles. MapLibre shows a vector map with a dark style, rotation and offline areas.</string>
+    <string name="map_renderer_osmdroid">osmdroid (classic)</string>
+    <string name="map_renderer_maplibre">MapLibre (vector)</string>
+    <string name="setting_map_style_url_title">MapLibre style URL</string>
+    <string name="setting_map_style_url_description">Used by the MapLibre map only. Leave blank for OpenFreeMap, which follows the app\'s light or dark theme. Enter the URL of a MapLibre style JSON to use another style.</string>
+    <string name="setting_map_style_url_label">Style URL (blank = OpenFreeMap)</string>
+    <string name="setting_map_style_url_invalid">Enter a valid http or https URL, or leave it blank</string>
+    <string name="map_use_osmdroid">Use osmdroid</string>
+    <string name="map_style_error_title">Couldn\'t load the map style</string>
+    <string name="map_style_error_message">Check your connection, or the style URL in Settings.</string>
+    <string name="maplibre_unavailable_title">MapLibre isn\'t available on this device</string>
+    <string name="maplibre_unavailable_message">Switch to osmdroid to keep using the map.</string>
+    <!-- Offline areas -->
+    <string name="map_download_area">Download this area</string>
+    <string name="offline_area_too_large">This area is too large. Zoom in to download a smaller area.</string>
+    <string name="offline_area_name_title">Download this area</string>
+    <string name="offline_area_name_label">Name</string>
+    <string name="offline_area_name_invalid">Enter 1 to 60 characters</string>
+    <string name="action_download">Download</string>
+    <string name="offline_download_progress">Downloading %1$s · %2$d%%</string>
+    <string name="offline_download_waiting">Waiting for network</string>
+    <string name="offline_download_done">%1$s is ready for offline use</string>
+    <string name="offline_download_failed">Download failed: %1$s</string>
+    <string name="offline_download_problem">Problem: %1$s</string>
+    <string name="offline_error_unknown">Unknown error</string>
+    <string name="offline_error_tile_limit">the area needs more than %1$d tiles</string>
+    <string name="offline_area_rename_title">Rename offline area</string>
+    <string name="cd_rename_named_item">Rename %1$s</string>
+    <string name="setting_offline_areas_title">Offline areas</string>
+    <string name="setting_offline_areas_description">Map areas downloaded for use without a connection. Used by the MapLibre map.</string>
+    <string name="offline_areas_empty">No offline areas yet. On the MapLibre map, open ⋮ and tap Download this area.</string>
+    <string name="offline_areas_unavailable">MapLibre isn\'t available on this device.</string>
+    <string name="offline_areas_total">Total: %1$s</string>
+    <string name="offline_area_unknown">Unknown area</string>
+    <string name="offline_area_complete">Complete</string>
+    <string name="offline_area_downloading">Downloading %1$d%%</string>
+    <string name="offline_area_incomplete">Incomplete</string>
+    <string name="offline_area_resume">Resume</string>
+    <string name="offline_area_delete_title">Delete offline area?</string>
+    <string name="offline_area_delete_message">Delete \"%1$s\" from this device?</string>
 </resources>

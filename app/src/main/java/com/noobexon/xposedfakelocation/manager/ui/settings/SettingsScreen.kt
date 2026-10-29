@@ -30,6 +30,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.MoreVert
@@ -69,6 +70,7 @@ import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -94,12 +96,15 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.noobexon.xposedfakelocation.R
 import com.noobexon.xposedfakelocation.data.MPS_TO_KMH
+import com.noobexon.xposedfakelocation.data.normalizeMapStyleUrl
 import com.noobexon.xposedfakelocation.data.normalizeRoutingServerUrl
 import com.noobexon.xposedfakelocation.data.normalizeServerUrl
 import com.noobexon.xposedfakelocation.data.model.JoystickMode
 import com.noobexon.xposedfakelocation.data.model.JoystickPreset
+import com.noobexon.xposedfakelocation.data.model.MapRenderer
 import com.noobexon.xposedfakelocation.manager.localization.LanguageOption
 import com.noobexon.xposedfakelocation.manager.localization.LocaleController
+import com.noobexon.xposedfakelocation.manager.ui.map.maplibre.OfflineAreasDialog
 import com.noobexon.xposedfakelocation.manager.ui.theme.ThemeOption
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
@@ -206,6 +211,8 @@ fun SettingsScreen(
 
     val selectedLanguage = LanguageOption.fromTag(uiState.languageTag)
 
+    var showOfflineAreas by rememberSaveable { mutableStateOf(false) }
+
     val categories: List<Pair<SettingsCategory, List<SettingEntry>>> = listOf(
         SettingsCategory.LOCATION to listOf(
             SettingEntry.Numeric(NumericSetting.RANDOMIZE_RADIUS, uiState.useRandomize, settingsViewModel::setUseRandomize, uiState.randomizeRadius, onValueChange = { settingsViewModel.setRandomizeRadius(it.toDouble()) }, onReset = { settingsViewModel.resetNumeric(NumericSetting.RANDOMIZE_RADIUS) }),
@@ -275,6 +282,26 @@ fun SettingsScreen(
                 errorRes = { if (normalizeRoutingServerUrl(it) == null) R.string.setting_routing_server_invalid else null },
             )
         ),
+        SettingsCategory.MAP to listOf(
+            SettingEntry.MapRendererChoice(uiState.mapRenderer, settingsViewModel::setMapRenderer),
+            SettingEntry.Text(
+                key = SettingKeys.MAP_STYLE_URL,
+                titleRes = R.string.setting_map_style_url_title,
+                descriptionRes = R.string.setting_map_style_url_description,
+                labelRes = R.string.setting_map_style_url_label,
+                value = uiState.mapStyleUrl,
+                inputKind = TextInputKind.URL,
+                onValueChange = settingsViewModel::setMapStyleUrl,
+                onReset = settingsViewModel::resetMapStyleUrl,
+                errorRes = { if (normalizeMapStyleUrl(it) == null) R.string.setting_map_style_url_invalid else null },
+            ),
+            SettingEntry.Action(
+                key = SettingKeys.OFFLINE_AREAS,
+                titleRes = R.string.setting_offline_areas_title,
+                descriptionRes = R.string.setting_offline_areas_description,
+                onClick = { showOfflineAreas = true },
+            ),
+        ),
         SettingsCategory.APPEARANCE to listOf(
             SettingEntry.Theme(uiState.themeOption) { option ->
                 settingsViewModel.setTheme(option)
@@ -323,6 +350,10 @@ fun SettingsScreen(
                 }
             }
         )
+    }
+
+    if (showOfflineAreas) {
+        OfflineAreasDialog(onDismiss = { showOfflineAreas = false })
     }
 }
 
@@ -689,6 +720,14 @@ private fun SettingEntryRow(entry: SettingEntry) {
             selectedTheme = entry.selected,
             onThemeSelected = entry.onSelected
         )
+        is SettingEntry.MapRendererChoice -> SingleChoiceSettingItem(
+            titleRes = entry.titleRes,
+            descriptionRes = entry.descriptionRes,
+            options = MapRenderer.entries,
+            selected = entry.selected,
+            labelRes = { it.labelRes },
+            onSelected = entry.onSelected
+        )
         is SettingEntry.JoystickPresetChoice -> SingleChoiceSettingItem(
             titleRes = entry.titleRes,
             descriptionRes = entry.descriptionRes,
@@ -696,6 +735,11 @@ private fun SettingEntryRow(entry: SettingEntry) {
             selected = entry.selected,
             labelRes = { it.labelRes },
             onSelected = entry.onSelected
+        )
+        is SettingEntry.Action -> ActionSettingItem(
+            title = stringResource(entry.titleRes),
+            description = stringResource(entry.descriptionRes),
+            onClick = entry.onClick
         )
     }
 }
@@ -1014,6 +1058,34 @@ private fun ThemeSettingItem(
         labelRes = { it.labelRes },
         onSelected = onThemeSelected
     )
+}
+
+/**
+ * A row that runs [onClick] when tapped (e.g. opens a dialog), with a chevron instead of a value.
+ */
+@Composable
+private fun ActionSettingItem(title: String, description: String, onClick: () -> Unit) {
+    var showTooltip by remember { mutableStateOf(false) }
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(Dimensions.SPACING_SMALL)
+    ) {
+        SettingHeader(
+            title = title,
+            description = description,
+            showTooltip = showTooltip,
+            onToggleTooltip = { showTooltip = !showTooltip },
+            onClick = onClick,
+            trailing = {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        )
+    }
 }
 
 /**

@@ -6,13 +6,16 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.noobexon.xposedfakelocation.R
 import com.noobexon.xposedfakelocation.data.model.FavoriteLocation
+import com.noobexon.xposedfakelocation.data.model.MapRenderer
 import com.noobexon.xposedfakelocation.data.repository.PreferencesRepository
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import org.osmdroid.util.GeoPoint
@@ -52,6 +55,19 @@ class MapViewModel(application: Application) : AndroidViewModel(application) {
 
     /** Snapshot of the full Map-screen UI state, updated atomically. */
     val uiState: StateFlow<MapUiState> = _uiState.asStateFlow()
+
+    /** Which library draws the map. */
+    val mapRenderer: StateFlow<MapRenderer> = preferencesRepository.getMapRendererFlow()
+        .stateIn(viewModelScope, SharingStarted.Eagerly, preferencesRepository.getMapRenderer())
+
+    /** Custom MapLibre style URL; blank means OpenFreeMap. */
+    val mapStyleUrl: StateFlow<String> = preferencesRepository.getMapStyleUrlFlow()
+        .stateIn(viewModelScope, SharingStarted.Eagerly, preferencesRepository.getMapStyleUrl())
+
+    /** Switches back to osmdroid (from the MapLibre error cards). */
+    fun useOsmdroid() {
+        viewModelScope.launch { preferencesRepository.saveMapRenderer(MapRenderer.OSMDROID) }
+    }
 
     /**
      * One-shot event that tells [MapViewEffects.HandleGoToPointEvent] to animate the camera to a

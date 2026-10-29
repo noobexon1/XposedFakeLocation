@@ -10,6 +10,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.LocationSearching
 import androidx.compose.material.icons.filled.Menu
@@ -42,7 +43,9 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
@@ -50,10 +53,22 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.noobexon.xposedfakelocation.R
+import com.noobexon.xposedfakelocation.data.OFFLINE_MAX_TILES
 import com.noobexon.xposedfakelocation.data.model.MapMode
+import com.noobexon.xposedfakelocation.data.model.MapRenderer
 import com.noobexon.xposedfakelocation.manager.geo.LatLon
 import com.noobexon.xposedfakelocation.manager.geo.Place
 import com.noobexon.xposedfakelocation.manager.joystick.JoystickButton
+import com.noobexon.xposedfakelocation.manager.ui.map.maplibre.OfflineAreaNameDialog
+import com.noobexon.xposedfakelocation.manager.ui.map.maplibre.OfflineAreasEvent
+import com.noobexon.xposedfakelocation.manager.ui.map.maplibre.OfflineAreasViewModel
+import com.noobexon.xposedfakelocation.manager.ui.map.maplibre.activityOfflineAreasViewModel
+import com.noobexon.xposedfakelocation.manager.ui.map.maplibre.OfflineDownloadCard
+import com.noobexon.xposedfakelocation.manager.ui.map.maplibre.VisibleArea
+import com.noobexon.xposedfakelocation.manager.ui.map.maplibre.estimateTileCount
+import com.noobexon.xposedfakelocation.manager.ui.map.maplibre.offlineAreaName
+import com.noobexon.xposedfakelocation.manager.ui.map.maplibre.offlineStyles
+import com.noobexon.xposedfakelocation.manager.ui.map.maplibre.offlineZoomRange
 import com.noobexon.xposedfakelocation.manager.ui.map.route.MapModeSwitch
 import com.noobexon.xposedfakelocation.manager.ui.map.route.RouteEditorViewModel
 import com.noobexon.xposedfakelocation.manager.ui.map.route.RouteLoadConfirmation
@@ -66,6 +81,7 @@ import com.noobexon.xposedfakelocation.manager.ui.map.search.searchPickAction
 import com.noobexon.xposedfakelocation.manager.ui.navigation.Screen
 import kotlinx.coroutines.launch
 import org.osmdroid.util.GeoPoint
+import java.util.Locale
 
 /**
  * Top-level Map screen composable.
@@ -114,6 +130,16 @@ fun MapScreen(
     val roadFailures by routeEditorViewModel.roadFailures.collectAsStateWithLifecycle()
     val routeMode = mapMode == MapMode.ROUTE
     val search by addressSearchViewModel.ui.collectAsStateWithLifecycle()
+    val mapRenderer by mapViewModel.mapRenderer.collectAsStateWithLifecycle()
+    val mapStyleUrl by mapViewModel.mapStyleUrl.collectAsStateWithLifecycle()
+    val darkMap = MaterialTheme.colorScheme.background.luminance() < 0.5f
+    val offlineViewModel: OfflineAreasViewModel = activityOfflineAreasViewModel()
+    val offline by offlineViewModel.state.collectAsStateWithLifecycle()
+    val mapLibre = mapRenderer == MapRenderer.MAPLIBRE
+    var visibleArea by remember { mutableStateOf<VisibleArea?>(null) }
+    var pendingDownload by remember { mutableStateOf<VisibleArea?>(null) }
+    val pixelRatio = LocalDensity.current.density
+    val areaTooLarge = stringResource(R.string.offline_area_too_large)
     val keyboardController = LocalSoftwareKeyboardController.current
     val onPlacePicked: (Place) -> Unit = { place ->
         keyboardController?.hide()
@@ -148,6 +174,24 @@ fun MapScreen(
     LaunchedEffect(mapViewModel.navigateToFavoritesEvent) {
         mapViewModel.navigateToFavoritesEvent.collect {
             navController.navigate(Screen.Favorites.route) { launchSingleTop = true }
+        }
+    }
+
+    LaunchedEffect(mapLibre) {
+        if (mapLibre) {
+            offlineViewModel.refresh()
+        } else {
+            visibleArea = null
+        }
+    }
+
+    LaunchedEffect(offlineViewModel) {
+        offlineViewModel.events.collect { event ->
+            val message = when (event) {
+                is OfflineAreasEvent.Finished -> context.getString(R.string.offline_download_done, event.name)
+                is OfflineAreasEvent.Failed -> context.getString(R.string.offline_download_failed, event.message)
+            }
+            Toast.makeText(context, message, Toast.LENGTH_LONG).show()
         }
     }
 
@@ -265,6 +309,29 @@ fun MapScreen(
                                     },
                                     enabled = isFabClickable
                                 )
+                                if (mapLibre) {
+                                    DropdownMenuItem(
+                                        leadingIcon = {
+                                            Icon(
+                                                imageVector = Icons.Default.Download,
+                                                contentDescription = stringResource(R.string.map_download_area)
+                                            )
+                                        },
+                                        text = { Text(stringResource(R.string.map_download_area)) },
+                                        onClick = {
+                                            showOptionsMenu = false
+                                            visibleArea?.let { area ->
+                                                val zoom = offlineZoomRange(area.zoom)
+                                                if (estimateTileCount(area.bounds, zoom.first, zoom.last) > OFFLINE_MAX_TILES) {
+                                                    Toast.makeText(context, areaTooLarge, Toast.LENGTH_LONG).show()
+                                                } else {
+                                                    pendingDownload = area
+                                                }
+                                            }
+                                        },
+                                        enabled = visibleArea != null && offline.download == null
+                                    )
+                                }
                             }
                         }
                     }
@@ -321,6 +388,9 @@ fun MapScreen(
                     .padding(innerPadding)
             ) {
                 MapViewContainer(
+                    renderer = mapRenderer,
+                    styleUrl = mapStyleUrl,
+                    darkTheme = darkMap,
                     isLoading = uiState.isLoading,
                     lastClickedLocation = uiState.lastClickedLocation,
                     userLocation = uiState.userLocation,
@@ -345,6 +415,8 @@ fun MapScreen(
                     onRouteSegmentTap = { a, b -> routeEditorViewModel.showSegment(a to b) },
                     cameraMoveEvent = mapViewModel.cameraMoveEvent,
                     onMapCenterChange = { addressSearchViewModel.setBias(LatLon(it.latitude, it.longitude)) },
+                    onUseOsmdroid = mapViewModel::useOsmdroid,
+                    onVisibleAreaChange = { visibleArea = it },
                 )
                 MapModeSwitch(
                     mode = mapMode,
@@ -369,6 +441,16 @@ fun MapScreen(
                         onPick = onPlacePicked,
                         onRetry = addressSearchViewModel::retry,
                         modifier = Modifier.align(Alignment.TopCenter).padding(top = 8.dp),
+                    )
+                }
+                val download = offline.download
+                if (mapLibre && download != null && !search.isOpen) {
+                    OfflineDownloadCard(
+                        download = download,
+                        onCancel = offlineViewModel::cancelDownload,
+                        modifier = Modifier
+                            .align(Alignment.TopCenter)
+                            .padding(top = 64.dp, start = 16.dp, end = 16.dp),
                     )
                 }
             }
@@ -404,6 +486,22 @@ fun MapScreen(
                 onLongitudeChange = mapViewModel::onFavoriteLongitudeChange,
                 onConfirm = mapViewModel::confirmAddFavorite,
                 onDismissRequest = mapViewModel::hideAddToFavoritesDialog,
+            )
+        }
+
+        pendingDownload?.let { area ->
+            var placeName by remember(area) { mutableStateOf<String?>(null) }
+            LaunchedEffect(area) {
+                placeName = addressSearchViewModel.placeAt(LatLon(area.centerLatitude, area.centerLongitude))?.let(::offlineAreaName)
+            }
+            OfflineAreaNameDialog(
+                initialName = String.format(Locale.US, "%.4f, %.4f", area.centerLatitude, area.centerLongitude),
+                suggestedName = placeName,
+                onConfirm = { name ->
+                    offlineViewModel.startDownload(name, area, offlineStyles(mapStyleUrl), pixelRatio)
+                    pendingDownload = null
+                },
+                onDismiss = { pendingDownload = null },
             )
         }
 

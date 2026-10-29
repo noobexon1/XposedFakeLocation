@@ -1,6 +1,5 @@
 package com.noobexon.xposedfakelocation.manager.ui.map
 
-import android.content.Context
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -10,48 +9,38 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.viewinterop.AndroidView
 import com.noobexon.xposedfakelocation.R
-import com.noobexon.xposedfakelocation.data.DEFAULT_MAP_ZOOM
+import com.noobexon.xposedfakelocation.data.model.MapRenderer
 import com.noobexon.xposedfakelocation.data.model.Route
 import com.noobexon.xposedfakelocation.manager.route.RoadFailure
-import com.noobexon.xposedfakelocation.manager.ui.map.route.HandleFitRouteEvent
-import com.noobexon.xposedfakelocation.manager.ui.map.route.RouteOverlaysEffect
+import com.noobexon.xposedfakelocation.manager.ui.map.maplibre.MapLibreHost
+import com.noobexon.xposedfakelocation.manager.ui.map.maplibre.VisibleArea
+import com.noobexon.xposedfakelocation.manager.ui.map.osmdroid.OsmdroidMap
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
-import org.osmdroid.tileprovider.tilesource.TileSourceFactory
 import org.osmdroid.util.GeoPoint
-import org.osmdroid.views.MapView
-import org.osmdroid.views.overlay.Marker
-import org.osmdroid.views.overlay.mylocation.GpsMyLocationProvider
-import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay
 
 /**
- * Hosts the osmdroid [MapView] inside a Compose layout and coordinates all map-related side
- * effects.
- *
- * This composable owns the [MapView] instance (via [rememberMapView]) and the associated osmdroid
- * overlays ([rememberUserMarker], [rememberLocationOverlay]), keeping them alive across
- * recompositions. It delegates every side effect — overlay management, event collection, marker
- * updates, click listening, initial camera positioning, and lifecycle handling — to the
- * `internal` effect composables in [MapViewEffects].
+ * Shows the map with the chosen [renderer]. Both renderers take the same state and callbacks, so
+ * the rest of the screen doesn't depend on which one is shown.
  *
  * The composable is intentionally stateless: it accepts individual primitive/lambda parameters
  * rather than the full [MapViewModel], so that only affected subtrees recompose when a single
  * field changes.
  *
+ * @param renderer Which library draws the map.
+ * @param styleUrl Custom MapLibre style URL; blank means OpenFreeMap. Ignored by osmdroid.
+ * @param darkTheme Whether the app shows its dark theme; picks the OpenFreeMap style.
  * @param isLoading When `true`, hides the map and shows [LoadingSpinner] instead. Becomes `false`
- *   once [MapViewEffects.CenterMapOnUserLocation] finishes the initial camera placement.
- * @param lastClickedLocation Current spoof target, or `null`. Passed to [HandleMarkerUpdates].
- * @param userLocation Cached real device location used by [CenterMapOnUserLocation] for re-entry
- *   restoration and by [HandleCenterMapEvent] for the "center on me" action.
+ *   once the initial camera placement finishes.
+ * @param lastClickedLocation Current spoof target, or `null`; drawn as the location marker.
+ * @param userLocation Cached real device location, used to restore the camera on re-entry and
+ *   for the "center on me" action.
  * @param isPlaying Whether spoofing is active. When `true`, map taps are ignored so the marker
  *   cannot be accidentally moved.
  * @param mapZoom Last persisted zoom level; used to restore the camera on re-entry.
@@ -81,9 +70,14 @@ import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay
  * @param cameraMoveEvent One-shot camera moves that leave the marker alone (e.g. a search pick
  *   while spoofing).
  * @param onMapCenterChange Called with the map center after panning or zooming settles.
+ * @param onVisibleAreaChange MapLibre only: the visible area after the camera settles, for offline downloads.
+ * @param onUseOsmdroid MapLibre only: switches the setting back to osmdroid from an error card.
  */
 @Composable
 fun MapViewContainer(
+    renderer: MapRenderer,
+    styleUrl: String,
+    darkTheme: Boolean,
     isLoading: Boolean,
     lastClickedLocation: GeoPoint?,
     userLocation: GeoPoint?,
@@ -108,110 +102,76 @@ fun MapViewContainer(
     onRouteSegmentTap: (String, String) -> Unit = { _, _ -> },
     cameraMoveEvent: Flow<GeoPoint> = emptyFlow(),
     onMapCenterChange: (GeoPoint) -> Unit = {},
+    onVisibleAreaChange: (VisibleArea) -> Unit = {},
+    onUseOsmdroid: () -> Unit = {},
 ) {
-    val context = LocalContext.current
-
-    // Remember MapView and overlays
-    val mapView = rememberMapView(context)
-    val userMarker = rememberUserMarker(mapView)
-    val locationOverlay = rememberLocationOverlay(context, mapView)
-
-    // Add the location overlay to the map
-    AddLocationOverlayToMap(mapView, locationOverlay)
-
-    // Handle map events and updates
-    HandleCenterMapEvent(mapView, locationOverlay, centerMapEvent)
-    HandleGoToPointEvent(mapView, goToPointEvent, onClickedLocationChange)
-    HandleCameraMoveEvent(mapView, cameraMoveEvent)
-    ReportMapCenter(mapView, onMapCenterChange)
-    val markerLocation = if (routeMode && !isPlaying) null else lastClickedLocation
-    HandleMarkerUpdates(mapView, userMarker, markerLocation)
-    SetupMapClickListener(mapView, isPlaying) { point ->
-        point?.let { if (routeMode) onRouteTap(it) else onClickedLocationChange(it) }
-    }
-    RouteOverlaysEffect(
-        mapView = mapView,
-        route = route.takeIf { routeMode },
-        editable = routeEditable,
-        roadFailures = roadFailures,
-        onPointTap = onRoutePointTap,
-        onPointMoved = onRoutePointMoved,
-        onSegmentTap = onRouteSegmentTap,
-    )
-    HandleFitRouteEvent(mapView, route, fitRouteEvent)
-    CenterMapOnUserLocation(
-        mapView = mapView,
-        locationOverlay = locationOverlay,
-        lastClickedLocation = lastClickedLocation,
-        userLocation = userLocation,
-        mapZoom = mapZoom,
-        hasResolvedInitialLocation = hasResolvedInitialLocation,
-        onUserLocationChange = onUserLocationChange,
-        onMapZoomChange = onMapZoomChange,
-        onLoadingFinished = onLoadingFinished,
-        onInitialLocationResolved = onInitialLocationResolved,
-    )
-    ManageMapViewLifecycle(mapView, locationOverlay, onMapZoomChange)
-
-    // Display loading spinner or MapView
-    if (isLoading) {
-        LoadingSpinner()
-    } else {
-        DisplayMapView(mapView)
-    }
-}
-
-/**
- * Creates and remembers a [MapView] configured with MAPNIK tiles, multi-touch zoom controls,
- * and the default zoom level. The instance is stable for the lifetime of the composition.
- */
-@Composable
-private fun rememberMapView(context: Context): MapView {
-    return remember {
-        MapView(context).apply {
-            setTileSource(TileSourceFactory.MAPNIK)
-            setBuiltInZoomControls(false)
-            setMultiTouchControls(true)
-            controller.setZoom(DEFAULT_MAP_ZOOM)
-        }
+    when (renderer) {
+        MapRenderer.OSMDROID -> OsmdroidMap(
+            isLoading = isLoading,
+            lastClickedLocation = lastClickedLocation,
+            userLocation = userLocation,
+            isPlaying = isPlaying,
+            mapZoom = mapZoom,
+            hasResolvedInitialLocation = hasResolvedInitialLocation,
+            goToPointEvent = goToPointEvent,
+            centerMapEvent = centerMapEvent,
+            onClickedLocationChange = onClickedLocationChange,
+            onUserLocationChange = onUserLocationChange,
+            onMapZoomChange = onMapZoomChange,
+            onLoadingFinished = onLoadingFinished,
+            onInitialLocationResolved = onInitialLocationResolved,
+            routeMode = routeMode,
+            route = route,
+            routeEditable = routeEditable,
+            roadFailures = roadFailures,
+            fitRouteEvent = fitRouteEvent,
+            onRouteTap = onRouteTap,
+            onRoutePointTap = onRoutePointTap,
+            onRoutePointMoved = onRoutePointMoved,
+            onRouteSegmentTap = onRouteSegmentTap,
+            cameraMoveEvent = cameraMoveEvent,
+            onMapCenterChange = onMapCenterChange,
+        )
+        MapRenderer.MAPLIBRE -> MapLibreHost(
+            styleUrl = resolveStyleUrl(styleUrl, darkTheme),
+            isLoading = isLoading,
+            lastClickedLocation = lastClickedLocation,
+            userLocation = userLocation,
+            isPlaying = isPlaying,
+            mapZoom = mapZoom,
+            hasResolvedInitialLocation = hasResolvedInitialLocation,
+            goToPointEvent = goToPointEvent,
+            centerMapEvent = centerMapEvent,
+            onClickedLocationChange = onClickedLocationChange,
+            onUserLocationChange = onUserLocationChange,
+            onMapZoomChange = onMapZoomChange,
+            onLoadingFinished = onLoadingFinished,
+            onInitialLocationResolved = onInitialLocationResolved,
+            routeMode = routeMode,
+            route = route,
+            routeEditable = routeEditable,
+            roadFailures = roadFailures,
+            fitRouteEvent = fitRouteEvent,
+            onRouteTap = onRouteTap,
+            onRoutePointTap = onRoutePointTap,
+            onRoutePointMoved = onRoutePointMoved,
+            onRouteSegmentTap = onRouteSegmentTap,
+            cameraMoveEvent = cameraMoveEvent,
+            onMapCenterChange = onMapCenterChange,
+            onVisibleAreaChange = onVisibleAreaChange,
+            onUseOsmdroid = onUseOsmdroid,
+        )
     }
 }
 
 /**
- * Creates and remembers the [Marker] used to show the user's chosen spoof-target on the map.
- * Anchored at the centre-bottom so the marker pin tip points to the exact tap location.
+ * Shown instead of (osmdroid) or over (MapLibre) the map while [MapUiState.isLoading] is `true`.
+ * Displays a centred [CircularProgressIndicator] with a descriptive label.
  */
 @Composable
-private fun rememberUserMarker(mapView: MapView): Marker {
-    return remember {
-        Marker(mapView).apply {
-            setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
-        }
-    }
-}
-
-/**
- * Creates and remembers a [MyLocationNewOverlay] backed by a [GpsMyLocationProvider]. Location
- * updates are enabled immediately; they are disabled again in
- * [MapViewEffects.ManageMapViewLifecycle] on dispose.
- */
-@Composable
-private fun rememberLocationOverlay(context: Context, mapView: MapView): MyLocationNewOverlay {
-    return remember {
-        MyLocationNewOverlay(GpsMyLocationProvider(context), mapView).apply {
-            enableMyLocation()
-        }
-    }
-}
-
-/**
- * Shown in place of the map while [MapUiState.isLoading] is `true`. Displays a centred
- * [CircularProgressIndicator] with a descriptive label.
- */
-@Composable
-private fun LoadingSpinner() {
+internal fun LoadingSpinner(modifier: Modifier = Modifier) {
     Box(
-        modifier = Modifier.fillMaxSize(),
+        modifier = modifier.fillMaxSize(),
         contentAlignment = Alignment.Center
     ) {
         Column(
@@ -226,16 +186,4 @@ private fun LoadingSpinner() {
             )
         }
     }
-}
-
-/**
- * Embeds [mapView] into the Compose layout via [AndroidView], filling all available space.
- * Only rendered when [MapUiState.isLoading] is `false`.
- */
-@Composable
-private fun DisplayMapView(mapView: MapView) {
-    AndroidView(
-        factory = { mapView },
-        modifier = Modifier.fillMaxSize()
-    )
 }

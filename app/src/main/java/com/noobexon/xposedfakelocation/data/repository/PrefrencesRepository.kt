@@ -60,6 +60,8 @@ import com.noobexon.xposedfakelocation.data.KEY_JOYSTICK_STATE
 import com.noobexon.xposedfakelocation.data.KEY_LANGUAGE_TAG
 import com.noobexon.xposedfakelocation.data.KEY_LAST_CLICKED_LOCATION
 import com.noobexon.xposedfakelocation.data.KEY_MAP_MODE
+import com.noobexon.xposedfakelocation.data.KEY_MAP_RENDERER
+import com.noobexon.xposedfakelocation.data.KEY_MAP_STYLE_URL
 import com.noobexon.xposedfakelocation.data.KEY_MAP_ZOOM
 import com.noobexon.xposedfakelocation.data.KEY_MEAN_SEA_LEVEL
 import com.noobexon.xposedfakelocation.data.KEY_MEAN_SEA_LEVEL_ACCURACY
@@ -97,9 +99,11 @@ import com.noobexon.xposedfakelocation.data.model.JoystickSettings
 import com.noobexon.xposedfakelocation.data.model.JoystickState
 import com.noobexon.xposedfakelocation.data.model.LastClickedLocation
 import com.noobexon.xposedfakelocation.data.model.MapMode
+import com.noobexon.xposedfakelocation.data.model.MapRenderer
 import com.noobexon.xposedfakelocation.data.model.Route
 import com.noobexon.xposedfakelocation.data.model.RouteDraft
 import com.noobexon.xposedfakelocation.data.model.RouteJson
+import com.noobexon.xposedfakelocation.data.normalizeMapStyleUrl
 import com.noobexon.xposedfakelocation.data.normalizeRoutingServerUrl
 import com.noobexon.xposedfakelocation.data.normalizeServerUrl
 import com.noobexon.xposedfakelocation.data.normalizeWifiSsid
@@ -619,6 +623,27 @@ class PreferencesRepository(context: Context) {
     /** A missing or invalid stored URL falls back to the default server. */
     private fun readRoutingServerUrl(prefs: SharedPreferences): String =
         normalizeRoutingServerUrl(prefs.getString(KEY_ROUTING_SERVER_URL, null)) ?: DEFAULT_ROUTING_SERVER_URL
+    // endregion
+    // region Map renderer (local)
+    fun getMapRendererFlow(): Flow<MapRenderer> = localFlow(KEY_MAP_RENDERER, ::readMapRenderer)
+
+    fun getMapRenderer(): MapRenderer = readMapRenderer(localPrefs)
+
+    suspend fun saveMapRenderer(renderer: MapRenderer) = editLocal { putString(KEY_MAP_RENDERER, renderer.tag) }
+
+    private fun readMapRenderer(prefs: SharedPreferences): MapRenderer =
+        MapRenderer.fromTag(prefs.getString(KEY_MAP_RENDERER, null))
+
+    /** Blank means the default OpenFreeMap styles. */
+    fun getMapStyleUrlFlow(): Flow<String> = localFlow(KEY_MAP_STYLE_URL, ::readMapStyleUrl)
+
+    fun getMapStyleUrl(): String = readMapStyleUrl(localPrefs)
+
+    suspend fun saveMapStyleUrl(url: String) = editLocal { putString(KEY_MAP_STYLE_URL, url) }
+
+    /** A missing or invalid stored URL falls back to blank (the default styles). */
+    private fun readMapStyleUrl(prefs: SharedPreferences): String =
+        normalizeMapStyleUrl(prefs.getString(KEY_MAP_STYLE_URL, null)) ?: ""
     // endregion
     // region Map Zoom (local)
     fun getMapZoom(): Double {
