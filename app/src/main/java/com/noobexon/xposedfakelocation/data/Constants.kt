@@ -158,6 +158,15 @@ const val ROAD_FETCH_SPACING_MS = 1_000L
 const val ROAD_PATH_DRAW_MAX_POINTS = 500
 const val ROAD_PATH_DRAW_TOLERANCE_M = 2.0
 
+// MAP RENDERER
+const val KEY_MAP_RENDERER = "map_renderer"
+const val KEY_MAP_STYLE_URL = "map_style_url"
+const val OPENFREEMAP_LIGHT_STYLE_URL = "https://tiles.openfreemap.org/styles/liberty"
+const val OPENFREEMAP_DARK_STYLE_URL = "https://tiles.openfreemap.org/styles/dark"
+const val OFFLINE_MAX_ZOOM = 16
+const val OFFLINE_MAX_TILES = 30_000L
+const val OFFLINE_AREA_NAME_MAX_LENGTH = 60
+
 const val MPS_TO_KMH = 3.6f
 const val DEFAULT_JOYSTICK_MAX_SPEED = 50f / MPS_TO_KMH
 const val DEFAULT_JOYSTICK_PRESET_WALK = 1.4f

@@ -33,3 +33,20 @@ fun normalizeRoutingServerUrl(input: String?): String? {
     normalizeServerUrl(trimmed.replace(ROUTING_PROFILE_PLACEHOLDER, "car")) ?: return null
     return trimmed
 }
+
+/**
+ * Trims [input]. Blank becomes `""` (use the default styles). Otherwise returns the URL only if it
+ * is an absolute http(s) URL with a host and a valid port; a query is allowed, a fragment is not.
+ */
+fun normalizeMapStyleUrl(input: String?): String? {
+    val trimmed = input?.trim() ?: return null
+    if (trimmed.isEmpty()) return ""
+    val uri = try {
+        URI(trimmed)
+    } catch (e: URISyntaxException) {
+        return null
+    }
+    val schemeOk = uri.scheme?.lowercase() in setOf("http", "https")
+    val portOk = uri.port == -1 || uri.port in 1..65535
+    return trimmed.takeIf { schemeOk && portOk && !uri.host.isNullOrBlank() && uri.rawFragment == null }
+}
