@@ -15,6 +15,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import org.maplibre.android.geometry.LatLngBounds
 import org.maplibre.android.offline.OfflineRegion
 import org.maplibre.android.offline.OfflineRegionError
@@ -66,14 +68,16 @@ class OfflineAreasViewModel(application: Application) : AndroidViewModel(applica
     private val downloading = mutableMapOf<Long, OfflineRegion>()
     private val stored = mutableMapOf<Long, StoredRegion>()
     private var creatingAreaId: String? = null
+    private val reloadLock = Mutex()
 
-    /** Reloads the stored areas. */
+    /** Reloads the stored areas. Skipped while a reload is already running. */
     fun refresh() {
         val store = store
         if (store == null) {
             _state.update { it.copy(available = false, loaded = true) }
             return
         }
+        if (reloadLock.isLocked) return
         viewModelScope.launch { reporting { reload(store) } }
     }
 
@@ -151,14 +155,15 @@ class OfflineAreasViewModel(application: Application) : AndroidViewModel(applica
         }
     }
 
-    private suspend fun reload(store: OfflineAreasStore) {
+    private suspend fun reload(store: OfflineAreasStore) = reloadLock.withLock {
         val listed = store.regions()
         regions.clear()
         listed.forEach { regions[it.id] = downloading[it.id] ?: it }
         stored.keys.retainAll(regions.keys)
-        for (region in regions.values) {
+        for (region in regions.values.toList()) {
             if (region.id !in downloading || region.id !in stored) {
-                stored[region.id] = store.status(region).toStored(region)
+                val status = store.status(region)
+                if (region.id in regions) stored[region.id] = status.toStored(region)
             }
         }
         publish()

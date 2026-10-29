@@ -51,7 +51,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.noobexon.xposedfakelocation.R
 import com.noobexon.xposedfakelocation.data.OFFLINE_MAX_TILES
@@ -63,6 +62,7 @@ import com.noobexon.xposedfakelocation.manager.joystick.JoystickButton
 import com.noobexon.xposedfakelocation.manager.ui.map.maplibre.OfflineAreaNameDialog
 import com.noobexon.xposedfakelocation.manager.ui.map.maplibre.OfflineAreasEvent
 import com.noobexon.xposedfakelocation.manager.ui.map.maplibre.OfflineAreasViewModel
+import com.noobexon.xposedfakelocation.manager.ui.map.maplibre.activityOfflineAreasViewModel
 import com.noobexon.xposedfakelocation.manager.ui.map.maplibre.OfflineDownloadCard
 import com.noobexon.xposedfakelocation.manager.ui.map.maplibre.VisibleArea
 import com.noobexon.xposedfakelocation.manager.ui.map.maplibre.estimateTileCount
@@ -132,7 +132,7 @@ fun MapScreen(
     val mapRenderer by mapViewModel.mapRenderer.collectAsStateWithLifecycle()
     val mapStyleUrl by mapViewModel.mapStyleUrl.collectAsStateWithLifecycle()
     val darkMap = MaterialTheme.colorScheme.background.luminance() < 0.5f
-    val offlineViewModel: OfflineAreasViewModel = viewModel()
+    val offlineViewModel: OfflineAreasViewModel = activityOfflineAreasViewModel()
     val offline by offlineViewModel.state.collectAsStateWithLifecycle()
     val mapLibre = mapRenderer == MapRenderer.MAPLIBRE
     var visibleArea by remember { mutableStateOf<VisibleArea?>(null) }

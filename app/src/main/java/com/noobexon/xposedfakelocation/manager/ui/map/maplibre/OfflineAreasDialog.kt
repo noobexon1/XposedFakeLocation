@@ -31,7 +31,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.noobexon.xposedfakelocation.R
 import kotlinx.coroutines.delay
 import java.text.DateFormat
@@ -41,7 +40,7 @@ private const val DOWNLOAD_POLL_MS = 1_000L
 
 /** Lists the stored offline areas with their size, date, source and status; resume or delete them. */
 @Composable
-internal fun OfflineAreasDialog(onDismiss: () -> Unit, viewModel: OfflineAreasViewModel = viewModel()) {
+internal fun OfflineAreasDialog(onDismiss: () -> Unit, viewModel: OfflineAreasViewModel = activityOfflineAreasViewModel()) {
     val context = LocalContext.current
     val state by viewModel.state.collectAsStateWithLifecycle()
     var pendingDelete by remember { mutableStateOf<OfflineArea?>(null) }
@@ -55,9 +54,11 @@ internal fun OfflineAreasDialog(onDismiss: () -> Unit, viewModel: OfflineAreasVi
     }
     LaunchedEffect(viewModel) {
         viewModel.events.collect { event ->
-            if (event is OfflineAreasEvent.Failed) {
-                Toast.makeText(context, context.getString(R.string.offline_download_failed, event.message), Toast.LENGTH_LONG).show()
+            val text = when (event) {
+                is OfflineAreasEvent.Finished -> context.getString(R.string.offline_download_done, event.name)
+                is OfflineAreasEvent.Failed -> context.getString(R.string.offline_download_failed, event.message)
             }
+            Toast.makeText(context, text, Toast.LENGTH_LONG).show()
         }
     }
 

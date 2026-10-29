@@ -1,5 +1,8 @@
 package com.noobexon.xposedfakelocation.manager.ui.map.maplibre
 
+import android.content.Context
+import android.content.ContextWrapper
+import androidx.activity.ComponentActivity
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -18,11 +21,30 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.LocalViewModelStoreOwner
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.noobexon.xposedfakelocation.R
 import com.noobexon.xposedfakelocation.data.OFFLINE_AREA_NAME_MAX_LENGTH
+
+/**
+ * The activity's [OfflineAreasViewModel], shared by the map and Settings so both see the same
+ * download and its observers.
+ */
+@Composable
+internal fun activityOfflineAreasViewModel(): OfflineAreasViewModel {
+    val owner = LocalContext.current.findActivity() ?: checkNotNull(LocalViewModelStoreOwner.current)
+    return viewModel(viewModelStoreOwner = owner)
+}
+
+private tailrec fun Context.findActivity(): ComponentActivity? = when (this) {
+    is ComponentActivity -> this
+    is ContextWrapper -> baseContext.findActivity()
+    else -> null
+}
 
 /** Asks for the offline area's name, prefilled with [initialName]; [onConfirm] gets it trimmed. */
 @Composable
