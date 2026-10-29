@@ -8,7 +8,7 @@
 [![GitHub Repo stars](https://img.shields.io/github/stars/noobexon1/XposedFakeLocation?style=for-the-badge&logo=apachespark&color=yellow)](https://github.com/noobexon1/XposedFakeLocation/stargazers)
 ![Platform](https://img.shields.io/badge/platform-Android-green.svg?style=for-the-badge&logo=android)
 
-**XposedFakeLocation** is an Android application and Xposed module that allows you to spoof your device's location for specific apps — and, optionally, at the system level — without using "mock location" from the developer options. Customize your location with precision, including sensor data, and add randomization within a specified radius for enhanced privacy.
+**XposedFakeLocation** is an Android app and Xposed module that spoofs your location for the apps you choose — and, optionally, at the system level — without using "mock location" from the developer options. Pick a spot on the map, walk around with a joystick, or play back a route along real roads.
 
 
 <div align="center">
@@ -17,7 +17,7 @@
 
 
 > [!IMPORTANT]
-> **This module now targets the modern libxposed API (Xposed API 101+).** You must use a recent **LSPosed** build that supports the new API — older managers will not load the module. Get the latest LSPosed from the official Telegram channel: **[t.me/LSPosed](https://t.me/LSPosed)**.
+> **This module targets the modern libxposed API (Xposed API 101+).** You must use a recent **LSPosed** build that supports the new API — older managers will not load the module. Get the latest LSPosed from the official Telegram channel: **[t.me/LSPosed](https://t.me/LSPosed)**.
 
 
 ---
@@ -28,7 +28,7 @@
 - [Prerequisites](#prerequisites)
 - [Installation](#installation)
 - [Usage](#usage)
-- [Development](#development)
+- [Building from Source](#building-from-source)
 - [Contributing](#contributing)
 - [License](#license)
 - [Disclaimer](#disclaimer)
@@ -38,136 +38,120 @@
 
 ## **Features**
 
-- **Per-App Location Spoofing**: Pick the apps that should receive a fake location directly inside the app — your selection drives the LSPosed module scope automatically, so you never have to manage scope by hand.
-- **Optional System-Level Hooks**: Extend spoofing into `system_server` (`system`) and the phone process (`com.android.phone`) for deeper coverage, via a single toggle in Settings.
-- **Custom Coordinates**: Set precise GPS latitude and longitude coordinates by tapping the integrated map.
-- **Fine-Tuned Spoofing Settings**: Customize sensor values such as horizontal/vertical accuracy, altitude, mean sea level (and its accuracy), speed (and its accuracy), and GPS noise.
-- **Randomization**: Set a radius for location randomization to mimic real-world movement patterns.
-- **Reactive Updates**: You only need to force-stop and restart a target app the **first** time it's added to the scope. After that, changes you make in the manager app (location, settings, start/stop) reflect in the running target app immediately — no restart required.
-- **Root Relaunch**: Force-stop and relaunch a target app straight from the Target Apps screen so spoofing takes effect immediately (requires root).
-- **Headless / External Control**: Drive the module from another app or `adb shell` via broadcast intents (off by default).
-- **Intuitive UI Navigation**: Easy access to the map, favorite locations, target apps, and settings.
+### Spoofing
+- **Per-app spoofing**: Choose the target apps inside the app. Your selection drives the LSPosed module scope automatically, so you never manage scope by hand.
+- **Optional system-level hooks**: Extend spoofing into `system_server` (`system`) and the phone process (`com.android.phone`) with a single toggle.
+- **Wi-Fi identity hooks**: Optionally report a custom Wi-Fi SSID, BSSID and signal strength (RSSI) to target apps and hide real Wi-Fi scan results while spoofing.
+- **Fine-tuned location data**: Horizontal/vertical accuracy, altitude, mean sea level (and its accuracy), speed (and its accuracy), GPS noise, and randomization within a radius.
+- **Reactive updates**: Force-stop a target app once, the **first** time it's added. After that, changes in the manager (location, settings, start/stop) reach the running app immediately.
+- **Root relaunch**: Force-stop and reopen a target app from the Target Apps screen (requires root).
+
+### Map
+- **Two map engines**: **MapLibre** (default) shows a sharp vector map with light and dark styles that follow the app theme; **osmdroid** shows the classic OpenStreetMap tiles. You can also use your own MapLibre style URL.
+- **Offline maps** (MapLibre): Download the area you're looking at and use the map without a connection. Downloads resume after losing the connection, are named after the place automatically, and can be renamed or deleted in Settings.
+- **Address search**: Find places by name and drop the marker or a route point there.
+
+### Movement
+- **Joystick**: A floating joystick over other apps lets you walk, run, bike or drive the fake location around while a target app is open.
+- **Custom routes**: Build a route on the map and play it back with a music-player style overlay or notification controls. Set speed, wait time and speed variation per section, loop or reverse the route, and save routes to favorites.
+- **Road following**: Route sections can follow real roads (car, bike or foot) instead of straight lines. Road paths are saved with the route, so playback works offline.
+
+### App
+- **Favorites**: Save locations and routes for quick access.
+- **Settings backup**: Export and import all settings, favorites and routes as a file.
+- **Headless / external control**: Drive the module from another app or `adb shell` via broadcast intents (off by default).
+- **Themes and languages**: Light, dark or system theme; English, German and Chinese.
 
 ---
 
 ## **Prerequisites**
 
-- **Rooted Android Device**: The app requires root access to function properly.
-- **Minimum Android Version**: 11 (API 30)
+- **Rooted Android device** with a 64-bit or 32-bit **ARM** processor.
+- **Android 10 (API 29)** or newer.
 - **Modern LSPosed (new API)**: This module is built against the **libxposed API (Xposed API 101+)**, so it requires a recent [LSPosed](https://github.com/LSPosed/LSPosed) build that supports the new API. Download the latest from the official Telegram channel: **[t.me/LSPosed](https://t.me/LSPosed)**. Legacy `Xposed`/`EdXposed` and older LSPosed managers are **not** supported.
 
 ---
 
 ## **Installation**
 
-You can always install the latest stable version of `XposedFakeLocation` from the [releases](https://github.com/noobexon1/XposedFakeLocation/releases) page. 
+1. **Install the APK**
 
-If you want to build by yourself:
+   - Download `XposedFakeLocation.apk` from the latest [release](https://github.com/noobexon1/XposedFakeLocation/releases/latest), or install it from the LSPosed manager's module repository.
+   - To build it yourself, see [Building from Source](#building-from-source).
 
-1. **Clone or Download the Repository**
-
-   ```shell
-   git clone https://github.com/noobexon1/XposedFakeLocation.git
-   ```
-
-2. **Build the Application**
-
-   - Open the project in `Android Studio`.
-   - Build the APK using `Build > Build Bundle(s) / APK(s) > Build APK(s)`.
-   - Alternatively, use `Gradle`:
-
-     ```shell
-     ./gradlew assembleDebug
-     ```
-
-3. **Install the APK**
-
-   - Install the APK via `adb`:
-   
-     ```shell
-     adb install app/build/outputs/apk/debug/app-debug.apk
-     ```
-
-4. **Activate the Xposed Module**
+2. **Activate the Xposed module**
 
    - Open a recent **LSPosed Manager** that supports the new API (see [Prerequisites](#prerequisites)).
    - Enable the `XposedFakeLocation` module and reboot once.
-   - **Select target apps from inside `XposedFakeLocation`** (the `Target Apps` screen). Your selection updates the module's LSPosed scope automatically — there's no need to manage scope manually in LSPosed.
-   - **(Optional) System-level hooks:** to spoof `system_server` (`system`) and phone process (`com.android.phone`) as well, open `Settings` inside `XposedFakeLocation` and enable **`Enable system-level hooks`**. This adds those packages to the scope; **reboot** your device for the change to take effect (and reboot again after turning it off).
+   - **Select target apps from inside `XposedFakeLocation`** (the `Target Apps` screen). Your selection updates the module's LSPosed scope automatically.
+   - **(Optional) System-level hooks:** to spoof `system_server` (`system`) and the phone process (`com.android.phone`) as well, enable **`Enable system-level hooks`** in `Settings`. This adds those packages to the scope; **reboot** for the change to take effect (and again after turning it off).
 
 > [!NOTE]
-> From now on, all you need to do in `LSPosed` is **enable the module** — the entire scope is managed from within the `XposedFakeLocation` app itself. Adding/removing target apps and toggling system-level hooks updates the LSPosed scope automatically, so you should not edit the module's scope manually in `LSPosed`.
+> All you need to do in `LSPosed` is **enable the module** — the entire scope is managed from within `XposedFakeLocation`. Don't edit the module's scope manually in `LSPosed`.
 
 ---
 
 ## **Usage**
 
-1. **Launch the App**
+1. **Select target apps**
 
-   - Open `XposedFakeLocation` from your apps menu.
+   - Open `Target Apps` from the navigation menu and select the apps that should receive the fake location. Other apps keep their real location.
+   - On a rooted device, tap the relaunch button next to an app to force-stop and reopen it so spoofing applies right away.
 
-2. **Navigate the Interface**
+2. **Pick a location**
 
-   - Use the navigation menu to access different sections:
-     - **Map**: Primary interface for location selection
-     - **Favorites**: Saved locations for quick access
-     - **Target Apps**: Apps that should receive spoofed locations.
-     - **Settings**: Configure application behavior
-     - **About**: View application information
+   - Tap the map, or use the search button to find a place by name.
 
-3. **Select Target Apps**
+3. **Start spoofing**
 
-   - Open `Target Apps` from the navigation menu.
-   - Search for and select the apps that should receive spoofed locations. Selecting/deselecting an app updates the module's LSPosed scope automatically.
-   - Apps not selected here will keep receiving their normal location data.
-   - On a rooted device you can tap the relaunch button next to a selected app to force-stop and reopen it so spoofing applies right away.
+   - Press `Play` to start and `Stop` to end spoofing. Only the apps in `Target Apps` are affected.
+   - **First time only:** when an app is newly added, force-stop and reopen it once (use the relaunch button, or do it manually). After that, every change applies to the running app immediately.
 
-4. **Select a Location**
+4. **Move around (optional)**
 
-   - Use the integrated map to select your desired location by tapping on the map.
+   - **Joystick:** open it from the map to steer the location over other apps. Speeds and presets are in `Settings` → `Joystick`. It needs the "Display over other apps" permission.
+   - **Routes:** switch the map to `Route` mode, tap to add points, tap a line between points to set its speed, and press `Play`. Turn on **Follow roads** to move along streets. A route and the joystick can't run at the same time.
 
-5. **Configure Settings**
+5. **Offline maps (optional)**
 
-   - Optionally, access the `Settings` screen to fine-tune your spoofing settings.
+   - With the MapLibre map, move to the area you need and download it from the map. Manage downloaded areas in `Settings` → `Map` → `Offline areas`.
 
-6. **Start Spoofing**
+6. **Configure settings (optional)**
 
-   - Toggle the `Play/Stop` button to begin location spoofing.
-   - `XposedFakeLocation` will override location data only for apps selected in `Target Apps`.
-   - **First time only:** when an app is newly added to the scope, force-stop and reopen it once (use the relaunch button, or do it manually) so the module is loaded into it. After that the module is reactive — any change you make in the manager (location, settings, start/stop) takes effect in the running target app immediately, with no further restarts.
+   - Fine-tune location data, Wi-Fi identity, the map engine and style, the search and routing servers, theme and language in `Settings`. Export or import a backup from there as well.
 
-7. **Stop Spoofing**
+7. **Headless mode (optional, off by default)**
 
-   - Toggle the `Play/Stop` button to cease location spoofing.
-
-8. **Headless Mode (Optional. Off by default)**
-   - Drive the module from another app or `adb shell` via broadcast intents — start/stop and update coordinates without opening the UI. See [`docs/EXTERNAL_CONTROL.md`](docs/EXTERNAL_CONTROL.md) for more details.
+   - Drive the module from another app or `adb shell` via broadcast intents — start/stop and update coordinates without opening the UI. See [`docs/EXTERNAL_CONTROL.md`](docs/EXTERNAL_CONTROL.md) for details.
 
 ---
 
-## **Development**
+## **Building from Source**
 
-### **Building from Source**
-
-1. **Clone the Repository**
+1. **Clone the repository**
 
    ```shell
    git clone https://github.com/noobexon1/XposedFakeLocation.git
    ```
 
-2. **Open in Android Studio**
+2. **Build**
 
-   - Navigate to the project directory.
-   - Open the project with `Android Studio`.
+   - Open the project in `Android Studio`, let Gradle sync, and run the app on your rooted device.
+   - Or build from the command line:
 
-3. **Sync Gradle**
+     ```shell
+     ./gradlew assembleRelease
+     ```
 
-   - Allow Gradle to download all dependencies.
+     The APK is written to `app/build/outputs/apk/release/app-release.apk`. Use `assembleDebug` for a faster, unshrunk debug build (`app/build/outputs/apk/debug/app-debug.apk`).
 
-4. **Build and Run**
+3. **Install**
 
-   - Connect your rooted device.
-   - Run the app from `Android Studio`.
+   ```shell
+   adb install -r app/build/outputs/apk/release/app-release.apk
+   ```
+
+   Then activate the module as described in [Installation](#installation).
 
 ---
 
@@ -193,7 +177,12 @@ This application is intended for **development and testing purposes only**. Misu
 - [GpsSetter](https://github.com/Android1500/GpsSetter) - Highly inspired by this amazing project!
 - [libxposed API](https://github.com/libxposed/api) - The modern Xposed API this module is built on.
 - [LSPosed](https://github.com/LSPosed/LSPosed) ([Telegram](https://t.me/LSPosed)) - The go-to Xposed framework manager app.
-- [OSMDroid](https://github.com/osmdroid/osmdroid) - Open-source offline map interface.
+- [MapLibre Native](https://github.com/maplibre/maplibre-native) - Vector map rendering and offline maps.
+- [OpenFreeMap](https://openfreemap.org/) - Free map styles and tiles for the MapLibre map.
+- [OSMDroid](https://github.com/osmdroid/osmdroid) - Classic OpenStreetMap map view.
+- [OpenStreetMap](https://www.openstreetmap.org/copyright) - Map data © OpenStreetMap contributors.
+- [Photon](https://photon.komoot.io/) - Address search.
+- [OSRM](https://project-osrm.org/) and [routing.openstreetmap.de](https://routing.openstreetmap.de/) - Road routing.
 - [Jetpack Compose](https://developer.android.com/jetpack/compose) - Modern UI toolkit for Android.
 - [Material Design 3](https://m3.material.io/) - Latest design system from Google.
 - [Line Awesome Icons](https://icons8.com/line-awesome) - Beautiful icon set used in the app.
