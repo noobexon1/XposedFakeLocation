@@ -354,4 +354,14 @@
         <item quantity="other">%1$d Abschnitte haben keinen Straßenweg. Gerade abspielen?</item>
     </plurals>
     <string name="route_play_anyway">Trotzdem abspielen</string>
+    <!-- Map renderer -->
+    <string name="category_map">Karte</string>
+    <string name="setting_map_renderer_title">Kartendarstellung</string>
+    <string name="setting_map_renderer_description">osmdroid zeigt die klassischen OpenStreetMap-Kacheln. MapLibre zeigt eine Vektorkarte mit dunklem Stil, Drehung und Offline-Gebieten.</string>
+    <string name="map_renderer_osmdroid">osmdroid (klassisch)</string>
+    <string name="map_renderer_maplibre">MapLibre (Vektor)</string>
+    <string name="setting_map_style_url_title">MapLibre-Stil-URL</string>
+    <string name="setting_map_style_url_description">Wird nur von der MapLibre-Karte verwendet. Leer lassen für OpenFreeMap, das dem hellen oder dunklen Design der App folgt. Gib die URL einer MapLibre-Stil-JSON ein, um einen anderen Stil zu verwenden.</string>
+    <string name="setting_map_style_url_label">Stil-URL (leer = OpenFreeMap)</string>
+    <string name="setting_map_style_url_invalid">Gib eine gültige http- oder https-URL ein oder lass das Feld leer</string>
 </resources>

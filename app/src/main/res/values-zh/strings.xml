@@ -362,4 +362,14 @@
         <item quantity="other">%1$d 个路段没有道路路径。按直线播放？</item>
     </plurals>
     <string name="route_play_anyway">仍然播放</string>
+    <!-- Map renderer -->
+    <string name="category_map">地图</string>
+    <string name="setting_map_renderer_title">地图渲染器</string>
+    <string name="setting_map_renderer_description">osmdroid 显示经典的 OpenStreetMap 瓦片。MapLibre 显示矢量地图，支持深色样式、旋转和离线区域。</string>
+    <string name="map_renderer_osmdroid">osmdroid（经典）</string>
+    <string name="map_renderer_maplibre">MapLibre（矢量）</string>
+    <string name="setting_map_style_url_title">MapLibre 样式 URL</string>
+    <string name="setting_map_style_url_description">仅用于 MapLibre 地图。留空则使用 OpenFreeMap，并跟随应用的浅色或深色主题。输入 MapLibre 样式 JSON 的 URL 以使用其他样式。</string>
+    <string name="setting_map_style_url_label">样式 URL（留空 = OpenFreeMap）</string>
+    <string name="setting_map_style_url_invalid">请输入有效的 http 或 https URL，或留空</string>
 </resources>

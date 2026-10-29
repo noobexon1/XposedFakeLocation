@@ -12,6 +12,7 @@ import com.noobexon.xposedfakelocation.data.model.JoystickBackup
 import com.noobexon.xposedfakelocation.data.model.JoystickMode
 import com.noobexon.xposedfakelocation.data.model.JoystickPreset
 import com.noobexon.xposedfakelocation.data.model.JoystickSettings
+import com.noobexon.xposedfakelocation.data.model.MapRenderer
 import com.noobexon.xposedfakelocation.data.model.SETTINGS_BACKUP_VERSION
 import com.noobexon.xposedfakelocation.data.model.SettingsBackup
 import com.noobexon.xposedfakelocation.data.model.SpoofingBackup
@@ -52,6 +53,7 @@ import com.noobexon.xposedfakelocation.data.DEFAULT_WIFI_SSID
 import com.noobexon.xposedfakelocation.data.MAX_WIFI_RSSI
 import com.noobexon.xposedfakelocation.data.MIN_WIFI_RSSI
 import com.noobexon.xposedfakelocation.data.SYSTEM_HOOK_PACKAGES
+import com.noobexon.xposedfakelocation.data.normalizeMapStyleUrl
 import com.noobexon.xposedfakelocation.data.normalizeRoutingServerUrl
 import com.noobexon.xposedfakelocation.data.normalizeServerUrl
 import com.noobexon.xposedfakelocation.data.repository.PreferencesRepository
@@ -334,6 +336,20 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         preferencesRepository::saveRoutingServerUrl
     )
 
+    // ---- Map (local) -------------------------------------------------------------------------
+
+    private val _mapRenderer = Preference(
+        MapRenderer.OSMDROID,
+        preferencesRepository.getMapRendererFlow(),
+        preferencesRepository::saveMapRenderer
+    )
+
+    private val _mapStyleUrl = Preference(
+        "",
+        preferencesRepository.getMapStyleUrlFlow(),
+        preferencesRepository::saveMapStyleUrl
+    )
+
     // ---- Joystick (local) --------------------------------------------------------------------
 
     /** Joystick configuration; speeds in m/s. */
@@ -433,6 +449,8 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         .combine(_themeOption.state)             { s, v -> s.copy(themeOption = ThemeOption.fromTag(v)) }
         .combine(_geocodingServerUrl.state)      { s, v -> s.copy(geocodingServerUrl = v) }
         .combine(_routingServerUrl.state)        { s, v -> s.copy(routingServerUrl = v) }
+        .combine(_mapRenderer.state)             { s, v -> s.copy(mapRenderer = v) }
+        .combine(_mapStyleUrl.state)             { s, v -> s.copy(mapStyleUrl = v) }
         .stateIn(viewModelScope, SharingStarted.Eagerly, SettingsUiState())
 
     // ---- Setters -----------------------------------------------------------------------------
@@ -654,6 +672,16 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     /** Resets the routing server to the public routing.openstreetmap.de instance. */
     fun resetRoutingServerUrl() = setRoutingServerUrl(DEFAULT_ROUTING_SERVER_URL)
 
+    fun setMapRenderer(renderer: MapRenderer) = _mapRenderer.set(renderer)
+
+    /** Saves [value] if it is blank or a valid http(s) URL; the settings row blocks invalid input. */
+    fun setMapStyleUrl(value: String) {
+        normalizeMapStyleUrl(value)?.let(_mapStyleUrl::set)
+    }
+
+    /** Clears the style URL, so MapLibre uses OpenFreeMap again. */
+    fun resetMapStyleUrl() = setMapStyleUrl("")
+
     /**
      * Restores every spoofing and behavioural preference to its constant default value (see
      * `data/Constants.kt`). Unlike the per-row reset icons (which only clear a value), this bulk
@@ -691,6 +719,8 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         setEnableBroadcastControl(DEFAULT_ENABLE_BROADCAST_CONTROL)
         resetGeocodingServerUrl()
         resetRoutingServerUrl()
+        setMapRenderer(MapRenderer.OSMDROID)
+        resetMapStyleUrl()
         JoystickSettings().let { defaults ->
             setJoystickMode(defaults.mode)
             setJoystickSelectedPreset(defaults.selectedPreset)

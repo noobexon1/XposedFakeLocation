@@ -366,4 +366,14 @@
         <item quantity="other">%1$d segments have no road path. Play them straight?</item>
     </plurals>
     <string name="route_play_anyway">Play anyway</string>
+    <!-- Map renderer -->
+    <string name="category_map">Map</string>
+    <string name="setting_map_renderer_title">Map renderer</string>
+    <string name="setting_map_renderer_description">osmdroid shows the classic OpenStreetMap tiles. MapLibre shows a vector map with a dark style, rotation and offline areas.</string>
+    <string name="map_renderer_osmdroid">osmdroid (classic)</string>
+    <string name="map_renderer_maplibre">MapLibre (vector)</string>
+    <string name="setting_map_style_url_title">MapLibre style URL</string>
+    <string name="setting_map_style_url_description">Used by the MapLibre map only. Leave blank for OpenFreeMap, which follows the app\'s light or dark theme. Enter the URL of a MapLibre style JSON to use another style.</string>
+    <string name="setting_map_style_url_label">Style URL (blank = OpenFreeMap)</string>
+    <string name="setting_map_style_url_invalid">Enter a valid http or https URL, or leave it blank</string>
 </resources>

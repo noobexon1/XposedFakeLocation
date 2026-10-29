@@ -36,6 +36,7 @@ import com.noobexon.xposedfakelocation.data.DEFAULT_WIFI_RSSI
 import com.noobexon.xposedfakelocation.data.DEFAULT_WIFI_SSID
 import com.noobexon.xposedfakelocation.data.MPS_TO_KMH
 import com.noobexon.xposedfakelocation.data.model.JoystickPreset
+import com.noobexon.xposedfakelocation.data.model.MapRenderer
 import com.noobexon.xposedfakelocation.manager.localization.LanguageOption
 import com.noobexon.xposedfakelocation.manager.ui.theme.ThemeOption
 import kotlin.math.round
@@ -56,6 +57,7 @@ enum class SettingsCategory(@StringRes val titleRes: Int) {
     WIFI_IDENTITY(R.string.category_wifi_identity),
     EXTERNAL_CONTROL(R.string.category_external_control),
     SEARCH(R.string.category_search),
+    MAP(R.string.category_map),
     APPEARANCE(R.string.category_appearance),
     LANGUAGE(R.string.category_language)
 }
@@ -209,6 +211,8 @@ object SettingKeys {
     const val BROADCAST = "broadcast"
     const val SEARCH_SERVER = "search_server"
     const val ROUTING_SERVER = "routing_server"
+    const val MAP_RENDERER = "map_renderer"
+    const val MAP_STYLE_URL = "map_style_url"
     const val THEME = "theme"
     const val LANGUAGE = "language"
 }
@@ -337,6 +341,16 @@ sealed interface SettingEntry {
         override val descriptionRes: Int get() = R.string.setting_theme_description
     }
 
+    /** The map renderer picker row. */
+    data class MapRendererChoice(
+        val selected: MapRenderer,
+        val onSelected: (MapRenderer) -> Unit
+    ) : SettingEntry {
+        override val key: String get() = SettingKeys.MAP_RENDERER
+        override val titleRes: Int get() = R.string.setting_map_renderer_title
+        override val descriptionRes: Int get() = R.string.setting_map_renderer_description
+    }
+
     /**
      * The joystick's Constant-mode speed preset picker. Tapping the row opens a selection dialog.
      *
@@ -361,6 +375,14 @@ val JoystickPreset.labelRes: Int
         JoystickPreset.RUN -> R.string.setting_joystick_run_label
         JoystickPreset.BIKE -> R.string.setting_joystick_bike_label
         JoystickPreset.DRIVE -> R.string.setting_joystick_drive_label
+    }
+
+/** Display name of a map renderer. */
+@get:StringRes
+val MapRenderer.labelRes: Int
+    get() = when (this) {
+        MapRenderer.OSMDROID -> R.string.map_renderer_osmdroid
+        MapRenderer.MAPLIBRE -> R.string.map_renderer_maplibre
     }
 
 /**
@@ -405,6 +427,9 @@ data class SettingsUiState(
     // Address search and routing
     val geocodingServerUrl: String = DEFAULT_GEOCODING_SERVER_URL,
     val routingServerUrl: String = DEFAULT_ROUTING_SERVER_URL,
+    // Map
+    val mapRenderer: MapRenderer = MapRenderer.OSMDROID,
+    val mapStyleUrl: String = "",
     // App
     val languageTag: String = DEFAULT_LANGUAGE_TAG,
     val themeOption: ThemeOption = ThemeOption.fromTag(DEFAULT_THEME_OPTION),

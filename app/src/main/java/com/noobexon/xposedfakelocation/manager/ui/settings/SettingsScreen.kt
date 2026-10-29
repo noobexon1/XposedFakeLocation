@@ -94,10 +94,12 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.noobexon.xposedfakelocation.R
 import com.noobexon.xposedfakelocation.data.MPS_TO_KMH
+import com.noobexon.xposedfakelocation.data.normalizeMapStyleUrl
 import com.noobexon.xposedfakelocation.data.normalizeRoutingServerUrl
 import com.noobexon.xposedfakelocation.data.normalizeServerUrl
 import com.noobexon.xposedfakelocation.data.model.JoystickMode
 import com.noobexon.xposedfakelocation.data.model.JoystickPreset
+import com.noobexon.xposedfakelocation.data.model.MapRenderer
 import com.noobexon.xposedfakelocation.manager.localization.LanguageOption
 import com.noobexon.xposedfakelocation.manager.localization.LocaleController
 import com.noobexon.xposedfakelocation.manager.ui.theme.ThemeOption
@@ -274,6 +276,20 @@ fun SettingsScreen(
                 onReset = settingsViewModel::resetRoutingServerUrl,
                 errorRes = { if (normalizeRoutingServerUrl(it) == null) R.string.setting_routing_server_invalid else null },
             )
+        ),
+        SettingsCategory.MAP to listOf(
+            SettingEntry.MapRendererChoice(uiState.mapRenderer, settingsViewModel::setMapRenderer),
+            SettingEntry.Text(
+                key = SettingKeys.MAP_STYLE_URL,
+                titleRes = R.string.setting_map_style_url_title,
+                descriptionRes = R.string.setting_map_style_url_description,
+                labelRes = R.string.setting_map_style_url_label,
+                value = uiState.mapStyleUrl,
+                inputKind = TextInputKind.URL,
+                onValueChange = settingsViewModel::setMapStyleUrl,
+                onReset = settingsViewModel::resetMapStyleUrl,
+                errorRes = { if (normalizeMapStyleUrl(it) == null) R.string.setting_map_style_url_invalid else null },
+            ),
         ),
         SettingsCategory.APPEARANCE to listOf(
             SettingEntry.Theme(uiState.themeOption) { option ->
@@ -688,6 +704,14 @@ private fun SettingEntryRow(entry: SettingEntry) {
         is SettingEntry.Theme -> ThemeSettingItem(
             selectedTheme = entry.selected,
             onThemeSelected = entry.onSelected
+        )
+        is SettingEntry.MapRendererChoice -> SingleChoiceSettingItem(
+            titleRes = entry.titleRes,
+            descriptionRes = entry.descriptionRes,
+            options = MapRenderer.entries,
+            selected = entry.selected,
+            labelRes = { it.labelRes },
+            onSelected = entry.onSelected
         )
         is SettingEntry.JoystickPresetChoice -> SingleChoiceSettingItem(
             titleRes = entry.titleRes,
