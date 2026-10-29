@@ -42,6 +42,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
@@ -114,6 +115,9 @@ fun MapScreen(
     val roadFailures by routeEditorViewModel.roadFailures.collectAsStateWithLifecycle()
     val routeMode = mapMode == MapMode.ROUTE
     val search by addressSearchViewModel.ui.collectAsStateWithLifecycle()
+    val mapRenderer by mapViewModel.mapRenderer.collectAsStateWithLifecycle()
+    val mapStyleUrl by mapViewModel.mapStyleUrl.collectAsStateWithLifecycle()
+    val darkMap = MaterialTheme.colorScheme.background.luminance() < 0.5f
     val keyboardController = LocalSoftwareKeyboardController.current
     val onPlacePicked: (Place) -> Unit = { place ->
         keyboardController?.hide()
@@ -321,6 +325,9 @@ fun MapScreen(
                     .padding(innerPadding)
             ) {
                 MapViewContainer(
+                    renderer = mapRenderer,
+                    styleUrl = mapStyleUrl,
+                    darkTheme = darkMap,
                     isLoading = uiState.isLoading,
                     lastClickedLocation = uiState.lastClickedLocation,
                     userLocation = uiState.userLocation,
@@ -345,6 +352,7 @@ fun MapScreen(
                     onRouteSegmentTap = { a, b -> routeEditorViewModel.showSegment(a to b) },
                     cameraMoveEvent = mapViewModel.cameraMoveEvent,
                     onMapCenterChange = { addressSearchViewModel.setBias(LatLon(it.latitude, it.longitude)) },
+                    onUseOsmdroid = mapViewModel::useOsmdroid,
                 )
                 MapModeSwitch(
                     mode = mapMode,

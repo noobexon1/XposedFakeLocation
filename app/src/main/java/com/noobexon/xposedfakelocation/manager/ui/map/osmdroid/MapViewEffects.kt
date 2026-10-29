@@ -1,4 +1,4 @@
-package com.noobexon.xposedfakelocation.manager.ui.map
+package com.noobexon.xposedfakelocation.manager.ui.map.osmdroid
 
 import android.widget.Toast
 import androidx.compose.runtime.Composable
@@ -16,6 +16,8 @@ import androidx.lifecycle.repeatOnLifecycle
 import com.noobexon.xposedfakelocation.R
 import com.noobexon.xposedfakelocation.data.DEFAULT_MAP_ZOOM
 import com.noobexon.xposedfakelocation.manager.geo.LatLon
+import com.noobexon.xposedfakelocation.manager.ui.map.getLastKnownDeviceLocation
+import com.noobexon.xposedfakelocation.manager.ui.map.resolveInitialCamera
 import kotlinx.coroutines.flow.Flow
 import org.osmdroid.events.DelayedMapListener
 import org.osmdroid.events.MapEventsReceiver

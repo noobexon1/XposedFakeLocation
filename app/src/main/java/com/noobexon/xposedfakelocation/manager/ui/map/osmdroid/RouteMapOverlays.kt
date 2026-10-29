@@ -1,4 +1,4 @@
-package com.noobexon.xposedfakelocation.manager.ui.map.route
+package com.noobexon.xposedfakelocation.manager.ui.map.osmdroid
 
 import android.graphics.DashPathEffect
 import androidx.compose.material3.MaterialTheme
@@ -15,6 +15,7 @@ import com.noobexon.xposedfakelocation.manager.route.RoadFailure
 import com.noobexon.xposedfakelocation.manager.ui.map.PointRole
 import com.noobexon.xposedfakelocation.manager.ui.map.SegmentMarker
 import com.noobexon.xposedfakelocation.manager.ui.map.routeDrawing
+import com.noobexon.xposedfakelocation.manager.ui.map.route.RouteMarkerIcons
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.suspendCancellableCoroutine
