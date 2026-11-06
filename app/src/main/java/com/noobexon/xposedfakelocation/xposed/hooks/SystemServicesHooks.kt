@@ -5,8 +5,7 @@ import android.location.Location
 import android.location.LocationManager
 import android.net.wifi.WifiInfo
 import android.os.Build
-import android.telephony.CellInfo
-import android.util.ArrayMap
+import android.os.Parcelable
 import android.util.Log
 import com.noobexon.xposedfakelocation.xposed.utils.LocationUtil
 import com.noobexon.xposedfakelocation.xposed.utils.PreferencesUtil
@@ -16,6 +15,7 @@ import io.github.libxposed.api.XposedInterface.Chain
 import io.github.libxposed.api.XposedInterface.Hooker
 import java.lang.reflect.Field
 import java.lang.reflect.Method
+import java.lang.reflect.Modifier
 
 class SystemServicesHooks(
     private val module: XposedInterface,
@@ -72,57 +72,67 @@ class SystemServicesHooks(
 
     private fun hookLocationDispatch(classLoader: ClassLoader) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            hookLocationProviderManager(classLoader)
+            hookRegistrationDelivery(classLoader)
         }
         hookReceiverCallbacks(classLoader)
     }
 
-    private fun hookLocationProviderManager(classLoader: ClassLoader) {
+    private fun hookRegistrationDelivery(classLoader: ClassLoader) {
         val providerClass = findClass(
             classLoader,
             "com.android.server.location.provider.LocationProviderManager"
         ) ?: return
 
-        hookAll(providerClass, "onReportLocation") { chain ->
-            interceptOnReportLocation(providerClass, chain)
-        }
-    }
-
-    private fun interceptOnReportLocation(providerClass: Class<*>, chain: Chain): Any? {
-        if (PreferencesUtil.getIsPlaying() != true) return chain.proceed()
-        val locationResult = chain.args.firstOrNull() ?: return chain.proceed()
-        val registrationsField = findField(providerClass, "mRegistrations") ?: return chain.proceed()
-        val registrations = registrationsField.get(chain.thisObject) as? Map<*, *> ?: return chain.proceed()
-
-        val locationsField = findField(locationResult.javaClass, "mLocations") ?: return chain.proceed()
-        val originalLocations = locationsField.get(locationResult) as? List<*> ?: return chain.proceed()
-        val original = originalLocations.firstOrNull() as? Location
-        val fakeLocation = LocationUtil.createFakeLocation(original)
-        val originalRegistrations = ArrayMap<Any?, Any?>()
-        val passthroughRegistrations = ArrayMap<Any?, Any?>()
-
-        registrations.forEach { (key, value) ->
-            originalRegistrations[key] = value
-            val packageNames = collectPackageNames(value)
-            val spoofedPackage = packageNames.firstOrNull { shouldSpoofPackage(it) }
-            if (spoofedPackage != null) {
-                // Deliver a fake location directly to this target registration and exclude it from
-                // the passthrough set so the real location is never pushed to it below.
-                locationsField.set(locationResult, arrayListOf(fakeLocation))
-                deliverLocationToRegistration(value, locationResult)
-                module.log(Log.INFO, tag, "Delivered spoofed provider location to $spoofedPackage.")
-            } else {
-                passthroughRegistrations[key] = value
+        val registrations = providerClass.declaredClasses.filter { clazz ->
+            clazz.declaredMethods.any {
+                it.name == "acceptLocationChange" && !Modifier.isAbstract(it.modifiers)
             }
         }
-
-        locationsField.set(locationResult, ArrayList(originalLocations))
-        registrationsField.set(chain.thisObject, passthroughRegistrations)
-        return try {
-            chain.proceed()
-        } finally {
-            registrationsField.set(chain.thisObject, originalRegistrations)
+        if (registrations.isEmpty()) {
+            module.log(Log.WARN, tag, "No acceptLocationChange override found on ${providerClass.name}")
+            return
         }
+
+        registrations.forEach { clazz -> hookAll(clazz, "acceptLocationChange") { chain ->
+            interceptAcceptLocationChange(chain)
+        } }
+    }
+
+    private fun interceptAcceptLocationChange(chain: Chain): Any? {
+        if (PreferencesUtil.getIsPlaying() != true) return chain.proceed()
+        // This runs while the framework holds mMultiplexerLock, so attribute with a single identity
+        // lookup instead of walking the registration's object graph.
+        val spoofedPackage = registrationPackageName(chain.thisObject)
+            ?.takeIf { shouldSpoofPackage(it) }
+            ?: return chain.proceed()
+
+        val spoofedResult = createFakeLocationResult(chain.args.firstOrNull())
+            ?: return chain.proceed()
+        module.log(Log.INFO, tag, "Replaced provider location for $spoofedPackage.")
+        return chain.proceed(arrayOf<Any?>(spoofedResult))
+    }
+
+    private fun registrationPackageName(registration: Any): String? = runCatching {
+        val identity = findMethod(registration.javaClass, "getIdentity")?.invoke(registration)
+        identity?.let { findMethod(it.javaClass, "getPackageName")?.invoke(it) } as? String
+    }.getOrNull()
+
+    // The reported LocationResult instance is shared by every registration of the provider, so the
+    // spoofed copy is built from scratch instead of being written into place.
+    private fun createFakeLocationResult(locationResult: Any?): Any? {
+        val originalLocations = locationResult?.let { result ->
+            findField(result.javaClass, "mLocations")?.get(result)
+        } as? List<*> ?: return null
+        val original = originalLocations.firstOrNull() as? Location ?: return null
+
+        return runCatching {
+            val builder = findMethod(locationResult.javaClass, "builder")?.invoke(null) ?: return null
+            val populated = findMethod(builder.javaClass, "addLocation", Location::class.java)
+                ?.invoke(builder, LocationUtil.createFakeLocation(original)) ?: return null
+            findMethod(populated.javaClass, "build")?.invoke(populated)
+        }.onFailure {
+            module.log(Log.ERROR, tag, "Could not build spoofed location result: ${it.message}")
+        }.getOrNull()
     }
 
     private fun hookMiuiLocationServices(classLoader: ClassLoader) {
@@ -162,7 +172,7 @@ class SystemServicesHooks(
             val result = chain.proceed()
             if (shouldSpoofArgs(chain.args)) {
                 module.log(Log.INFO, tag, "Cleared MIUI blurry cell info result.")
-                emptyList<CellInfo>()
+                emptyResultLike(result)
             } else {
                 result
             }
@@ -283,7 +293,7 @@ class SystemServicesHooks(
             val identity = WifiIdentityHookPolicy.readActiveIdentity(module)
             if (identity != null && shouldSpoofWifiArgs(chain.args, identity.targetApps)) {
                 module.log(Log.INFO, tag, "Cleared Wi-Fi scan results while spoofing.")
-                emptyList<Any>()
+                emptyResultLike(result)
             } else {
                 result
             }
@@ -308,6 +318,29 @@ class SystemServicesHooks(
             .setRssi(identity.rssi)
             .setNetworkId(0)
             .build()
+
+    /**
+     * Builds an empty replacement that keeps the runtime type of [original].
+     *
+     * `WifiServiceImpl#getScanResults` returns a Parcelable list slice, which the Binder stub
+     * writes through `Parcel#writeTypedObject`; substituting a plain list there fails the
+     * `Parcelable` cast inside system_server and takes the whole framework down. Falls back to
+     * the untouched [original] when no empty instance of that type can be created.
+     */
+    private fun emptyResultLike(original: Any?): Any? = when (original) {
+        null -> null
+        is Parcelable -> createEmptySlice(original) ?: original.also {
+            module.log(Log.WARN, tag, "No empty ${it.javaClass.name} available; keeping scan results.")
+        }
+        is List<*> -> ArrayList<Any?>()
+        else -> original
+    }
+
+    private fun createEmptySlice(original: Parcelable): Any? = runCatching {
+        original.javaClass.getMethod("emptyList").invoke(null)
+    }.recoverCatching {
+        original.javaClass.getDeclaredConstructor(List::class.java).newInstance(ArrayList<Any?>())
+    }.getOrNull()
 
     private fun hookGeofence(classLoader: ClassLoader) {
         val serviceClass = findClass(
@@ -384,25 +417,6 @@ class SystemServicesHooks(
             }
         }
         return null
-    }
-
-    private fun deliverLocationToRegistration(registration: Any?, locationResult: Any) {
-        if (registration == null) return
-        runCatching {
-            val acceptMethod = registration.javaClass.methods.firstOrNull { it.name == "acceptLocationChange" }
-                ?: registration.javaClass.declaredMethods.firstOrNull { it.name == "acceptLocationChange" }
-                ?: return
-            acceptMethod.isAccessible = true
-            val operation = acceptMethod.invoke(registration, locationResult)
-
-            val executeMethod = registration.javaClass.methods.firstOrNull { it.name == "executeOperation" }
-                ?: registration.javaClass.declaredMethods.firstOrNull { it.name == "executeOperation" }
-                ?: return
-            executeMethod.isAccessible = true
-            executeMethod.invoke(registration, operation)
-        }.onFailure {
-            module.log(Log.ERROR, tag, "Failed delivering spoofed provider location: ${it.message}")
-        }
     }
 
     // Name-based attribution for pull/query style calls: only spoof while playing and when a target
