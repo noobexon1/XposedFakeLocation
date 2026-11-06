@@ -5,7 +5,7 @@ import android.location.Location
 import android.location.LocationManager
 import android.net.wifi.WifiInfo
 import android.os.Build
-import android.telephony.CellInfo
+import android.os.Parcelable
 import android.util.Log
 import com.noobexon.xposedfakelocation.xposed.utils.LocationUtil
 import com.noobexon.xposedfakelocation.xposed.utils.PreferencesUtil
@@ -172,7 +172,7 @@ class SystemServicesHooks(
             val result = chain.proceed()
             if (shouldSpoofArgs(chain.args)) {
                 module.log(Log.INFO, tag, "Cleared MIUI blurry cell info result.")
-                emptyList<CellInfo>()
+                emptyResultLike(result)
             } else {
                 result
             }
@@ -293,7 +293,7 @@ class SystemServicesHooks(
             val identity = WifiIdentityHookPolicy.readActiveIdentity(module)
             if (identity != null && shouldSpoofWifiArgs(chain.args, identity.targetApps)) {
                 module.log(Log.INFO, tag, "Cleared Wi-Fi scan results while spoofing.")
-                emptyList<Any>()
+                emptyResultLike(result)
             } else {
                 result
             }
@@ -318,6 +318,29 @@ class SystemServicesHooks(
             .setRssi(identity.rssi)
             .setNetworkId(0)
             .build()
+
+    /**
+     * Builds an empty replacement that keeps the runtime type of [original].
+     *
+     * `WifiServiceImpl#getScanResults` returns a Parcelable list slice, which the Binder stub
+     * writes through `Parcel#writeTypedObject`; substituting a plain list there fails the
+     * `Parcelable` cast inside system_server and takes the whole framework down. Falls back to
+     * the untouched [original] when no empty instance of that type can be created.
+     */
+    private fun emptyResultLike(original: Any?): Any? = when (original) {
+        null -> null
+        is Parcelable -> createEmptySlice(original) ?: original.also {
+            module.log(Log.WARN, tag, "No empty ${it.javaClass.name} available; keeping scan results.")
+        }
+        is List<*> -> ArrayList<Any?>()
+        else -> original
+    }
+
+    private fun createEmptySlice(original: Parcelable): Any? = runCatching {
+        original.javaClass.getMethod("emptyList").invoke(null)
+    }.recoverCatching {
+        original.javaClass.getDeclaredConstructor(List::class.java).newInstance(ArrayList<Any?>())
+    }.getOrNull()
 
     private fun hookGeofence(classLoader: ClassLoader) {
         val serviceClass = findClass(
