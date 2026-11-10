@@ -2,6 +2,7 @@ package com.noobexon.xposedfakelocation.xposed.hooks
 
 import android.location.GnssMeasurementsEvent
 import android.location.GnssNavigationMessage
+import android.os.Build
 import android.util.Log
 import io.github.libxposed.api.XposedInterface
 import java.util.WeakHashMap
@@ -98,5 +99,34 @@ class GnssApiHooks(
         }
     }
 
-    private fun hookCapabilities() = Unit
+    /** Reports no raw-data support from `GnssCapabilities` (API 30+) while spoofing. */
+    private fun hookCapabilities() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) return
+        val capabilitiesClass = runCatching {
+            Class.forName("android.location.GnssCapabilities", false, classLoader)
+        }.onFailure {
+            module.log(Log.ERROR, tag, "GnssCapabilities not found: ${it.message}")
+        }.getOrNull() ?: return
+        val methods = runCatching { capabilitiesClass.declaredMethods }.onFailure {
+            module.log(Log.ERROR, tag, "Failed listing GnssCapabilities methods: ${it.message}")
+        }.getOrNull() ?: return
+
+        methods
+            .filter { method ->
+                method.name in GnssHookPolicy.UNSUPPORTED_CAPABILITIES &&
+                    method.parameterTypes.isEmpty() &&
+                    method.returnType == java.lang.Boolean.TYPE
+            }
+            .forEach { method ->
+                runCatching {
+                    module.hook(method).intercept { chain ->
+                        val real = chain.proceed() as Boolean
+                        GnssHookPolicy.capability(method.name, gnssSpoofingActive(), real)
+                    }
+                    module.log(Log.INFO, tag, "Hooked GnssCapabilities#${method.name}.")
+                }.onFailure {
+                    module.log(Log.ERROR, tag, "Failed hooking GnssCapabilities#${method.name}: ${it.message}")
+                }
+            }
+    }
 }
