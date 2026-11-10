@@ -19,8 +19,14 @@ class GnssApiHooks(
     private val classLoader: ClassLoader,
 ) {
     private val tag = "[GnssApiHooks]"
-    private val measurementWrappers = WeakHashMap<GnssMeasurementsEvent.Callback, MeasurementsCallbackWrapper>()
-    private val navigationWrappers = WeakHashMap<GnssNavigationMessage.Callback, NavigationMessageCallbackWrapper>()
+    private val measurementWrappers = WrapperCache<GnssMeasurementsEvent.Callback>(
+        isWrapper = { it is MeasurementsCallbackWrapper },
+        create = ::MeasurementsCallbackWrapper,
+    )
+    private val navigationWrappers = WrapperCache<GnssNavigationMessage.Callback>(
+        isWrapper = { it is NavigationMessageCallbackWrapper },
+        create = ::NavigationMessageCallbackWrapper,
+    )
 
     fun init() {
         val locationManagerClass = runCatching {
@@ -31,36 +37,45 @@ class GnssApiHooks(
 
         val measurementsCallback = GnssMeasurementsEvent.Callback::class.java
         val navigationCallback = GnssNavigationMessage.Callback::class.java
-        hookCallbackArgument(locationManagerClass, "registerGnssMeasurementsCallback", measurementsCallback, ::measurementWrapper)
-        hookCallbackArgument(locationManagerClass, "unregisterGnssMeasurementsCallback", measurementsCallback, ::releaseMeasurementWrapper)
-        hookCallbackArgument(locationManagerClass, "registerGnssNavigationMessageCallback", navigationCallback, ::navigationWrapper)
-        hookCallbackArgument(locationManagerClass, "unregisterGnssNavigationMessageCallback", navigationCallback, ::releaseNavigationWrapper)
+        hookRegister(locationManagerClass, "registerGnssMeasurementsCallback", measurementsCallback, measurementWrappers)
+        hookUnregister(locationManagerClass, "unregisterGnssMeasurementsCallback", measurementsCallback, measurementWrappers)
+        hookRegister(locationManagerClass, "registerGnssNavigationMessageCallback", navigationCallback, navigationWrappers)
+        hookUnregister(locationManagerClass, "unregisterGnssNavigationMessageCallback", navigationCallback, navigationWrappers)
         hookCapabilities()
         module.log(Log.INFO, tag, "Instantiated hooks successfully")
     }
 
-    private fun measurementWrapper(callback: GnssMeasurementsEvent.Callback): GnssMeasurementsEvent.Callback =
-        if (callback is MeasurementsCallbackWrapper) callback
-        else synchronized(measurementWrappers) { measurementWrappers.getOrPut(callback) { MeasurementsCallbackWrapper(callback) } }
+    /**
+     * Registers the wrapper of [cache] instead of the app's callback. A wrapper created for this call is
+     * dropped again when the registration returns `false` or throws, so a failed registration doesn't
+     * keep the app callback alive.
+     */
+    private fun <T : Any> hookRegister(clazz: Class<*>, methodName: String, callbackType: Class<T>, cache: WrapperCache<T>) {
+        hookCallbackArgument(clazz, methodName, callbackType) { callback, proceed ->
+            val (wrapper, created) = cache.acquire(callback)
+            try {
+                proceed(wrapper).also { result -> if (created && result == false) cache.discard(callback) }
+            } catch (t: Throwable) {
+                if (created) cache.discard(callback)
+                throw t
+            }
+        }
+    }
 
-    /** The wrapper registered for [callback], dropped from the cache since it is being unregistered. */
-    private fun releaseMeasurementWrapper(callback: GnssMeasurementsEvent.Callback): GnssMeasurementsEvent.Callback =
-        synchronized(measurementWrappers) { measurementWrappers.remove(callback) } ?: callback
+    /** Unregisters the wrapper of [cache] that was registered for the app's callback. */
+    private fun <T : Any> hookUnregister(clazz: Class<*>, methodName: String, callbackType: Class<T>, cache: WrapperCache<T>) {
+        hookCallbackArgument(clazz, methodName, callbackType) { callback, proceed -> proceed(cache.release(callback)) }
+    }
 
-    private fun navigationWrapper(callback: GnssNavigationMessage.Callback): GnssNavigationMessage.Callback =
-        if (callback is NavigationMessageCallbackWrapper) callback
-        else synchronized(navigationWrappers) { navigationWrappers.getOrPut(callback) { NavigationMessageCallbackWrapper(callback) } }
-
-    /** The wrapper registered for [callback], dropped from the cache since it is being unregistered. */
-    private fun releaseNavigationWrapper(callback: GnssNavigationMessage.Callback): GnssNavigationMessage.Callback =
-        synchronized(navigationWrappers) { navigationWrappers.remove(callback) } ?: callback
-
-    /** Hooks every overload of [methodName] taking a [callbackType] and replaces that argument with [replace]. */
+    /**
+     * Hooks every overload of [methodName] taking a [callbackType]. [onCall] gets that argument and a
+     * `proceed` function that runs the original method with the argument replaced.
+     */
     private fun <T : Any> hookCallbackArgument(
         clazz: Class<*>,
         methodName: String,
         callbackType: Class<T>,
-        replace: (T) -> T,
+        onCall: (callback: T, proceed: (replacement: T) -> Any?) -> Any?,
     ) {
         val methods = runCatching {
             clazz.declaredMethods.filter { method ->
@@ -80,9 +95,11 @@ class GnssApiHooks(
                 module.hook(method).intercept { chain ->
                     val callback = chain.args[index]
                     if (callbackType.isInstance(callback)) {
-                        val args = chain.args.toTypedArray()
-                        args[index] = replace(callbackType.cast(callback)!!)
-                        chain.proceed(args)
+                        onCall(callbackType.cast(callback)!!) { replacement ->
+                            val args = chain.args.toTypedArray()
+                            args[index] = replacement
+                            chain.proceed(args)
+                        }
                     } else {
                         chain.proceed()
                     }
@@ -129,4 +146,29 @@ class GnssApiHooks(
                 }
             }
     }
+}
+
+/** The wrappers handed to the platform in place of the app's callbacks, keyed by the app's callback. */
+private class WrapperCache<T : Any>(
+    private val isWrapper: (T) -> Boolean,
+    private val create: (T) -> T,
+) {
+    private val wrappers = WeakHashMap<T, T>()
+
+    /** The wrapper to register for [callback], and whether it was created by this call. */
+    fun acquire(callback: T): Pair<T, Boolean> {
+        if (isWrapper(callback)) return callback to false
+        synchronized(wrappers) {
+            wrappers[callback]?.let { return it to false }
+            return create(callback).also { wrappers[callback] = it } to true
+        }
+    }
+
+    /** Forgets the wrapper created for [callback]. */
+    fun discard(callback: T) {
+        synchronized(wrappers) { wrappers.remove(callback) }
+    }
+
+    /** The wrapper registered for [callback], dropped from the cache since it is being unregistered. */
+    fun release(callback: T): T = synchronized(wrappers) { wrappers.remove(callback) } ?: callback
 }
