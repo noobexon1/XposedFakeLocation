@@ -5,6 +5,7 @@ import android.location.GnssNavigationMessage
 import android.os.Build
 import android.util.Log
 import io.github.libxposed.api.XposedInterface
+import java.lang.reflect.Method
 import java.util.WeakHashMap
 
 /**
@@ -128,24 +129,32 @@ class GnssApiHooks(
             module.log(Log.ERROR, tag, "Failed listing GnssCapabilities methods: ${it.message}")
         }.getOrNull() ?: return
 
-        methods
-            .filter { method ->
-                method.name in GnssHookPolicy.UNSUPPORTED_CAPABILITIES &&
-                    method.parameterTypes.isEmpty() &&
-                    method.returnType == java.lang.Boolean.TYPE
-            }
-            .forEach { method ->
-                runCatching {
-                    module.hook(method).intercept { chain ->
-                        val real = chain.proceed() as Boolean
-                        GnssHookPolicy.capability(method.name, gnssSpoofingActive(), real)
+        var hooked = 0
+        methods.filter { it.parameterTypes.isEmpty() }.forEach { method ->
+            val hookedMethod = when {
+                method.name in GnssHookPolicy.UNSUPPORTED_CAPABILITIES && method.returnType == java.lang.Boolean.TYPE ->
+                    hookCapability(method) { real ->
+                        GnssHookPolicy.capability(method.name, gnssSpoofingActive(), real as Boolean)
                     }
-                    module.log(Log.INFO, tag, "Hooked GnssCapabilities#${method.name}.")
-                }.onFailure {
-                    module.log(Log.ERROR, tag, "Failed hooking GnssCapabilities#${method.name}: ${it.message}")
-                }
+                method.name == GnssHookPolicy.ACCUMULATED_DELTA_RANGE_GETTER && method.returnType == java.lang.Integer.TYPE ->
+                    hookCapability(method) { real ->
+                        GnssHookPolicy.accumulatedDeltaRange(gnssSpoofingActive(), real as Int)
+                    }
+                else -> false
             }
+            if (hookedMethod) hooked++
+        }
+        if (hooked == 0) module.log(Log.WARN, tag, "No GnssCapabilities getter hooked.")
     }
+
+    /** Replaces the result of the no-arg `GnssCapabilities` getter [method] with [transform] of its real result. */
+    private fun hookCapability(method: Method, transform: (Any?) -> Any?): Boolean =
+        runCatching {
+            module.hook(method).intercept { chain -> transform(chain.proceed()) }
+            module.log(Log.INFO, tag, "Hooked GnssCapabilities#${method.name}.")
+        }.onFailure {
+            module.log(Log.ERROR, tag, "Failed hooking GnssCapabilities#${method.name}: ${it.message}")
+        }.isSuccess
 }
 
 /** The wrappers handed to the platform in place of the app's callbacks, keyed by the app's callback. */

@@ -37,4 +37,20 @@ internal object GnssHookPolicy {
     /** The value the `GnssCapabilities` getter [name] returns, given its [real] value. */
     fun capability(name: String, spoofing: Boolean, real: Boolean): Boolean =
         if (spoofing && name in UNSUPPORTED_CAPABILITIES) false else real
+
+    /** `GnssCapabilities#hasAccumulatedDeltaRange` (API 34+), which reports a tri-state instead of a boolean. */
+    const val ACCUMULATED_DELTA_RANGE_GETTER = "hasAccumulatedDeltaRange"
+
+    /** `GnssCapabilities.CAPABILITY_UNKNOWN`. */
+    const val CAPABILITY_UNKNOWN = 0
+
+    /** `GnssCapabilities.CAPABILITY_SUPPORTED`. */
+    const val CAPABILITY_SUPPORTED = 1
+
+    /** `GnssCapabilities.CAPABILITY_UNSUPPORTED`. */
+    const val CAPABILITY_UNSUPPORTED = 2
+
+    /** The value `GnssCapabilities#hasAccumulatedDeltaRange` returns, given its [real] value. */
+    fun accumulatedDeltaRange(spoofing: Boolean, real: Int): Int =
+        if (spoofing) CAPABILITY_UNSUPPORTED else real
 }

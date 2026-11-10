@@ -27,8 +27,15 @@ class GnssHookPolicyTest {
 
     @Test
     fun otherStatusesPassBeforeAndroid12() {
-        assertEquals(statusLocationDisabled, GnssHookPolicy.rawDataStatus(30, spoofing = true, status = statusLocationDisabled))
+        assertEquals(
+            statusLocationDisabled,
+            GnssHookPolicy.rawDataStatus(30, spoofing = true, status = statusLocationDisabled),
+        )
         assertEquals(statusNotAllowed, GnssHookPolicy.rawDataStatus(29, spoofing = true, status = statusNotAllowed))
+        assertEquals(
+            GnssHookPolicy.STATUS_NOT_SUPPORTED,
+            GnssHookPolicy.rawDataStatus(29, spoofing = true, status = GnssHookPolicy.STATUS_NOT_SUPPORTED),
+        )
     }
 
     @Test
@@ -67,6 +74,31 @@ class GnssHookPolicyTest {
     fun otherCapabilitiesKeepRealValue() {
         assertTrue(GnssHookPolicy.capability("hasAntennaInfo", spoofing = true, real = true))
         assertFalse(GnssHookPolicy.capability("hasLowPowerMode", spoofing = true, real = false))
+    }
+
+    @Test
+    fun accumulatedDeltaRangeIsUnsupportedWhileSpoofing() {
+        for (real in listOf(
+            GnssHookPolicy.CAPABILITY_UNKNOWN,
+            GnssHookPolicy.CAPABILITY_SUPPORTED,
+            GnssHookPolicy.CAPABILITY_UNSUPPORTED,
+        )) {
+            assertEquals(
+                GnssHookPolicy.CAPABILITY_UNSUPPORTED,
+                GnssHookPolicy.accumulatedDeltaRange(spoofing = true, real = real),
+            )
+        }
+    }
+
+    @Test
+    fun accumulatedDeltaRangeKeepsRealValueWhenNotSpoofing() {
+        for (real in listOf(
+            GnssHookPolicy.CAPABILITY_UNKNOWN,
+            GnssHookPolicy.CAPABILITY_SUPPORTED,
+            GnssHookPolicy.CAPABILITY_UNSUPPORTED,
+        )) {
+            assertEquals(real, GnssHookPolicy.accumulatedDeltaRange(spoofing = false, real = real))
+        }
     }
 
     @Test
