@@ -31,9 +31,9 @@ class GnssApiHooks(
         val measurementsCallback = GnssMeasurementsEvent.Callback::class.java
         val navigationCallback = GnssNavigationMessage.Callback::class.java
         hookCallbackArgument(locationManagerClass, "registerGnssMeasurementsCallback", measurementsCallback, ::measurementWrapper)
-        hookCallbackArgument(locationManagerClass, "unregisterGnssMeasurementsCallback", measurementsCallback, ::registeredMeasurementWrapper)
+        hookCallbackArgument(locationManagerClass, "unregisterGnssMeasurementsCallback", measurementsCallback, ::releaseMeasurementWrapper)
         hookCallbackArgument(locationManagerClass, "registerGnssNavigationMessageCallback", navigationCallback, ::navigationWrapper)
-        hookCallbackArgument(locationManagerClass, "unregisterGnssNavigationMessageCallback", navigationCallback, ::registeredNavigationWrapper)
+        hookCallbackArgument(locationManagerClass, "unregisterGnssNavigationMessageCallback", navigationCallback, ::releaseNavigationWrapper)
         hookCapabilities()
         module.log(Log.INFO, tag, "Instantiated hooks successfully")
     }
@@ -42,15 +42,17 @@ class GnssApiHooks(
         if (callback is MeasurementsCallbackWrapper) callback
         else synchronized(measurementWrappers) { measurementWrappers.getOrPut(callback) { MeasurementsCallbackWrapper(callback) } }
 
-    private fun registeredMeasurementWrapper(callback: GnssMeasurementsEvent.Callback): GnssMeasurementsEvent.Callback =
-        synchronized(measurementWrappers) { measurementWrappers[callback] } ?: callback
+    /** The wrapper registered for [callback], dropped from the cache since it is being unregistered. */
+    private fun releaseMeasurementWrapper(callback: GnssMeasurementsEvent.Callback): GnssMeasurementsEvent.Callback =
+        synchronized(measurementWrappers) { measurementWrappers.remove(callback) } ?: callback
 
     private fun navigationWrapper(callback: GnssNavigationMessage.Callback): GnssNavigationMessage.Callback =
         if (callback is NavigationMessageCallbackWrapper) callback
         else synchronized(navigationWrappers) { navigationWrappers.getOrPut(callback) { NavigationMessageCallbackWrapper(callback) } }
 
-    private fun registeredNavigationWrapper(callback: GnssNavigationMessage.Callback): GnssNavigationMessage.Callback =
-        synchronized(navigationWrappers) { navigationWrappers[callback] } ?: callback
+    /** The wrapper registered for [callback], dropped from the cache since it is being unregistered. */
+    private fun releaseNavigationWrapper(callback: GnssNavigationMessage.Callback): GnssNavigationMessage.Callback =
+        synchronized(navigationWrappers) { navigationWrappers.remove(callback) } ?: callback
 
     /** Hooks every overload of [methodName] taking a [callbackType] and replaces that argument with [replace]. */
     private fun <T : Any> hookCallbackArgument(
@@ -59,9 +61,13 @@ class GnssApiHooks(
         callbackType: Class<T>,
         replace: (T) -> T,
     ) {
-        val methods = clazz.declaredMethods.filter { method ->
-            method.name == methodName && callbackType in method.parameterTypes
-        }
+        val methods = runCatching {
+            clazz.declaredMethods.filter { method ->
+                method.name == methodName && callbackType in method.parameterTypes
+            }
+        }.onFailure {
+            module.log(Log.ERROR, tag, "Failed looking up LocationManager#$methodName: ${it.message}")
+        }.getOrNull() ?: return
         if (methods.isEmpty()) {
             module.log(Log.WARN, tag, "No $methodName overload on this API level")
             return
@@ -85,7 +91,11 @@ class GnssApiHooks(
                 module.log(Log.ERROR, tag, "Failed hooking LocationManager#$methodName: ${it.message}")
             }
         }
-        module.log(Log.INFO, tag, "Hooked LocationManager#$methodName ($hooked overloads).")
+        if (hooked == 0) {
+            module.log(Log.ERROR, tag, "No LocationManager#$methodName overload hooked.")
+        } else {
+            module.log(Log.INFO, tag, "Hooked LocationManager#$methodName ($hooked overloads).")
+        }
     }
 
     private fun hookCapabilities() = Unit
