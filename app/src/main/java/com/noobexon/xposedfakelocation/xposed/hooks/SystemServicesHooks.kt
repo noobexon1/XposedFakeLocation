@@ -46,6 +46,7 @@ class SystemServicesHooks(
             if (shouldSpoofArgs(chain.args)) {
                 val original = result as? Location
                 module.log(Log.INFO, tag, "Replaced getLastLocation result.")
+                LocationUtil.updateLocation()
                 LocationUtil.createFakeLocation(original)
             } else {
                 result
@@ -106,6 +107,9 @@ class SystemServicesHooks(
             ?.takeIf { shouldSpoofPackage(it) }
             ?: return chain.proceed()
 
+        // Unlike the app-side hooks, nothing here refreshes the spoof state per call, so do it
+        // before building the fake; otherwise the fields keep their 0.0 defaults.
+        LocationUtil.updateLocation()
         val spoofedResult = createFakeLocationResult(chain.args.firstOrNull())
             ?: return chain.proceed()
         module.log(Log.INFO, tag, "Replaced provider location for $spoofedPackage.")
@@ -125,11 +129,9 @@ class SystemServicesHooks(
         } as? List<*> ?: return null
         val original = originalLocations.firstOrNull() as? Location ?: return null
 
+        val fake = LocationUtil.createFakeLocation(original)
         return runCatching {
-            val builder = findMethod(locationResult.javaClass, "builder")?.invoke(null) ?: return null
-            val populated = findMethod(builder.javaClass, "addLocation", Location::class.java)
-                ?.invoke(builder, LocationUtil.createFakeLocation(original)) ?: return null
-            findMethod(populated.javaClass, "build")?.invoke(populated)
+            locationResult.javaClass.getMethod("wrap", List::class.java).invoke(null, listOf(fake))
         }.onFailure {
             module.log(Log.ERROR, tag, "Could not build spoofed location result: ${it.message}")
         }.getOrNull()
@@ -211,6 +213,7 @@ class SystemServicesHooks(
 
         val original = args[locationArgIndex] as? Location
         val newArgs = args.toTypedArray()
+        LocationUtil.updateLocation()
         newArgs[locationArgIndex] = LocationUtil.createFakeLocation(original)
         module.log(Log.INFO, tag, "Replaced Receiver.callLocationChangedLocked argument.")
         return chain.proceed(newArgs)
@@ -552,6 +555,7 @@ class SystemServicesHooks(
     }
 
     private fun replaceLocationLikeResult(result: Any?, method: Method?): Any? {
+        LocationUtil.updateLocation()
         if (result is Location) {
             return LocationUtil.createFakeLocation(result)
         }
