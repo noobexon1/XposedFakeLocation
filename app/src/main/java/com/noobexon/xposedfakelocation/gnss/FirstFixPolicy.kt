@@ -42,20 +42,23 @@ class FirstFixPolicy(private val random: Random) {
         state = State.FIXED
     }
 
-    /** Whether the session has its first fix at [nowMillis], fixing it once the TTFF has elapsed. */
+    /**
+     * Called for a status at [nowMillis]: the session's TTFF once it has its first fix, else `null`. A status
+     * while UNKNOWN or STOPPED means the engine runs without a start seen, so it is fixed at once.
+     */
     @Synchronized
-    fun isFixed(nowMillis: Long): Boolean {
+    fun fixedTtff(nowMillis: Long): Int? {
         when (state) {
-            State.UNKNOWN -> {
+            State.UNKNOWN, State.STOPPED -> {
                 ttffMillis = randomTtff()
                 state = State.FIXED
             }
             State.STARTED -> if (nowMillis - startedAtMillis >= ttffMillis) {
                 state = State.FIXED
             }
-            State.FIXED, State.STOPPED -> Unit
+            State.FIXED -> Unit
         }
-        return state == State.FIXED
+        return if (state == State.FIXED) ttffMillis else null
     }
 
     /** TTFF of the current session; 0 before its first fix. */

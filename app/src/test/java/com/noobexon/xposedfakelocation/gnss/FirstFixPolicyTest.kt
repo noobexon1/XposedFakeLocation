@@ -2,6 +2,7 @@ package com.noobexon.xposedfakelocation.gnss
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import kotlin.random.Random
@@ -14,12 +15,12 @@ class FirstFixPolicyTest {
     fun fixIsDueAfterTheTtffAndStays() {
         val policy = FirstFixPolicy(Random(7))
         policy.onStarted(1_000L)
-        assertFalse(policy.isFixed(1_999L))
+        assertNull(policy.fixedTtff(1_999L))
         assertEquals(0, policy.timeToFirstFixMillis)
-        assertTrue(policy.isFixed(5_000L))
-        val ttff = policy.timeToFirstFixMillis
+        val ttff = policy.fixedTtff(5_000L)!!
         assertTrue(ttff in 1000..4000)
-        assertTrue(policy.isFixed(6_000L))
+        assertEquals(ttff, policy.timeToFirstFixMillis)
+        assertEquals(ttff, policy.fixedTtff(6_000L))
         assertEquals(ttff, policy.timeToFirstFixMillis)
     }
 
@@ -28,8 +29,8 @@ class FirstFixPolicyTest {
         val ttff = ttffDraws(1).single()
         val policy = FirstFixPolicy(Random(7))
         policy.onStarted(0L)
-        assertFalse(policy.isFixed(ttff - 1L))
-        assertTrue(policy.isFixed(ttff.toLong()))
+        assertNull(policy.fixedTtff(ttff - 1L))
+        assertEquals(ttff, policy.fixedTtff(ttff.toLong()))
         assertEquals(ttff, policy.timeToFirstFixMillis)
     }
 
@@ -39,10 +40,10 @@ class FirstFixPolicyTest {
         val policy = FirstFixPolicy(Random(7))
         policy.onStarted(0L)
         policy.onStarted(500L)
-        assertFalse(policy.isFixed(ttff - 1L))
-        assertTrue(policy.isFixed(ttff.toLong()))
+        assertNull(policy.fixedTtff(ttff - 1L))
+        assertEquals(ttff, policy.fixedTtff(ttff.toLong()))
         policy.onStarted(20_000L)
-        assertTrue(policy.isFixed(20_001L))
+        assertEquals(ttff, policy.fixedTtff(20_001L))
         assertEquals(ttff, policy.timeToFirstFixMillis)
     }
 
@@ -52,7 +53,7 @@ class FirstFixPolicyTest {
         policy.onStarted(0L)
         policy.onRealFirstFix(2_345)
         assertEquals(2_345, policy.timeToFirstFixMillis)
-        assertTrue(policy.isFixed(1L))
+        assertEquals(2_345, policy.fixedTtff(1L))
         assertEquals(2_345, policy.timeToFirstFixMillis)
     }
 
@@ -62,7 +63,7 @@ class FirstFixPolicyTest {
         val started = FirstFixPolicy(Random(7))
         started.onStarted(0L)
         started.onRealFirstFix(null)
-        assertTrue(started.isFixed(1L))
+        assertEquals(ttff, started.fixedTtff(1L))
         assertEquals(ttff, started.timeToFirstFixMillis)
 
         val unknown = FirstFixPolicy(Random(7))
@@ -74,9 +75,10 @@ class FirstFixPolicyTest {
     fun registeredWhileRunningIsFixedImmediately() {
         val policy = FirstFixPolicy(Random(7))
         assertEquals(0, policy.timeToFirstFixMillis)
-        assertTrue(policy.isFixed(5_000L))
-        assertTrue(policy.timeToFirstFixMillis in 1000..4000)
-        assertTrue(policy.isFixed(5_001L))
+        val ttff = policy.fixedTtff(5_000L)!!
+        assertTrue(ttff in 1000..4000)
+        assertEquals(ttff, policy.timeToFirstFixMillis)
+        assertEquals(ttff, policy.fixedTtff(5_001L))
     }
 
     @Test
@@ -84,8 +86,24 @@ class FirstFixPolicyTest {
         val policy = FirstFixPolicy(Random(7))
         policy.onStarted(0L)
         policy.onStopped()
-        assertFalse(policy.isFixed(10_000L))
         assertEquals(0, policy.timeToFirstFixMillis)
+    }
+
+    @Test
+    fun statusWhileStoppedRecoversTheMissedStart() {
+        val (_, second, third) = ttffDraws(3)
+        val policy = FirstFixPolicy(Random(7))
+        policy.onStarted(0L)
+        policy.onStopped()
+        val ttff = policy.fixedTtff(10_000L)!!
+        assertTrue(ttff in 1000..4000)
+        assertEquals(second, ttff)
+        assertEquals(ttff, policy.timeToFirstFixMillis)
+        policy.onStopped()
+        policy.onStarted(30_000L)
+        assertNull(policy.fixedTtff(30_999L))
+        assertEquals(0, policy.timeToFirstFixMillis)
+        assertEquals(third, policy.fixedTtff(34_000L))
     }
 
     @Test
@@ -93,15 +111,14 @@ class FirstFixPolicyTest {
         val (first, second) = ttffDraws(2)
         val policy = FirstFixPolicy(Random(7))
         policy.onStarted(0L)
-        assertTrue(policy.isFixed(10_000L))
+        assertEquals(first, policy.fixedTtff(10_000L))
         assertEquals(first, policy.timeToFirstFixMillis)
         policy.onStopped()
         assertEquals(0, policy.timeToFirstFixMillis)
-        assertFalse(policy.isFixed(20_000L))
         policy.onStarted(30_000L)
-        assertFalse(policy.isFixed(30_999L))
+        assertNull(policy.fixedTtff(30_999L))
         assertEquals(0, policy.timeToFirstFixMillis)
-        assertTrue(policy.isFixed(34_000L))
+        assertEquals(second, policy.fixedTtff(34_000L))
         assertEquals(second, policy.timeToFirstFixMillis)
     }
 

@@ -41,11 +41,11 @@ internal class GnssStatusCallbackWrapper(
             app.onSatelliteStatusChanged(status)
             return
         }
-        val fixed = GnssSkySource.firstFix.isFixed(SystemClock.elapsedRealtime())
-        val fake = GnssSkySource.fakeGnssStatus(fixed) ?: return
-        if (fixed && !firstFixDelivered) {
+        val ttffMillis = GnssSkySource.firstFix.fixedTtff(SystemClock.elapsedRealtime())
+        val fake = GnssSkySource.fakeGnssStatus(fixed = ttffMillis != null) ?: return
+        if (ttffMillis != null && !firstFixDelivered) {
             firstFixDelivered = true
-            app.onFirstFix(GnssSkySource.firstFix.timeToFirstFixMillis)
+            app.onFirstFix(ttffMillis)
         }
         app.onSatelliteStatusChanged(fake)
     }
@@ -80,7 +80,7 @@ internal class GpsStatusListenerWrapper(
                 firstFixDelivered = true
             }
             GpsStatus.GPS_EVENT_SATELLITE_STATUS ->
-                if (spoofing && !firstFixDelivered && GnssSkySource.firstFix.isFixed(SystemClock.elapsedRealtime())) {
+                if (spoofing && !firstFixDelivered && GnssSkySource.firstFix.fixedTtff(SystemClock.elapsedRealtime()) != null) {
                     firstFixDelivered = true
                     app.onGpsStatusChanged(GpsStatus.GPS_EVENT_FIRST_FIX)
                 }
