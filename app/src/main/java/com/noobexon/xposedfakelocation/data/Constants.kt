@@ -53,6 +53,9 @@ const val KEY_WIFI_SSID = "wifi_ssid"
 const val KEY_WIFI_BSSID = "wifi_bssid"
 const val KEY_WIFI_RSSI = "wifi_rssi"
 
+const val KEY_GNSS_ORBITS = "gnss_orbits"
+const val KEY_GNSS_ORBITS_VERSION = "gnss_orbits_version"
+
 // Packages added/removed from module scope when system-level hooks are toggled.
 // Modern libxposed uses `system` as the virtual package name for system_server.
 val SYSTEM_HOOK_PACKAGES = listOf("system", "com.android.phone")

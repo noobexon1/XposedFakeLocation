@@ -18,6 +18,8 @@ import com.noobexon.xposedfakelocation.data.DEFAULT_WIFI_SSID
 import com.noobexon.xposedfakelocation.data.KEY_ACCURACY
 import com.noobexon.xposedfakelocation.data.KEY_ALTITUDE
 import com.noobexon.xposedfakelocation.data.KEY_ENABLE_SYSTEM_HOOKS
+import com.noobexon.xposedfakelocation.data.KEY_GNSS_ORBITS
+import com.noobexon.xposedfakelocation.data.KEY_GNSS_ORBITS_VERSION
 import com.noobexon.xposedfakelocation.data.KEY_HIDE_FAKE_LOCATION_TOAST
 import com.noobexon.xposedfakelocation.data.KEY_IS_PLAYING
 import com.noobexon.xposedfakelocation.data.KEY_JOYSTICK_STATE
@@ -114,6 +116,8 @@ object PreferencesUtil {
     fun getHideFakeLocationToast(): Boolean? = getPreference(KEY_HIDE_FAKE_LOCATION_TOAST)
     fun getJoystickState(): JoystickState? = getPreference(KEY_JOYSTICK_STATE)
     fun getEnableSystemHooks(): Boolean = preferences?.getBoolean(KEY_ENABLE_SYSTEM_HOOKS, false) ?: false
+    fun getGnssOrbits(): String? = preferences?.getString(KEY_GNSS_ORBITS, null)
+    fun getGnssOrbitsVersion(): Long = preferences?.getLong(KEY_GNSS_ORBITS_VERSION, 0L) ?: 0L
 
     fun getWifiSsid(): String =
         normalizeWifiSsid(preferences?.getString(KEY_WIFI_SSID, DEFAULT_WIFI_SSID))
