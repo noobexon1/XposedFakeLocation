@@ -229,12 +229,12 @@ class SystemServicesHooks(
             )
         ).distinct()
 
+        // GnssStatus registrations go through: target apps get the fake sky from GnssStatusApiHooks.
         val methodsToBlock = listOf(
             "addGnssBatchingCallback",
             "addGnssMeasurementsListener",
             "addGnssNavigationMessageListener",
             "addGnssAntennaInfoListener",
-            "registerGnssStatusCallback",
             "registerGnssNmeaCallback"
         )
 

@@ -6,6 +6,7 @@ import android.widget.Toast
 import com.noobexon.xposedfakelocation.data.REMOTE_PREFS_GROUP
 import com.noobexon.xposedfakelocation.xposed.hooks.AppWifiHooks
 import com.noobexon.xposedfakelocation.xposed.hooks.GnssApiHooks
+import com.noobexon.xposedfakelocation.xposed.hooks.GnssStatusApiHooks
 import com.noobexon.xposedfakelocation.xposed.hooks.LocationApiHooks
 import com.noobexon.xposedfakelocation.xposed.hooks.LocationManagerApiHooks
 import com.noobexon.xposedfakelocation.xposed.hooks.PhoneServicesHooks
@@ -26,7 +27,7 @@ private const val TAG = "[ModuleEntry]"
  * Responsibilities:
  * - Wire loggers into [LocationUtil] and [PreferencesUtil] on module load.
  * - Initialize remote preferences and install the appropriate hook set for each process:
- *   - Regular target apps → [LocationApiHooks] + [LocationManagerApiHooks] + [AppWifiHooks] + [GnssApiHooks].
+ *   - Regular target apps → [LocationApiHooks] + [LocationManagerApiHooks] + [AppWifiHooks] + [GnssApiHooks] + [GnssStatusApiHooks].
  *   - `com.android.phone` → [PhoneServicesHooks] only (telephony cell/Wi-Fi spoofing).
  *   - `system` (system_server, when opted in) → [SystemServicesHooks].
  */
@@ -55,7 +56,7 @@ class ModuleEntry : XposedModule() {
      * Called when a package's [Application] is ready.
      * Installs the correct hook set for the process:
      * - `com.android.phone` gets [PhoneServicesHooks] only.
-     * - All other scoped apps get [LocationApiHooks] + [LocationManagerApiHooks],
+     * - All other scoped apps get the [initHooks] set,
      *   plus an optional toast indicating that spoofing is active.
      *
      * Only the first package in the process is processed ([PackageReadyParam.isFirstPackage]).
@@ -104,12 +105,16 @@ class ModuleEntry : XposedModule() {
         PreferencesUtil.init(getRemotePreferences(REMOTE_PREFS_GROUP))
     }
 
-    /** Installs [LocationApiHooks], [LocationManagerApiHooks], [AppWifiHooks] and [GnssApiHooks] into the target app process. */
+    /**
+     * Installs [LocationApiHooks], [LocationManagerApiHooks], [AppWifiHooks], [GnssApiHooks] and
+     * [GnssStatusApiHooks] into the target app process.
+     */
     private fun initHooks(classLoader: ClassLoader, packageName: String) {
         LocationApiHooks(this, classLoader).init()
         LocationManagerApiHooks(this, classLoader).init()
         AppWifiHooks(this, classLoader, packageName).init()
         GnssApiHooks(this, classLoader).init()
+        GnssStatusApiHooks(this, classLoader).init()
     }
 
     /** Installs [PhoneServicesHooks] into the `com.android.phone` process. */
