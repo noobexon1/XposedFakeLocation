@@ -45,6 +45,8 @@ import com.noobexon.xposedfakelocation.data.KEY_ENABLE_SYSTEM_HOOKS
 import com.noobexon.xposedfakelocation.data.KEY_ENABLE_WIFI_IDENTITY
 import com.noobexon.xposedfakelocation.data.KEY_FAVORITES
 import com.noobexon.xposedfakelocation.data.KEY_GEOCODING_SERVER_URL
+import com.noobexon.xposedfakelocation.data.KEY_GNSS_ORBITS
+import com.noobexon.xposedfakelocation.data.KEY_GNSS_ORBITS_VERSION
 import com.noobexon.xposedfakelocation.data.KEY_HIDE_FAKE_LOCATION_TOAST
 import com.noobexon.xposedfakelocation.data.KEY_IS_PLAYING
 import com.noobexon.xposedfakelocation.data.KEY_JOYSTICK_MAX_SPEED
@@ -209,6 +211,15 @@ class PreferencesRepository(context: Context) {
     fun getIsPlayingFlow(): Flow<Boolean> = remoteFlow(KEY_IS_PLAYING, false) { it.getBoolean(KEY_IS_PLAYING, false) }
     suspend fun saveIsPlaying(isPlaying: Boolean) = editRemote { putBoolean(KEY_IS_PLAYING, isPlaying) }
     fun getIsPlaying(): Boolean = remotePrefs()?.getBoolean(KEY_IS_PLAYING, false) ?: false
+    // endregion
+
+    // region GNSS orbits (remote, not part of settings backup)
+    fun getGnssOrbits(): String? = remotePrefs()?.getString(KEY_GNSS_ORBITS, null)
+    fun getGnssOrbitsVersion(): Long = remotePrefs()?.getLong(KEY_GNSS_ORBITS_VERSION, 0L) ?: 0L
+    fun saveGnssOrbits(encoded: String, version: Long) = editRemote {
+        putString(KEY_GNSS_ORBITS, encoded)
+        putLong(KEY_GNSS_ORBITS_VERSION, version)
+    }
     // endregion
 
     // region Last Clicked Location (remote)
