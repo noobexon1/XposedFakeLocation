@@ -71,10 +71,61 @@ class NmeaEpochRewriterTest {
         val rewriter = NmeaEpochRewriter()
         val gsv = update.first().second
         assertEquals(4, rewriter.rewrite(gsv, t, style) { NmeaFixtures.FIX }.size)
-        assertEquals(0, rewriter.rewrite(gsv, t + 400, style) { NmeaFixtures.FIX }.size)
-        assertEquals(0, rewriter.rewrite(gsv, t + 800, style) { NmeaFixtures.FIX }.size)
-        assertEquals(4, rewriter.rewrite(gsv, t + 1301, style) { NmeaFixtures.FIX }.size)
+        assertEquals(0, rewriter.rewrite(gsv, t + 40, style) { NmeaFixtures.FIX }.size)
+        assertEquals(0, rewriter.rewrite(gsv, t + 80, style) { NmeaFixtures.FIX }.size)
+        assertEquals(4, rewriter.rewrite(gsv, t + 131, style) { NmeaFixtures.FIX }.size)
         assertEquals(4, rewriter.rewrite(gsv, t, style) { NmeaFixtures.FIX }.size)
+    }
+
+    @Test
+    fun tenHertzUpdatesStaySeparate() {
+        val rewriter = NmeaEpochRewriter()
+        var snapshots = 0
+        val supplier = { snapshots++; NmeaFixtures.FIX }
+        val out = (0 until 3).map { cycle ->
+            update.flatMap { (timestamp, line) -> rewriter.rewrite(line, timestamp + 100L * cycle, style, supplier) }
+        }
+        assertEquals(3, snapshots)
+        out.forEach { assertEquals(NmeaFixtures.GSV, it.take(4)) }
+    }
+
+    @Test
+    fun repeatedPositionSentenceStartsAnUpdateWhenTimestampsRepeat() {
+        val rewriter = NmeaEpochRewriter()
+        var snapshots = 0
+        val supplier = { snapshots++; NmeaFixtures.NO_FIX }
+        rewriteAll(rewriter, update.map { t to it.second }, NmeaFixtures.NO_FIX)
+        val second = update.flatMap { (_, line) -> rewriter.rewrite(line, t, style, supplier) }
+        assertEquals(1, snapshots)
+        assertEquals(
+            listOf(
+                NmeaFixtures.NO_FIX_DTM,
+                NmeaFixtures.NO_FIX_RMC,
+                NmeaFixtures.NO_FIX_GNS,
+                NmeaFixtures.NO_FIX_GGA,
+                NmeaFixtures.NO_FIX_VTG,
+            ),
+            second,
+        )
+    }
+
+    @Test
+    fun failedSnapshotDoesNotLoseTheSky() {
+        val rewriter = NmeaEpochRewriter()
+        val gsv = update.first().second
+        runCatching { rewriter.rewrite(gsv, t, style) { error("prefs unavailable") } }
+        assertEquals(NmeaFixtures.GSV, rewriter.rewrite(update[1].second, t, style) { NmeaFixtures.FIX })
+    }
+
+    @Test
+    fun proprietarySentenceNamedLikeAPositionSentenceDoesNotSplit() {
+        val rewriter = NmeaEpochRewriter()
+        var snapshots = 0
+        val supplier = { snapshots++; NmeaFixtures.FIX }
+        rewriter.rewrite(NmeaFixtures.GGA, t, style, supplier)
+        rewriter.rewrite(NmeaSentence("P", "GGA", listOf("1")).format(), t, style, supplier)
+        assertEquals(emptyList<String>(), rewriter.rewrite(update.first().second, t, style, supplier).drop(4))
+        assertEquals(1, snapshots)
     }
 
     @Test
