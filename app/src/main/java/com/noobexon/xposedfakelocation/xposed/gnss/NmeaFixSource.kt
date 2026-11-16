@@ -10,6 +10,7 @@ import kotlin.math.abs
 /** Builds the [NmeaFix] of one NMEA update from the fake sky and the fake position. */
 internal object NmeaFixSource {
     private const val SHARE_MILLIS = 200L
+    private const val SAME_UPDATE_MILLIS = 50L
     private var shared: NmeaFix? = null
     private var sharedAtMillis = 0L
 
@@ -17,13 +18,15 @@ internal object NmeaFixSource {
      * The fix at [utcMillis]: the sky of [GnssSkySource] (which refreshes the fake position when it rebuilds)
      * and one consistent read of [LocationUtil]. MSL altitude is the MSL override, else the altitude override
      * minus the geoid separation, else 0. The course is known only while a joystick drives the motion.
-     * Listeners of the same update (within [SHARE_MILLIS]) share one fix.
+     * Listeners of the same update (timestamps within [SAME_UPDATE_MILLIS], built less than [SHARE_MILLIS] ago)
+     * share one fix.
      */
     @Synchronized
     fun snapshot(utcMillis: Long, fixed: Boolean): NmeaFix {
         val now = SystemClock.elapsedRealtime()
-        shared?.takeIf { it.fixed == fixed && now - sharedAtMillis < SHARE_MILLIS && abs(it.utcMillis - utcMillis) < SHARE_MILLIS }
-            ?.let { return it }
+        shared?.takeIf {
+            it.fixed == fixed && now - sharedAtMillis < SHARE_MILLIS && abs(it.utcMillis - utcMillis) <= SAME_UPDATE_MILLIS
+        }?.let { return it }
         return build(utcMillis, fixed).also {
             shared = it
             sharedAtMillis = now
