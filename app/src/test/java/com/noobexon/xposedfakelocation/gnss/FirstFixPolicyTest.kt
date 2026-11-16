@@ -123,6 +123,23 @@ class FirstFixPolicyTest {
     }
 
     @Test
+    fun nmeaAfterStopKeepsTheNextSessionsNoFixPeriod() {
+        val policy = FirstFixPolicy(Random(7))
+        policy.onStarted(0L)
+        assertTrue(policy.fixedTtff(10_000L) != null)
+        policy.onStopped()
+        assertNull(policy.fixedTtff(20_000L, recoverStopped = false))
+        policy.onStarted(30_000L)
+        assertNull(policy.fixedTtff(30_500L, recoverStopped = false))
+        assertTrue(policy.fixedTtff(40_000L, recoverStopped = false) != null)
+    }
+
+    @Test
+    fun nmeaOnlyAppIsFixedAtOnce() {
+        assertTrue(FirstFixPolicy(Random(7)).fixedTtff(1_000L, recoverStopped = false) != null)
+    }
+
+    @Test
     fun realFirstFixIsDroppedOnlyWhileSpoofing() {
         assertFalse(FirstFixPolicy.deliversRealFirstFix(spoofing = true))
         assertTrue(FirstFixPolicy.deliversRealFirstFix(spoofing = false))

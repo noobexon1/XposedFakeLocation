@@ -229,13 +229,13 @@ class SystemServicesHooks(
             )
         ).distinct()
 
-        // GnssStatus registrations go through: target apps get the fake sky from GnssStatusApiHooks.
+        // GnssStatus and NMEA registrations go through: target apps get the fake sky from GnssStatusApiHooks
+        // and fake NMEA from GnssNmeaApiHooks.
         val methodsToBlock = listOf(
             "addGnssBatchingCallback",
             "addGnssMeasurementsListener",
             "addGnssNavigationMessageListener",
-            "addGnssAntennaInfoListener",
-            "registerGnssNmeaCallback"
+            "addGnssAntennaInfoListener"
         )
 
         serviceClasses.forEach { serviceClass ->

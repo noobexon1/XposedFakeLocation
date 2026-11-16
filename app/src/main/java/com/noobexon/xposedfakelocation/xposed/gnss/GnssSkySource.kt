@@ -32,6 +32,7 @@ internal object GnssSkySource {
     private var orbitsVersion = -1L
     private var orbits: List<OrbitElements> = emptyList()
     private var chip: ChipProfile? = null
+    private var nmeaChip: ChipProfile? = null
     private var failureLogged = false
     private var cachedSky: List<SkySatellite>? = null
     private var cachedAtMillis = 0L
@@ -48,6 +49,13 @@ internal object GnssSkySource {
             val observed = ChipProfile.fromObservations(observations) ?: return
             chip = chip?.merge(observed) ?: observed
         }
+    }
+
+    /** Learns the chip from a real NMEA GSV sentence; used only while no real status was observed. */
+    @Synchronized
+    fun observeNmea(observation: ChipProfile.Observation) {
+        val observed = ChipProfile.fromObservations(listOf(observation)) ?: return
+        nmeaChip = nmeaChip?.merge(observed) ?: observed
     }
 
     @Synchronized
@@ -70,8 +78,12 @@ internal object GnssSkySource {
             }
             .getOrNull()
 
-    /** The sky built within the last [SKY_CACHE_MILLIS], so drift advances once per chip update. */
-    private fun sky(fixed: Boolean): List<SkySatellite> {
+    /**
+     * The sky built within the last [SKY_CACHE_MILLIS], so drift advances once per chip update and the status
+     * and NMEA of one update show the same satellites. Rebuilding it refreshes [LocationUtil].
+     */
+    @Synchronized
+    fun sky(fixed: Boolean): List<SkySatellite> {
         val now = SystemClock.elapsedRealtime()
         val sky = cachedSky?.takeIf { now - cachedAtMillis < SKY_CACHE_MILLIS }
             ?: currentSky().also {
@@ -89,7 +101,7 @@ internal object GnssSkySource {
             Observer(LocationUtil.latitude, LocationUtil.longitude, LocationUtil.altitude),
             System.currentTimeMillis(),
             LocationUtil.accuracy,
-            chip ?: ChipProfile.DEFAULT,
+            chip ?: nmeaChip ?: ChipProfile.DEFAULT,
         )
     }
 
