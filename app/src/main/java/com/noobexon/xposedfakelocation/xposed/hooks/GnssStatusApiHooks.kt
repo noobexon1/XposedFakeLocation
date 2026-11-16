@@ -63,8 +63,9 @@ class GnssStatusApiHooks(
                 } else {
                     runCatching {
                         val target = (real ?: chain.args[0]) as GpsStatus?
-                        GnssSkySource.fakeGnssStatus()?.let { fake ->
-                            GnssStatusFactory.gpsStatus(target, fake, GnssSkySource.timeToFirstFixMillis)
+                        val ttffMillis = GnssSkySource.firstFix.timeToFirstFixMillis
+                        GnssSkySource.fakeGnssStatus(fixed = ttffMillis > 0)?.let { fake ->
+                            GnssStatusFactory.gpsStatus(target, fake, ttffMillis)
                         }
                     }.onFailure {
                         if (!gpsStatusFailureLogged) {

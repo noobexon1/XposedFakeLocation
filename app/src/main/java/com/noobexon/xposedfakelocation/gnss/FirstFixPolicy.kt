@@ -3,8 +3,9 @@ package com.noobexon.xposedfakelocation.gnss
 import kotlin.random.Random
 
 /**
- * Synthesizes one first-fix event per engine start, a random 1-4 s after the start. A callback registered
- * while the engine was already running gets its first fix with the first status.
+ * The first-fix session of the GNSS engine, shared by every status callback in the process. Each engine
+ * start fixes a random 1-4 s after the start, or when the real first fix is forwarded; an engine that was
+ * already running when first seen counts as fixed.
  */
 class FirstFixPolicy(private val random: Random) {
     private enum class State { UNKNOWN, STARTED, FIXED, STOPPED }
@@ -13,8 +14,10 @@ class FirstFixPolicy(private val random: Random) {
     private var startedAtMillis = 0L
     private var ttffMillis = 0
 
+    /** Several callbacks receive the same start, so a running session is kept. */
     @Synchronized
     fun onStarted(nowMillis: Long) {
+        if (state == State.STARTED || state == State.FIXED) return
         state = State.STARTED
         startedAtMillis = nowMillis
         ttffMillis = randomTtff()
@@ -25,21 +28,34 @@ class FirstFixPolicy(private val random: Random) {
         state = State.STOPPED
     }
 
-    /** Called before delivering a fake status: the TTFF to report through `onFirstFix` now, or `null`. */
+    /**
+     * A real first fix was forwarded, so spoofing starting later in this session doesn't fix again. A `null`
+     * TTFF (legacy event) keeps the one drawn at start.
+     */
     @Synchronized
-    fun firstFixDue(nowMillis: Long): Int? = when (state) {
-        State.UNKNOWN -> {
-            ttffMillis = randomTtff()
-            state = State.FIXED
-            ttffMillis
+    fun onRealFirstFix(ttffMillis: Int?) {
+        if (ttffMillis != null) {
+            this.ttffMillis = ttffMillis
+        } else if (state == State.UNKNOWN || state == State.STOPPED) {
+            this.ttffMillis = randomTtff()
         }
-        State.STARTED -> if (nowMillis - startedAtMillis >= ttffMillis) {
-            state = State.FIXED
-            ttffMillis
-        } else {
-            null
+        state = State.FIXED
+    }
+
+    /** Whether the session has its first fix at [nowMillis], fixing it once the TTFF has elapsed. */
+    @Synchronized
+    fun isFixed(nowMillis: Long): Boolean {
+        when (state) {
+            State.UNKNOWN -> {
+                ttffMillis = randomTtff()
+                state = State.FIXED
+            }
+            State.STARTED -> if (nowMillis - startedAtMillis >= ttffMillis) {
+                state = State.FIXED
+            }
+            State.FIXED, State.STOPPED -> Unit
         }
-        State.FIXED, State.STOPPED -> null
+        return state == State.FIXED
     }
 
     /** TTFF of the current session; 0 before its first fix. */
