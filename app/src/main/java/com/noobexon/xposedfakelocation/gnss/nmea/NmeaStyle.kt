@@ -19,7 +19,7 @@ data class NmeaStyle(
     fun observe(sentence: NmeaSentence): NmeaStyle {
         val fields = sentence.fields
         return when (sentence.type) {
-            "GSV" -> GSV_TALKERS[sentence.talker]
+            "GSV" -> NmeaSignals.GSV_TALKERS[sentence.talker]
                 ?.let { constellation -> copy(talkers = talkers + (constellation to sentence.talker)) }
                 ?: this
             "GGA", "GNS" -> withDecimals(fields.getOrNull(1)).withGnsMode(sentence)
@@ -44,13 +44,6 @@ data class NmeaStyle(
     companion object {
         private const val MAX_MINUTE_DECIMALS = 8
         private val LATITUDE = Regex("""\d{4}\.(\d+)""")
-        private val GSV_TALKERS = mapOf(
-            "GP" to Constellation.GPS,
-            "GL" to Constellation.GLONASS,
-            "GA" to Constellation.GALILEO,
-            "GB" to Constellation.BEIDOU,
-            "BD" to Constellation.BEIDOU,
-        )
 
         val DEFAULT = NmeaStyle(
             talkers = mapOf(

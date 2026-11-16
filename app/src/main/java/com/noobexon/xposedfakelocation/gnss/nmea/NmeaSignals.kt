@@ -1,5 +1,6 @@
 package com.noobexon.xposedfakelocation.gnss.nmea
 
+import com.noobexon.xposedfakelocation.gnss.ChipProfile
 import com.noobexon.xposedfakelocation.gnss.Constellation
 import kotlin.math.abs
 
@@ -16,6 +17,14 @@ internal object NmeaSignals {
         Constellation.BEIDOU to listOf(Band("1", 1561.098), Band("3", 1575.42), Band("5", 1176.45), Band("B", 1207.14)),
     )
 
+    val GSV_TALKERS: Map<String, Constellation> = mapOf(
+        "GP" to Constellation.GPS,
+        "GL" to Constellation.GLONASS,
+        "GA" to Constellation.GALILEO,
+        "GB" to Constellation.BEIDOU,
+        "BD" to Constellation.BEIDOU,
+    )
+
     /** The signal ID of [carrierFrequencyHz]; the primary band when it is unknown or matches no band. */
     fun signalId(constellation: Constellation, carrierFrequencyHz: Float?): String {
         val bands = BANDS.getValue(constellation)
@@ -26,4 +35,17 @@ internal object NmeaSignals {
     /** Position of [signalId] in the output order of [constellation]'s bands. */
     fun order(constellation: Constellation, signalId: String): Int =
         BANDS.getValue(constellation).indexOfFirst { it.id == signalId }
+
+    /**
+     * What a real GSV sentence shows of the chip: its system and band (signal ID after the satellite groups,
+     * primary band when absent or unknown). `null` for other sentences and systems outside the fake sky.
+     */
+    fun observation(sentence: NmeaSentence): ChipProfile.Observation? {
+        if (sentence.type != "GSV") return null
+        val constellation = GSV_TALKERS[sentence.talker] ?: return null
+        val signalId = sentence.fields.takeIf { it.size % 4 == 0 }?.last()
+        val bands = BANDS.getValue(constellation)
+        val band = bands.firstOrNull { it.id == signalId } ?: bands.first()
+        return ChipProfile.Observation(constellation.androidType, (band.megahertz * 1e6).toFloat())
+    }
 }

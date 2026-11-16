@@ -32,6 +32,7 @@ internal object GnssSkySource {
     private var orbitsVersion = -1L
     private var orbits: List<OrbitElements> = emptyList()
     private var chip: ChipProfile? = null
+    private var nmeaChip: ChipProfile? = null
     private var failureLogged = false
     private var cachedSky: List<SkySatellite>? = null
     private var cachedAtMillis = 0L
@@ -48,6 +49,13 @@ internal object GnssSkySource {
             val observed = ChipProfile.fromObservations(observations) ?: return
             chip = chip?.merge(observed) ?: observed
         }
+    }
+
+    /** Learns the chip from a real NMEA GSV sentence; used only while no real status was observed. */
+    @Synchronized
+    fun observeNmea(observation: ChipProfile.Observation) {
+        val observed = ChipProfile.fromObservations(listOf(observation)) ?: return
+        nmeaChip = nmeaChip?.merge(observed) ?: observed
     }
 
     @Synchronized
@@ -93,7 +101,7 @@ internal object GnssSkySource {
             Observer(LocationUtil.latitude, LocationUtil.longitude, LocationUtil.altitude),
             System.currentTimeMillis(),
             LocationUtil.accuracy,
-            chip ?: ChipProfile.DEFAULT,
+            chip ?: nmeaChip ?: ChipProfile.DEFAULT,
         )
     }
 
