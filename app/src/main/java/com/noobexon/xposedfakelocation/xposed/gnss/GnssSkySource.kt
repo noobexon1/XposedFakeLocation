@@ -70,8 +70,12 @@ internal object GnssSkySource {
             }
             .getOrNull()
 
-    /** The sky built within the last [SKY_CACHE_MILLIS], so drift advances once per chip update. */
-    private fun sky(fixed: Boolean): List<SkySatellite> {
+    /**
+     * The sky built within the last [SKY_CACHE_MILLIS], so drift advances once per chip update and the status
+     * and NMEA of one update show the same satellites. Rebuilding it refreshes [LocationUtil].
+     */
+    @Synchronized
+    fun sky(fixed: Boolean): List<SkySatellite> {
         val now = SystemClock.elapsedRealtime()
         val sky = cachedSky?.takeIf { now - cachedAtMillis < SKY_CACHE_MILLIS }
             ?: currentSky().also {
