@@ -6,13 +6,15 @@ import android.os.Build
 import androidx.annotation.RequiresApi
 import com.noobexon.xposedfakelocation.gnss.LegacyStatusEncoding
 import com.noobexon.xposedfakelocation.gnss.SkySatellite
+import org.lsposed.hiddenapibypass.HiddenApiBypass
 
 /** Turns a fake sky into platform `GnssStatus` / `GpsStatus` objects on every supported API level. */
 @Suppress("DEPRECATION")
 internal object GnssStatusFactory {
     private val legacyConstructor by lazy {
-        GnssStatus::class.java.getDeclaredConstructor(
-            Int::class.javaPrimitiveType,
+        HiddenApiBypass.getDeclaredConstructor(
+            GnssStatus::class.java,
+            Int::class.java,
             IntArray::class.java,
             FloatArray::class.java,
             FloatArray::class.java,
@@ -21,10 +23,10 @@ internal object GnssStatusFactory {
         ).apply { isAccessible = true }
     }
     private val gpsStatusConstructor by lazy {
-        GpsStatus::class.java.getDeclaredConstructor().apply { isAccessible = true }
+        HiddenApiBypass.getDeclaredConstructor(GpsStatus::class.java).apply { isAccessible = true }
     }
     private val gpsStatusSetStatus by lazy {
-        GpsStatus::class.java.getDeclaredMethod("setStatus", GnssStatus::class.java, Int::class.javaPrimitiveType)
+        HiddenApiBypass.getDeclaredMethod(GpsStatus::class.java, "setStatus", GnssStatus::class.java, Int::class.java)
             .apply { isAccessible = true }
     }
 
@@ -43,7 +45,7 @@ internal object GnssStatusFactory {
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             GpsStatus.create(status, ttffMillis)
         } else {
-            gpsStatusConstructor.newInstance().also { gpsStatusSetStatus.invoke(it, status, ttffMillis) }
+            (gpsStatusConstructor.newInstance() as GpsStatus).also { gpsStatusSetStatus.invoke(it, status, ttffMillis) }
         }
     }
 
@@ -74,5 +76,5 @@ internal object GnssStatusFactory {
         FloatArray(sky.size) { sky[it].elevationDeg },
         FloatArray(sky.size) { sky[it].azimuthDeg },
         FloatArray(sky.size) { sky[it].carrierFrequencyHz ?: 0f },
-    )
+    ) as GnssStatus
 }
