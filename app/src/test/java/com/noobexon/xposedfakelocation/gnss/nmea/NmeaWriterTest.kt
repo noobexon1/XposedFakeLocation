@@ -82,6 +82,8 @@ class NmeaWriterTest {
         assertEquals("", fields("VTG", slow)[0])
         assertEquals("", fields("RMC", FIX.copy(courseDegrees = null))[7])
         assertEquals("270.0", fields("RMC", FIX.copy(courseDegrees = -90f))[7])
+        assertEquals("0.0", fields("RMC", FIX.copy(courseDegrees = 359.96f))[7])
+        assertEquals("359.9", fields("RMC", FIX.copy(courseDegrees = 359.94f))[7])
     }
 
     @Test

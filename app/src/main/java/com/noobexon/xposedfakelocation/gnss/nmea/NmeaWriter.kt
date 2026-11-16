@@ -213,7 +213,8 @@ object NmeaWriter {
     private fun course(fix: NmeaFix): String {
         val course = fix.courseDegrees ?: return ""
         if (fix.speedMetersPerSecond < MIN_COURSE_SPEED_MPS) return ""
-        return one(course.mod(360f).toDouble())
+        val tenths = (course.toDouble() * 10).roundToLong().mod(3600L)
+        return one(tenths / 10.0)
     }
 
     private fun position(fix: NmeaFix, style: NmeaStyle): List<String> = listOf(
